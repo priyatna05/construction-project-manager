@@ -1,0 +1,66 @@
+#Logic dari aplikasi construction project manager
+
+Project
+start ======================================================= end = 100%
+                BAC = budget proyek tanpa PPN
+     Task Group (backlog)
+Tasks |  notif alert jika melebihi start-end dan budget dari project yang sudah ditentukan sebelumnya
+    start ===== end = 100 %  (Task 1)
+    budget = budget task
+    
+         start ===== end = 100 %        | (Task 2) Parent
+         budget = budget task           | Relasi
+                                        | notif alert jika set budget pada cild melebihi dari task parent
+(Task 3)      start ===== end = 100 %   | notif alert jika melebihi dari task parent yang sudah ditentukan sebelumnya
+              budget = budget task      | Relasi
+                                        |           (Task 3 dan 4 adalah child)
+(Task 4)            start ===== end = 100 %
+                    budget = budget task
+
+                           start ===== end = 100 % (Task 5)
+                           budget = budgetask
+
+     Task Group (To-do)
+     jika task 1 = 10 %,
+          task 2 = 80 %
+          task 5 = 50 %
+          maka ...
+     Task Group (Review)
+     
+     Task Group (Done)
+Logic perhitungan
+#Project akumulasi
+jika task  1-5 = 100% dan task berada pada bagain task Group(Done)
+maka perhitungan project complite 100%
+
+
+#Task ( 2 (parent), 3 dan 4 )  = 100 %
+Note start = S dan end = E
+example 
+ Task 2(parent) S = 15/03/2025  E = 20/03/2025 = 5 hari
+ Task 3(child) S = 15/03/2025  E = 17/03/2025 = 2 hari
+ Task 4(child) S = 17/03/2025  E = 20/03/2025 = 3 hari
+Budget Task 2 = 10
+                Task 3 = 5
+                Task 4 = 5
+
+Akumulasi Task 2,3,4 (
+    Start to End = 5 --> 100%
+    Budget = 10      --> 100%
+)
+Jika task 3,4 terkumpul 100% maka akumulasi pada parent 100 %
+jika task 3 = 50%
+     task 4 = 50%
+     maka akumulasi pada parent 50%
+jika task 3 = 10%
+     task 4 = 40%
+     maka akumulasi pada parent 20%
+
+jika budget task 2 = 10
+            task 3 = 5
+            task 4 = 5
+            maka akumulasi pada Task parent 10(100%)
+jika budget task 2 = 10
+            task 3 = 5
+            task 4 = 3
+            maka akumulasi pada Task parent 8(80%)

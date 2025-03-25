@@ -1,0 +1,530 @@
+Upah Tukang Bangunan Harian di Majalengka
+Jenis Tukang	Satuan	Upah
+Kepala Tukang	orang/hari 8jam	Rp. 175.000  perjam 21,875
+Tukang Cat	orang/hari	Rp. 120.000 
+Tukang Kayu	orang/hari	Rp. 130.000
+Tukang Batu	orang/hari	Rp. 140.000
+Pembantu Tukang	orang/hari	Rp. 100.000 perjam 12,500
+Tukang Besi	orang/hari	Rp. 130.000
+Tukang Gali Tanah	orang/hari	Rp. 100.000
+Tukang Listrik	orang/hari	Rp. 110.000
+
+Arsitekture aplikasi
+
+.github
+app/
+├── Actions/
+│   |── Client/
+│   |   ├── CreateCient.php
+│   |   └── UpdateClient.php
+│   |── ClientCompany/
+│   |   ├── CreateClientCompany.php
+│   |   └── UpdateClientCompany.php
+│   |── Invoice/
+│   |   ├── CreateInvoice.php
+│   |   └── UpdateInvoice.php
+│   |── OwnerCompany/
+│   |   └──UpdateOwnerCompany.php
+│   |── Task/
+│   |   ├── CreateTask.php
+│   |   └── UpdateTask.php
+│   └── User/
+│       ├── CreateUser.php
+│       ├── UpdateUser.php
+│       └── UpdateAuthUser.php
+├── Console/
+│   ├── Commands/
+│   │   └── PureActivites.php
+│   │   └── PureNotifications.php
+│   └── Kernel.php
+├── Enums/
+│   └── Invoice.php 
+│   └── Queue.php
+├── Events/
+│   └── Task/
+|   |   └── AttachmentDeleteed.php
+|   |   └── AttachmentUploaded.php
+|   |   └── TaskCreated.php
+|   |   └── TaskCreated.php
+|   |   └── TaskGroupChanged.php
+|   |   └── TaskOrderChanged.php
+|   |   └── TaskRestored.php
+|   |   └── TaskUpdated.php
+|   |   └── TimeLogCreated.php
+|   |   └── TimeLogDeleted.php
+│   └── TaskGroup/
+│   |   └── TaskGroupCreated.php
+│   |   └── TaskGroupDeleted.php
+│   |   └── TaskGroupOrderChanged.php
+│   |   └── TaskGroupRestored.php
+│   |   └── TaskGroupUpdated.php
+│   └── UserCreated.php
+│   └── EarnedValueUpdated.php
+├── Exceptions/
+│   └── Handler.php
+├── Http/
+│   ├── Controllers/
+│   │   ├── Account/
+│   │   │   └── NotificationController.php
+│   │   │   └── ProfileController.php
+│   │   ├── Auth/
+│   │   │   └── AuthenticationController.php
+│   │   │   └── GoogleSocialiteController.php
+│   │   │   └── NewPasswordController.php
+│   │   │   └── ResetPasswordController.php
+│   │   ├── Client/
+│   │   │   └── ClientCompanyController.php
+│   │   │   └── ClientUserController.php
+│   │   ├── Invoice/
+│   │   │   └── InvoiceTaskController.php
+│   │   ├── MyWork/
+│   │   │   └── ActivityController.php
+│   │   │   └── MyWorkTaskController.php
+│   │   ├── Settings/
+│   │   │   └── LabelController.php
+│   │   │   └── OwnerCompanyController.php
+│   │   │   └── RoleController.php
+│   │   ├── Task/
+│   │   │   └── AttachmentController.php
+│   │   │   └── CommentController.php
+│   │   │   └── GroupController.php
+│   │   │   └── TimeLogController.php
+│   │   └── Controller.php
+│   │   └── DashboardController.php
+│   │   └── DropdownValuesController.php
+│   │   └── InvoiceController.php
+│   │   └── ProjectController.php
+│   │   └── ReportController.php
+│   │   └── TaskController.php
+│   │   └── TestController.php
+│   │   └── UserController.php
+│   ├── Middleware/
+│   │   └── Authenticate.php
+│   │   └── EncryptCookies.php
+│   │   └── handleInteriaRequests.php
+│   │   └── PreventRequestDuringMaintenance.php
+│   │   └── RedirectIfAuthenticated.php
+│   │   └── TrimString.php
+│   │   └── TrustHost.php
+│   │   └── TrustProxies.php
+│   │   └── ValidateSignature.php
+│   │   └── VerifyCsrfToken.php
+│   ├── Requests/
+│   │   └── Auth/
+│   │   │   └── LoginRequest.php
+│   │   └── Client/
+│   │   │   └── StoreClientRequest.php
+│   │   │   └── UpdateClientRequest.php
+│   │   └── ClientCompany/
+│   │   │   └── StoreClientCompanyRequest.php
+│   │   │   └── UpdateClientCompanyRequest.php
+│   │   └── Comment/
+│   │   │   └── StoreCommentRequest.php
+│   │   └── Invoice/
+│   │   │   └── StoreInvoiceRequest.php
+│   │   │   └── UpdateInvoiceRequest.php
+│   │   └── Label/
+│   │   │   └── StoreLabelRequest.php
+│   │   │   └── UpdateLabelRequest.php
+│   │   └── OwnerCompany/
+│   │   │   └── UpdateOwnerCompanyRequest.php
+│   │   └── Project/
+│   │   │   └── StoreProjectRequest.php
+│   │   │   └── UpdateProjectRequest.php
+│   │   └── Role/
+│   │   │   └── StoreRoleRequest.php
+│   │   │   └── UpdateRoleRequest.php
+│   │   └── Task/
+│   │   │   └── StoreTaskRequest.php
+│   │   │   └── UpdateTaskRequest.php
+│   │   └── TaskGroup/
+│   │   │   └── StoreTaskGroupRequest.php
+│   │   │   └── UpdateTaskGroupRequest.php
+│   │   └── TimeLog/
+│   │   │   └── StoreTimeLogRequest.php
+│   │   └── User/
+│   │   │   └── StoreUserRequest.php
+│   │   │   └── UpdateAuthUserRequest.php
+│   │   │   └── UpdateUserRequest.php
+│   ├── resources/
+│   │   └── Activity/
+|   |   |   └── ActivityGroupedByDateCollection.php
+│   │   └── Client/
+│   │   │   └── ClientResource.php
+│   │   └── ClientCompany/
+│   │   │   └── ClientCompanyResource.php
+│   │   └── Invoice/
+│   │   │   └── InvoiceResource.php
+│   │   └── Label/
+│   │   │   └── LabelResource.php
+│   │   └── Notification/
+│   │   │   └── NotificationGroupedByDateResource.php
+│   │   │   └── NotificationResource.php
+│   │   └── Project/
+│   │   │   └── ProjectResource.php
+│   │   └── Role/
+│   │   │   └── RoleResource.php
+│   │   └── User/
+│   │   │   └── AuthUserResource.php
+│   │   │   └── UserResource.php
+│   └── Kernel.php
+├── Listeners/
+│   └── NotifyTaskSubscribers.php
+│   └── SendEmailWithCredentials.php
+├── Models/
+│   └── Filter/
+│   │   └── IsNullFilter.php
+│   │   └── TaskCompletedFilter.php
+│   │   └── TaskOverdueFilter.php
+│   │   └── WhereHasFilter.php
+│   │   └── WhereInFilter.php
+│   └── Activity.php
+│   └── Attachment.php
+│   └── ClientCompany.php
+│   └── Comment.php
+│   └── Country.php
+│   └── Currency.php
+│   └── Invoice.php
+│   └── Label.php
+│   └── OwnerCompany.php
+│   └── Permission.php
+│   └── Project.php
+│   └── Role.php
+│   └── Task.php
+│   └── TaskGroup.php
+│   └── TimeLog.php
+│   └── User.php
+├── Notifications/
+│   └── CommentCreatedMentioneduserNotification.php
+│   └── CommentCreatedNotification.php
+│   └── TaskCreatedMentionUserNotification.php
+│   └── TaskCreatedNotification.php
+│   └── UserCreatedNotification.php
+├── Observers/
+│   └── CommentObserver.php
+│   └── ProjectObserver.php
+│   └── TaskObserver.php
+├── Policies/
+│   └── ClientCompanyPolicy.php
+│   └── CommmentPolicy.php
+│   └── InvoicePolicy.php
+│   └── LabelPolicy.php
+│   └── OwnerCompanyPolicy.php
+│   └── ProjectPolicy.php
+│   └── RolePolicy.php
+│   └── TaskGroupPolicy.php
+│   └── TaskPolicy.php
+│   └── TimeLogPolicy.php
+│   └── UserPolicy.php
+├── Providers/
+│   └── AppServiceProvider.php
+│   └── AuthServiceProvider.php
+│   └── BroadcastServiceProvider.php
+│   └── EvenServiceProvider.php
+│   └── RouteServiceProvider.php
+└── Services/
+|   └── InvoiceService.php
+|   └── NotificationService.php
+|   └── PermissionService.php
+|   └── ProjectService.php
+|   └── UserMentionService.php
+|   └── UserService.php
+|── bootstrap/
+|   └── Cache/
+|   |   └── .gitignore
+|   |   └── package.php
+|   |   └── services.php
+|   └── app.php
+|── config/
+|   └── app.php
+|   └── audit.php
+|   └── auth.php
+|   └── broadcasting.php
+|   └── cache.php
+|   └── cors.php
+|   └── database.php
+|   └── favorite.php
+|   └── filesystem.php
+|   └── hashing.php
+|   └── logging.php
+|   └── mail.php
+|   └── permission.php
+|   └── queue.php
+|   └── scantum.php
+|   └── service.php
+|   └── session.php
+|   └── view.php
+|── database/
+|   └── factories/
+|   └── migrations/
+|   └── seeders/
+|   └── .gitignore
+|── public/
+|── resources/
+|   └── css/
+|   |   └── app.css
+|   └── js/
+|   |   └── app.jsx
+|   |   └── bootstrap.js
+|   |   └── types.ts
+|   |   └── components/
+|   |   |   └── css/
+|   |   |   |   └── Card.module.css
+|   |   |   |   └── FileThumbnail.module.css
+|   |   |   |   └── FlashNotification.module.css
+|   |   |   |   └── Notification.module.css
+|   |   |   |   └── RichTextEditor.module.css
+|   |   |   |   └── TableHeader.module.css
+|   |   |   |   └── UserInfoCard.module.css
+|   |   |   └── RichTextEditor/
+|   |   |   |   └── Menntion/
+|   |   |   |       └── css/
+|   |   |   |       |   └── MentionList.css
+|   |   |   |       └── MentionList.jsx
+|   |   |   |       └── suggestion.js
+|   |   |   └── ActionButton.jsx
+|   |   |   └── ArchivedFilterButton.jsx
+|   |   |   └── BackButton.jsx
+|   |   |   └── Card.jsx
+|   |   |   └── ClearFilterButton.jsx
+|   |   |   └── ConfirmModal.jsx
+|   |   |   └── Dropzone.jsx
+|   |   |   └── EmptyResult.jsx
+|   |   |   └── EmptyWithIcon.jsx
+|   |   |   └── FileThumbnail.jsx
+|   |   |   └── FlashNotification.jsx
+|   |   |   └── ImageModal.jsx
+|   |   |   └── Label.jsx
+|   |   |   └── Logo.jsx
+|   |   |   └── Notification.jsx
+|   |   |   └── Pagination.jsx
+|   |   |   └── RichTextEditor.jsx
+|   |   |   └── RoleBadge.jsx
+|   |   |   └── SearchInput.jsx
+|   |   |   └── TableHead.jsx
+|   |   |   └── TableHeaderCell.jsx
+|   |   |   └── TableRowAction.jsx
+|   |   |   └── TableRowEmpty.jsx
+|   |   |   └── TaskkGroupLabel.jsx
+|   |   |   └── UserInfoCard.jsx
+|   |   └── hooks/
+|   |   |   └─ store/
+|   |   |   |  └─ taskGroups/
+|   |   |   |  |  └─ TaskGroupWebSocketUpdateSlice.js
+|   |   |   |  └─ tasks/
+|   |   |   |  |  └─ TaskAttachmentsSlice.js
+|   |   |   |  |  └─ TaskCommentsSlice.js
+|   |   |   |  |  └─ TaskTimeLogsSlice.js
+|   |   |   |  |  └─ TaskWebSocketUpdateSlice.js
+|   |   |   |  └─ useNavigationStore.js
+|   |   |   |  └─ useNotificationStore.js
+|   |   |   |  └─ useTaskDrawerStore.js
+|   |   |   |  └─ useTaskFiltersStore.js
+|   |   |   |  └─ useTaskGroupsStore.js
+|   |   |   |  └─ useTasksStore.js
+|   |   |   └─ useAuthorization.js
+|   |   |   └─ useForm.js
+|   |   |   └─ useImageLoader.js
+|   |   |   └─ usePreferences.js
+|   |   |   └─ useRoles.js
+|   |   |   └─ useSorting.js
+|   |   |   └─ useTimer.js
+|   |   |   └─ useWebSockets.js
+|   |   └── icons/
+|   |   |   └── GoogleIcon.jsx
+|   |   └── layouts/
+|   |   |   └── css/
+|   |   |   └── ContainerBox.jsx
+|   |   |   └── GuestLayout.jsx
+|   |   |   └── MainLayout.jsx
+|   |   |   └── NavbarLinksGroup.jsx
+|   |   |   └── NavbarNested.jsx
+|   |   |   └── Notifications.jsx
+|   |   |   └── UserButton.jsx
+|   |   └── pages/
+|   |   |   └── Account/
+|   |   |   |   └── Notifications/
+|   |   |   |   |   └── css/
+|   |   |   |   |   |   └── index.module.css
+|   |   |   |   |   └── index.jsx
+|   |   |   |   └── Profile/
+|   |   |   |       └── Edit.jsx
+|   |   |   └── Auth/
+|   |   |   |   └── css/
+|   |   |   |   |   └── ForgotPassword.module.css
+|   |   |   |   |   └── Login.module.css
+|   |   |   |   |   └── ResetPassword.module.css
+|   |   |   |   └── ForgotPassword.jsx
+|   |   |   |   └── Login.jsx
+|   |   |   |   └── LoginNotification.jsx
+|   |   |   |   └── ResetPassword.jsx
+|   |   |   └── Client/
+|   |   |   |   └── Companies/
+|   |   |   |   |   └── Create.jsx
+|   |   |   |   |   └── Edit.jsx
+|   |   |   |   |   └── Index.jsx
+|   |   |   |   |   └── TableRow.jsx
+|   |   |   |   └── Users/
+|   |   |   |       └── Create.jsx
+|   |   |   |       └── Edit.jsx
+|   |   |   |       └── Index.jsx
+|   |   |   |       └── TableRow.jsx
+|   |   |   └── css/
+|   |   |   |   └── Error.module.css
+|   |   |   └── Dashboard/
+|   |   |   |   └── Cards/
+|   |   |   |   |   └── css/
+|   |   |   |   |   |   └── OverdueTasks.module.css
+|   |   |   |   |   |   └── ProjectCard.module.css
+|   |   |   |   |   |   └── RecentComments.module.css
+|   |   |   |   |   |   └── RecentlyAssignedTasks.module.css
+|   |   |   |   |   └── OverdueTasks.jsx
+|   |   |   |   |   └── OverViewProject.jsx
+|   |   |   |   |   └── ProjectCard.jsx
+|   |   |   |   |   └── RecentComments.jsx
+|   |   |   |   |   └── RecentlyAssignedTasks.jsx
+|   |   |   |   └── css/
+|   |   |   |   |   └── index.module.css
+|   |   |   |   └── index.jsx
+|   |   |   └── Invoice/
+|   |   |   |   └── css/
+|   |   |   |   |   └── Task.module.css
+|   |   |   |   └── Create.jsx
+|   |   |   |   └── Edit.jsx
+|   |   |   |   └── Index.jsx
+|   |   |   |   └── InvoiceCreate.jsx
+|   |   |   |   └── StatusDropdown.jsx
+|   |   |   |   └── TableRow.jsx
+|   |   |   |   └── Task.jsx
+|   |   |   └── MyWork/
+|   |   |   |   └── Activity/
+|   |   |   |   |   └── index.jsx
+|   |   |   |   └── Tasks/
+|   |   |   |   |   └── css/
+|   |   |   |   |   |   └── Index.module.css
+|   |   |   |   |   |   └── Task.module.css
+|   |   |   |   |   └── Index.jsx
+|   |   |   |   |   └── Task.jsx
+|   |   |   └── Projects/
+|   |   |   |   └── Index/
+|   |   |   |   |   └── css/
+|   |   |   |   |   |   └── FavoriteToggle.module.css
+|   |   |   |   |   |   └── ProjectCard.module.css
+|   |   |   |   |   └── Modals/
+|   |   |   |   |   |   └── UserAccessModal.jsx
+|   |   |   |   |   └── FavoriteToggle.jsx
+|   |   |   |   |   └── ProjectCard.jsx
+|   |   |   |   |   └── ProjectCardAction.jsx
+|   |   |   |   └── Tasks/
+|   |   |   |   |   |   └── css/
+|   |   |   |   |   |   |   └── Index.module.css
+|   |   |   |   |   |   └── Drawers/
+|   |   |   |   |   |   |   └── css/
+|   |   |   |   |   |   |   |   └── Comments.module.css
+|   |   |   |   |   |   |   |   └── TaskDrawer.module.css
+|   |   |   |   |   |   |   |   └── Timer.module.css
+|   |   |   |   |   |   |   └── Comments.jsx
+|   |   |   |   |   |   |   └── CreateTaskDrawer.jsx
+|   |   |   |   |   |   |   └── EditTaskDrawer.jsx
+|   |   |   |   |   |   |   └── labelsDropdown.jsx
+|   |   |   |   |   |   |   └── Timer.jsx
+|   |   |   |   |   |   └── Index/
+|   |   |   |   |   |   |   └── Archive/
+|   |   |   |   |   |   |   |   └── ArchivedItems.jsx
+|   |   |   |   |   |   |   |   └── ArchivedTask.jsx
+|   |   |   |   |   |   |   |   └── ArchivedTaskGroup.jsx
+|   |   |   |   |   |   |   └── css/
+|   |   |   |   |   |   |   |   └── TaskGroup.module.css
+|   |   |   |   |   |   |   └── Filter/
+|   |   |   |   |   |   |   |   └── css/
+|   |   |   |   |   |   |   |   |   └── FilterButton.modeule.css
+|   |   |   |   |   |   |   |   └── FilterButton.jsx
+|   |   |   |   |   |   |   └── Modals/
+|   |   |   |   |   |   |   |   └── CreateTasksGroupModal.jsx
+|   |   |   |   |   |   |   |   └── EditTasksGroupModal.jsx
+|   |   |   |   |   |   |   └── Task/
+|   |   |   |   |   |   |   |   └── css/
+|   |   |   |   |   |   |   |   |   └── TaskCard.module.css
+|   |   |   |   |   |   |   |   |   └── TaskRow.module.css
+|   |   |   |   |   |   |   |   └── TaskCard.jsx
+|   |   |   |   |   |   |   |   └── TaskRow.jsx
+|   |   |   |   |   |   |   └── Filter.jsx
+|   |   |   |   |   |   |   └── FilterDrawer,jsx
+|   |   |   |   |   |   |   └── Header.jsx
+|   |   |   |   |   |   |   └── Task.jsx
+|   |   |   |   |   |   |   └── TaskAction.jsx
+|   |   |   |   |   |   |   └── TaskGroup.jsx
+|   |   |   |   |   |   |   └── TaskGroupAction.jsx
+|   |   |   |   |   └── Index.jsx
+|   |   |   |   └── Create.jsx
+|   |   |   |   └── Edit.jsx
+|   |   |   |   └── Index.jsx
+|   |   |   └── Report/
+|   |   |   |   └── DailyLoggedTime.jsx 
+|   |   |   |   └── LoggedTimeSum.jsx 
+|   |   |   └── Settings/
+|   |   |   |   └── Company/
+|   |   |   |   |   └── Edit.jsx
+|   |   |   |   └── Labels/
+|   |   |   |   |   └── Create.jsx
+|   |   |   |   |   └── Edit.jsx
+|   |   |   |   |   └── Index.jsx
+|   |   |   |   |   └── TableRow.jsx
+|   |   |   |   └── Roles/
+|   |   |   |       └── Create.jsx
+|   |   |   |       └── Edit.jsx
+|   |   |   |       └── Index.jsx
+|   |   |   |       └── TableRow.jsx
+|   |   |   └── Users/
+|   |   |   |   └── Create.jsx
+|   |   |   |   └── Edit.jsx
+|   |   |   |   └── Index.jsx
+|   |   |   |   └── TableRow.jsx
+|   |   |   └── Error.jsx
+|   |   └── utils/
+|   |   |   └── axios.js
+|   |   |   └── currency.js
+|   |   |   └── datetime.js
+|   |   |   └── domEvents.js
+|   |   |   └── file.js
+|   |   |   └── recorder.js
+|   |   |   └── route.js
+|   |   |   └── table.js
+|   |   |   └── task.js
+|   |   |   └── timer.js
+|   |   |   └── user.js
+|   └── views/
+|       └── vendor/
+|       └── app.blade.php
+|── routes/
+|    └── api.php
+|    └── auth.php
+|    └── chanels.php
+|    └── console.php
+|    └── web.php
+|── storage/
+|── tests/
+|── vendor/
+|
+.editorconfig
+.env 
+.env.example
+.eslintrc.cjs
+.gitattaributes
+.gitignore
+.prettierrc
+atisan
+composer.json
+composer.lock
+jsconfig.json
+package-lock.json
+package.json
+phpunit.xml
+print.json
+postcss.config.js
+README.md 
+vite.config.js 
+
+
+untuk dashboard tampilkan Evm semuanya 
+dan select project terkini

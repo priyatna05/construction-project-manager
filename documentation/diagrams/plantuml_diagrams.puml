@@ -1,0 +1,226 @@
+@startuml
+
+' Updated Use Case Diagram
+package "Use Case Diagram" {
+    actor User
+    actor Admin
+    actor Client
+
+    usecase "Create Invoice" as UC1
+    usecase "Manage Tasks" as UC2
+    usecase "View Projects" as UC3
+    usecase "Update Profile" as UC4
+    usecase "Manage Users" as UC5
+    usecase "View Reports" as UC6
+    usecase "Assign Roles" as UC7
+    usecase "View Invoices" as UC8
+    usecase "Request Task Updates" as UC9
+    usecase "Create Project Request" as UC10
+    usecase "Provide Feedback" as UC11
+
+    User --> UC1
+    User --> UC2
+    User --> UC3
+    User --> UC4
+    Admin --> UC5
+    Admin --> UC6
+    Admin --> UC7
+    Client --> UC8
+    Client --> UC9
+    Client --> UC10
+    Client --> UC11
+
+    note right of (Create Invoice)
+      Proses pembuatan invoice oleh pengguna
+      yang mencakup detail seperti jumlah,
+      deskripsi, dan tanggal jatuh tempo.
+    end note
+}
+
+@enduml
+
+@startuml
+' Activity Diagram
+start
+:User logs in;
+:User selects a project;
+:User creates a task;
+if (Is task valid?) then (yes)
+  :Save task;
+  :Notify assigned user;
+  if (Is task assigned?) then (yes)
+    :Send notification to assigned user;
+  else (no)
+    :Log task creation without assignment;
+  endif
+else (no)
+  :Show error message;
+endif
+:User logs out;
+stop
+
+note right of (Save task)
+  Task is saved in the database
+  and its status is updated.
+end note
+@enduml
+
+@startuml
+' Sequence Diagram
+User -> Task: createTask()
+Task -> Project: associateWithProject()
+Task -> User: notifyUser()
+User -> Task: updateTask()
+Task -> User: confirmUpdate()
+User -> Invoice: createInvoice()
+Invoice -> Client: sendInvoice()
+alt If invoice creation fails
+    Invoice -> User: showError()
+else
+    Invoice -> Client: confirmInvoiceSent()
+end
+@enduml
+
+@startuml
+' Class Diagram
+class User {
+    +name: String
+    +email: String
+    +password: String
+    +clientCompanies(): BelongsToMany
+    +projects(): BelongsToMany
+    +tasks(): HasMany
+    +updateProfile(): void
+}
+
+class Task {
+    +name: String
+    +description: String
+    +dueDate: Date
+    +project(): BelongsTo
+    +assignedToUser(): BelongsTo
+    +comments(): HasMany
+    +status: String
+}
+
+class Project {
+    +name: String
+    +description: String
+    +startDate: Date
+    +endDate: Date
+    +tasks(): HasMany
+    +users(): BelongsToMany
+}
+
+class Invoice {
+    +clientCompanyId: Integer
+    +createdByUserId: Integer
+    +number: String
+    +status: String
+    +amount: Float
+    +dueDate: Date
+    +note: String
+    +tasks(): HasMany
+}
+
+class ClientCompany {
+    +name: String
+    +address: String
+    +postalCode: String
+    +city: String
+    +countryId: Integer
+    +currencyId: Integer
+    +email: String
+    +phone: String
+    +web: String
+    +businessId: Integer
+    +invoices(): HasMany
+    +projects(): HasMany
+}
+
+class Activity {
+    +userId: Integer
+    +projectId: Integer
+    +title: String
+    +subtitle: String
+    +createdAt: Date
+}
+
+class Attachment {
+    +taskId: Integer
+    +userId: Integer
+    +name: String
+    +path: String
+    +thumb: String
+    +type: String
+    +size: Integer
+}
+
+class Comment {
+    +userId: Integer
+    +taskId: Integer
+    +content: String
+}
+
+class Country {
+    +dropdownValues(): array
+}
+
+class Currency {
+    +clientCompanies(): HasMany
+    +dropdownValues(): array
+}
+
+class Label {
+    +name: String
+    +color: String
+}
+
+class OwnerCompany {
+    +name: String
+    +logo: String
+    +address: String
+    +postalCode: String
+    +city: String
+    +countryId: Integer
+    +currencyId: Integer
+    +email: String
+    +phone: String
+    +web: String
+    +businessId: Integer
+}
+
+class Permission {
+    +name: String
+    +guardName: String
+}
+
+class Role {
+    +name: String
+    +guardName: String
+}
+
+class TaskGroup {
+    +name: String
+    +projectId: Integer
+    +orderColumn: Integer
+}
+
+class TimeLog {
+    +taskId: Integer
+    +userId: Integer
+    +minutes: Integer
+    +timerStart: DateTime
+    +timerStop: DateTime
+}
+
+User "1" -- "0..*" Task
+Project "1" -- "0..*" Task
+ClientCompany "1" -- "0..*" Invoice
+Task "1" -- "0..*" Attachment
+Task "1" -- "0..*" Comment
+TaskGroup "1" -- "0..*" Task
+@enduml
+```
+
+Please confirm if I can proceed with this update to the `diagrams/plantuml_diagrams.puml` file.
