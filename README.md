@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # construction-project-manager
 Management Proyek Konstruksi
 =======
@@ -94,4 +93,3 @@ To use Pusher, sign up, then create a project and copy paste app keys to `.env` 
 - [ ] Write tests.
 - [ ] Optimize frontend and backend.
 - [ ] Consider moving to TypeScript.
->>>>>>> d84c690 (commit)
