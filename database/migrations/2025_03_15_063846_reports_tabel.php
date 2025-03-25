@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        //id	name	description	file	project_id	user_id	created_at	updated_at	
+        // id	name	description	file	project_id	user_id	created_at	updated_at
         Schema::create('resources', function (Blueprint $table) {
             $table->id();
             $table->string('name');

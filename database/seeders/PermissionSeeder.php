@@ -51,7 +51,7 @@ class PermissionSeeder extends Seeder
                         'permission_id' => $id,
                     ])->toArray()
                 );
-        } 
+        }
 
         Artisan::call('cache:clear');
     }

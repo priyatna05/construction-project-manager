@@ -1,7 +1,9 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\Account\NotificationController;
+use App\Http\Controllers\Account\ProfileController;
+use App\Http\Controllers\Client\ClientCompanyController;
+use App\Http\Controllers\Client\ClientUserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DropdownValuesController;
 use App\Http\Controllers\Invoice\InvoiceTasksController;
@@ -19,22 +21,18 @@ use App\Http\Controllers\Task\GroupController;
 use App\Http\Controllers\Task\TimeLogController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TaskDependencyController;
-use App\Http\Controllers\Client\ClientCompanyController;
-use App\Http\Controllers\Client\ClientUserController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\Account\NotificationController;
-use App\Http\Controllers\Account\ProfileController;
-
+use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', 'dashboard');
 
 Route::group(['middleware' => ['auth:sanctum']], function () {
     // Dashboard
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    
+
     // Projects
     Route::resource('projects', ProjectController::class)->except(['show']);
-    
+
     Route::group(['prefix' => 'projects', 'as' => 'projects.'], function () {
         // PROJECT + earned
         Route::post('{projectId}/restore', [ProjectController::class, 'restore'])->name('restore');
@@ -65,7 +63,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
             Route::get('/', [TaskDependencyController::class, 'index'])->name('index');
             Route::post('/', [TaskDependencyController::class, 'store'])->name('store');
             Route::delete('/{dependencyId}', [TaskDependencyController::class, 'destroy'])->name('destroy');
-            });
+        });
         // ATTACHMENTS
         Route::group(['prefix' => '{project}/tasks/{task}', 'as' => 'tasks.'], function () {
             Route::post('attachments/upload', [AttachmentController::class, 'store'])->name('attachments.upload');

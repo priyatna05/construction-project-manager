@@ -22,12 +22,12 @@ class TaskController extends Controller
         $this->authorize('viewAny', [Task::class, $project]);
 
         $groups = $project->taskGroups()
-            ->with(['tasks' => function ($query) use ($request, $project) {
+            ->with(['tasks' => function ($query) use ($request) {
                 $query->searchByQueryString()
                     ->filterByQueryString()
                     ->when($request->user()->hasRole('client'), fn ($query) => $query->where('hidden_from_clients', false))
                     ->when($request->has('archived'), fn ($query) => $query->onlyArchived())
-                    ->when(!$request->has('status'), fn ($query) => $query->whereNull('completed_at'))
+                    ->when(! $request->has('status'), fn ($query) => $query->whereNull('completed_at'))
                     ->withDefault();
             }])
             ->get();
@@ -46,7 +46,7 @@ class TaskController extends Controller
     {
         $this->authorize('create', [Task::class, $project]);
 
-        (new TaskService())->createTask($project, $request->validated());
+        (new TaskService)->createTask($project, $request->validated());
 
         return redirect()->route('projects.tasks', $project)->success('Task added', 'A new task was successfully added.');
     }
@@ -55,7 +55,7 @@ class TaskController extends Controller
     {
         $this->authorize('update', [$task, $project]);
 
-        (new TaskService())->updateTask($task, $request->validated());
+        (new TaskService)->updateTask($task, $request->validated());
 
         return response()->json();
     }
@@ -64,7 +64,7 @@ class TaskController extends Controller
     {
         $this->authorize('reorder', [Task::class, $project]);
 
-        (new TaskService())->reorderTasks($project, $request->ids, $request->group_id, $request->from_index, $request->to_index);
+        (new TaskService)->reorderTasks($project, $request->ids, $request->group_id, $request->from_index, $request->to_index);
 
         return response()->json();
     }
@@ -73,7 +73,7 @@ class TaskController extends Controller
     {
         $this->authorize('reorder', [Task::class, $project]);
 
-        (new TaskService())->moveTaskGroup($request->ids, $request->from_group_id, $request->to_group_id, $request->from_index, $request->to_index);
+        (new TaskService)->moveTaskGroup($request->ids, $request->from_group_id, $request->to_group_id, $request->from_index, $request->to_index);
 
         return response()->json();
     }
@@ -82,7 +82,7 @@ class TaskController extends Controller
     {
         $this->authorize('complete', [Task::class, $project]);
 
-        (new TaskService())->completeTask($task, $request->completed);
+        (new TaskService)->completeTask($task, $request->completed);
 
         return response()->json();
     }
@@ -91,7 +91,7 @@ class TaskController extends Controller
     {
         $this->authorize('archive task', [$task, $project]);
 
-        (new TaskService())->archiveTask($task);
+        (new TaskService)->archiveTask($task);
 
         return redirect()->back()->success('Task archived', 'The task was successfully archived.');
     }
@@ -102,7 +102,7 @@ class TaskController extends Controller
 
         $this->authorize('restore', [$task, $project]);
 
-        (new TaskService())->restoreTask($task);
+        (new TaskService)->restoreTask($task);
 
         return redirect()->back()->success('Task restored', 'The restoring of the Task was completed successfully.');
     }

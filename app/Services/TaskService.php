@@ -51,6 +51,7 @@ class TaskService
         $task->unArchive();
         TaskRestored::dispatch($task);
     }
+
     public function addDependency(Task $task, int $dependsOnTaskId, string $relationType): void
     {
         $task->dependencies()->attach($dependsOnTaskId, ['relation_type' => $relationType]);

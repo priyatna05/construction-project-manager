@@ -92,7 +92,7 @@ class Task extends Model implements AuditableContract, Sortable
 
     public function scopeWithDefault(Builder $query)
     {
-        if (!$query->getEagerLoads()) {
+        if (! $query->getEagerLoads()) {
             $query->with($this->defaultWith);
         }
     }
@@ -165,9 +165,9 @@ class Task extends Model implements AuditableContract, Sortable
     public function dependencies(): BelongsToMany
     {
         return $this->belongsToMany(
-            Task::class, 
-            'task_dependencies', 
-            'task_id', 
+            Task::class,
+            'task_dependencies',
+            'task_id',
             'depends_on_task_id'
         )->withPivot('relation_type')->withTimestamps();
     }
@@ -175,9 +175,9 @@ class Task extends Model implements AuditableContract, Sortable
     public function dependentTasks(): BelongsToMany
     {
         return $this->belongsToMany(
-            Task::class, 
-            'task_dependencies', 
-            'depends_on_task_id', 
+            Task::class,
+            'task_dependencies',
+            'depends_on_task_id',
             'task_id'
         )->withPivot('relation_type')->withTimestamps();
     }

@@ -24,14 +24,14 @@ class TaskDependencyController extends Controller
             'relation_type' => 'required|in:Blocking,Sequential,Related',
         ]);
 
-        (new TaskService())->addDependency($task, $request->depends_on_task_id, $request->relation_type);
+        (new TaskService)->addDependency($task, $request->depends_on_task_id, $request->relation_type);
 
         return response()->json(['message' => 'Task dependency added successfully']);
     }
 
     public function destroy(Task $task, $dependencyId): JsonResponse
     {
-        (new TaskService())->removeDependency($task, $dependencyId);
+        (new TaskService)->removeDependency($task, $dependencyId);
 
         return response()->json(['message' => 'Task dependency removed successfully']);
     }

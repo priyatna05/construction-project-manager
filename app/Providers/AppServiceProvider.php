@@ -4,8 +4,8 @@ namespace App\Providers;
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Schema; // Required for Schema operations
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\ServiceProvider; // Required for Schema operations
 
 class AppServiceProvider extends ServiceProvider
 {
