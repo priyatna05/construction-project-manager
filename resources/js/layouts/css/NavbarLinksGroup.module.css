@@ -1,0 +1,150 @@
+/* Container wrapper */
+.wrapper {
+  position: relative;
+}
+
+/* Navbar main container */
+.navbar {
+  /* background-color: var(--mantine-color-blue-9); */
+  height: 100vh;
+  width: rem(300px);
+  padding: var(--mantine-spacing-md);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease;
+}
+
+/* Main clickable item */
+.control {
+  font-weight: 500;
+  display: block;
+  width: 100%;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-md);
+  color: var(--mantine-color-blue-9);
+  font-size: var(--mantine-font-size-sm);
+  position: relative;
+  transition: background-color 0.3s ease;
+  border-radius: var(--mantine-radius-md);
+}
+
+.controlCollapsed {
+  position: relative;
+}
+
+.tooltip {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  visibility: hidden;
+  background: var(--mantine-color-blue-7);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  white-space: nowrap;
+  z-index: 1000;
+  transition: opacity 0.2s ease;
+}
+
+.controlCollapsed:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.submenuTooltip {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  transform: translateX(8px);
+  opacity: 0;
+  visibility: hidden;
+  background: var(--mantine-color-blue-7);
+  color: white;
+  padding: 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: opacity 0.2s ease;
+}
+
+.controlCollapsed:hover .submenuTooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.submenuList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.submenuItem {
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.submenuItem:hover {
+  background-color: var(--mantine-color-blue-5);
+  border-radius: 5rem;
+}
+
+.controlCollapsed:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Sub-links inside expanded view */
+.link {
+  width: 100%;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-md);
+  padding-left: var(--mantine-spacing-xl);
+  font-size: var(--mantine-font-size-sm);
+  border-left: 1px solid var(--mantine-color-blue-7);
+  color: var(--mantine-color-blue-9);
+  border-radius: var(--mantine-radius-md);
+}
+
+/* Layout container for links */
+.links {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xs);
+  padding: var(--mantine-spacing-md) 0;
+}
+
+.linksInner {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Chevron rotation */
+.chevron {
+  transition: transform 0.3s ease;
+}
+
+/* Active state */
+.active {
+  font-weight: 600;
+  background-color: var(--mantine-color-blue-9) !important;
+  border-start-start-radius: var(--mantine-radius-xl);
+  border-end-start-radius: var(--mantine-radius-xl);
+  border-end-end-radius:unset;
+  border-start-end-radius:unset;
+  color: var(--mantine-color-white) !important;
+}
+
+/* Hover state */
+.control:hover,
+.link:hover {
+  background-color: var(--mantine-color-blue-9);
+  color: var(--mantine-color-white);
+  border-start-start-radius: var(--mantine-radius-xl);
+  border-end-start-radius: var(--mantine-radius-xl);
+  border-end-end-radius:unset;
+  border-start-end-radius:unset;
+  cursor: pointer;
+}

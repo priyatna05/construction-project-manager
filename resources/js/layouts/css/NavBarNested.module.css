@@ -1,0 +1,17 @@
+.navbar {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  /* background-color: var(--mantine-color-blue), var(--mantine-color-dark-7); */
+}
+
+.linksInner {
+  display: flex;
+  flex-direction: column;
+}
+
+.footer {
+  padding-top: var(--mantine-spacing-md);
+  margin-top: auto;
+  border-top: rem(1px) solid var(--mantine-color-gray-2);
+}

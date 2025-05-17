@@ -1,0 +1,156 @@
+@startuml Construction Project Management System
+
+' Define styles
+skinparam componentStyle uml2
+skinparam packageStyle rectangle
+
+' Main Application Package
+package "AppCPM" {
+    ' Core Components
+    package "Core" {
+        [Actions] as actions
+        [Models] as models
+        [Services] as services
+        [Http Controllers] as controllers
+    }
+
+    ' Business Logic Components
+    package "Business Logic" {
+        package "Project Management" {
+            [Task Management] as taskMgmt #LightBlue
+            [Client Management] as clientMgmt #LightGreen
+            [Inventory Management] as inventoryMgmt #LightYellow
+            [Invoice Management] as invoiceMgmt #LightPink
+        }
+
+        package "User Management" {
+            [Authentication] as auth #LightCyan
+            [Authorization] as authz #LightCyan
+            [User Actions] as userActions #LightCyan
+        }
+
+        ' Enums
+        package "Enums" {
+            [InventoryStatus] as invStatus
+            [InventoryType] as invType
+            [InventoryUnit] as invUnit
+            [InvoiceStatus] as invoiceStatus
+            [QueueStatus] as queueStatus
+        }
+    }
+
+    ' Data Layer
+    package "Data Layer" {
+        database "Database" {
+            [Migrations]
+            [Seeders]
+            [Models] as dbModels
+        }
+    }
+
+    ' API & Routes
+    package "API & Routes" {
+        [API Routes] as apiRoutes
+        [Web Routes] as webRoutes
+        [Channel Routes] as channels
+    }
+
+    ' Frontend Resources
+    package "Frontend" {
+        [Views] as views
+        [JavaScript] as js
+        [CSS] as css
+    }
+
+    ' Support Systems
+    package "Support" {
+        package "Events" as events {
+            [Task Created] as taskCreated
+            [Comment Created] as commentCreated
+            [User Created] as userCreated
+        }
+        package "Listeners" as listeners {
+            [Notify Task Subscribers] as notifyTaskSubs
+            [Send Email Credentials] as sendCreds
+        }
+        [Notifications] as notifications
+        [Mail] as mail
+        [Queue] as queue
+        package "Observers" as observers {
+            [Task Observer] as taskObserver
+            [Project Observer] as projObserver
+            [Comment Observer] as commentObserver
+        }
+    }
+
+    ' Configuration
+    package "Configuration" {
+        [App Config] as appConfig
+        [Auth Config] as authConfig
+        [Database Config] as dbConfig
+        [Queue Config] as queueConfig
+    }
+
+    ' Testing
+    package "Testing" {
+        [Unit Tests] as unitTests
+        [Feature Tests] as featureTests
+    }
+}
+
+' Define relationships
+actions --> models
+controllers --> actions
+controllers --> services
+services --> models
+models --> dbModels
+
+taskMgmt --> actions : uses
+taskMgmt ..> invStatus : references
+inventoryMgmt --> invStatus : uses
+inventoryMgmt --> invType : uses
+inventoryMgmt --> invUnit : uses
+invoiceMgmt --> invoiceStatus : uses
+invoiceMgmt --> actions : uses
+
+clientMgmt --> actions : uses
+inventoryMgmt --> actions : uses
+invoiceMgmt --> actions : uses
+
+auth --> userActions : uses
+authz --> userActions : uses
+auth --> [Mail Server] : sends verification
+notifications --> queueStatus : uses
+
+apiRoutes --> controllers
+webRoutes --> controllers
+channels --> events
+
+taskCreated --> notifyTaskSubs : triggers
+commentCreated --> notifyTaskSubs : triggers
+userCreated --> sendCreds : triggers
+
+taskObserver --> models : monitors
+projObserver --> models : monitors
+commentObserver --> models : monitors
+
+notifyTaskSubs --> notifications : sends
+sendCreds --> notifications : sends
+notifications --> mail : uses
+notifications --> queue : uses
+
+taskMgmt ..> taskObserver : observed by
+taskMgmt ..> taskCreated : fires
+
+' External Systems
+cloud "External Services" {
+    [Mail Server]
+    [Queue Server]
+    [Storage Service]
+}
+
+mail --> [Mail Server]
+queue --> [Queue Server]
+services --> [Storage Service]
+
+@enduml

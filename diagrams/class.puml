@@ -1,0 +1,53 @@
+@startuml
+class User {
+    +String name
+    +String email
+    +String password
+    +String job_title
+    +String avatar
+    +String phone
+    +float rate
+    +String google_id
+    +datetime email_verified_at
+    +String remember_token
+    +String getFirstName()
+    +bool isAdmin()
+    +bool isNotAdmin()
+    +BelongsToMany clientCompanies()
+    +BelongsToMany projects()
+    +BelongsToMany subscribedToTasks()
+    +bool hasProjectAccess(Project project)
+    +array userDropdownValues(array exclude)
+    +array clientDropdownValues()
+}
+
+class Role {
+    +String name
+    +String guard_name
+}
+
+class Permission {
+    // Inherits attributes and methods from SpatiePermission
+}
+
+class Label {
+    +String name
+    +String color
+}
+
+class TaskGroup {
+    +String name
+    +int project_id
+    +int order_column
+    +BelongsTo project()
+    +HasMany tasks()
+    +MorphMany activities()
+}
+
+User --> Role : has
+User --> Permission : has
+TaskGroup --> Project : belongs to
+TaskGroup --> Task : has many
+TaskGroup --> Activity : morphs many
+@enduml
+</create_file>
