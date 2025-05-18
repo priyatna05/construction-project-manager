@@ -9,8 +9,8 @@
   background-color: var(--mantine-color-gray-0);
   border: 1px solid var(--mantine-color-gray-3);
   padding: 20px 12px;
-  border-radius: 8rem;
-  padding-left: 6%;
+  border-radius: 5rem;
+  padding-left: 9%;
   transition: border-color 0.2s ease;
 }
 
@@ -31,7 +31,7 @@
 }
 
 .resultItem:hover {
-  background-color: var(--mantine-color-gray-1);
+  background-color: var(--mantine-moz-font-smoothing);
   transform: translateX(2px);
 }
 
@@ -51,4 +51,10 @@
   .resultItem {
     padding: 0.5rem 0.7rem;
   }
+}
+
+.itemMenu{
+    padding-block: 5rem;
+    transform-box: var(--mantine-color-gray-2), var(--mantine-color-body);
+    text-decoration: blue;
 }

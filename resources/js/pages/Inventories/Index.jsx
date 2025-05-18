@@ -2,15 +2,17 @@ import EmptyWithIcon from '@/components/EmptyWithIcon';
 import ArchivedFilterButton from '@/components/ArchivedFilterButton';
 import Layout from '@/layouts/MainLayout';
 import useAuthorization from '@/hooks/useAuthorization';
-import { redirectTo } from '@/utils/route';
 import { usePage } from '@inertiajs/react';
-import { Button, Center, Flex, Grid, Group } from '@mantine/core';
+import { Button, Center, Text, Flex, Grid, Group } from '@mantine/core';
 import { IconPlus, IconSearch } from '@tabler/icons-react';
 import InventoryCard from './Card/InventoryCard';
+import Modal from '@/components/Modal';
+import { useState } from 'react';
 
 const InventoriesIndex = () => {
   const { items } = usePage().props;
   const { isAdmin } = useAuthorization();
+  const { opened, setOpened } = useState(false);
 
   return (
     <>
@@ -25,7 +27,7 @@ const InventoriesIndex = () => {
             leftSection={<IconPlus size={14} />}
             radius='xl'
             variant='default'
-            onClick={() => redirectTo('inventories.create')}
+            onClick={() => setOpened(true)}
             >
               Create
             </Button>
@@ -34,9 +36,17 @@ const InventoriesIndex = () => {
           </Group>
         </Grid.Col>
       </Grid>
+      <Modal
+      opened={opened}
+      onClose={() => setOpened(false)}
+      size='md'
+      >
+        <Text>
+          for list inventories like Labor, equipment and material
+        </Text>
       {items.length ? (
         <Flex
-          mt='xl'
+        mt='xl'
           gap='lg'
           justify='flex-start'
           align='flex-start'
@@ -45,8 +55,8 @@ const InventoriesIndex = () => {
         >
           {items.map(item => (
             <InventoryCard
-              item={item}
-              key={item.id}
+            item={item}
+            key={item.id}
             />
           ))}
         </Flex>
@@ -56,9 +66,10 @@ const InventoriesIndex = () => {
             title='No inventories found'
             subtitle='or you do not have access to any of them'
             icon={IconSearch}
-          />
+            />
         </Center>
       )}
+      </Modal>
     </>
   );
 };

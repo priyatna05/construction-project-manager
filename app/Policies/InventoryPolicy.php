@@ -5,6 +5,8 @@ namespace App\Policies;
 use App\Models\User;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\Inventory;
+use App\Enums\InventoryStatus;
 
 
 class InventoryPolicy
@@ -23,16 +25,17 @@ class InventoryPolicy
      */
     public function view(User $user, Inventory $inventory): bool
     {
-        return $user->hasPermissionTo('view inventories') &&
+        return $user->hasPermissionTo('view inventory') &&
                $inventory->status !== InventoryStatus::DELETED->value;
     }
 
     /**
      * Determine whether the user can create inventories.
      */
-    public function create(User $user, Project $project): bool
+    public function create(User $user, Inventory $inventory): bool
     {
-        return $user->hasPermissionTo('create inventories') && $user->hasPermissionTo('edit', $project);
+        return $user->hasPermissionTo('create inventory') &&
+                $inventory->status !== InventoryStatus::ACTIVE->value;
     }
 
     /**
@@ -40,17 +43,17 @@ class InventoryPolicy
      */
     public function update(User $user, Inventory $inventory): bool
     {
-        return $user->hasPermissionTo('edit inventories') &&
-               $inventory->status !== InventoryStatus::DELETED->value;
+        return $user->hasPermissionTo('edit inventory') &&
+               $inventory->status !== InventoryStatus::ACTIVE->value;
     }
 
     /**
-     * Determine whether the user can delete the Inventories.
+     * Determine whether the user can achive the Inventories
      */
-    public function delete(User $user, Inventory $inventory): bool
+    public function archive(User $user, Inventory $inventory): bool
     {
-        return $user->hasPermissionTo('delete inventories') &&
-               $inventory->status !== InventoryStatus::DELETED->value;
+        return $user->hasPermissionTo('archive inventory') &&
+                $inventory->status !== InventoryStatus::INACTIVE->value;
     }
 
     /**
@@ -58,16 +61,26 @@ class InventoryPolicy
      */
     public function restore(User $user, Inventory $inventory): bool
     {
-        return $user->hasPermissionTo('restore inventories') &&
-               $inventory->status === InventoryStatus::DELETED->value;
+        return $user->hasPermissionTo('restore inventory') &&
+               $inventory->status !== InventoryStatus::ACTIVE->value;
     }
 
     /**
-     * Determine whether the user can force delete the Inventories.
+     * Determine whether the user can delete the Inventories.
+     */
+    public function delete(User $user, Inventory $inventory): bool
+    {
+        return $user->hasPermissionTo('delete inventory') &&
+               $inventory->status !== InventoryStatus::DELETED->value;
+    }
+
+    /**
+     * Determine whether the user can delete the model.
      */
     public function forceDelete(User $user, Inventory $inventory): bool
     {
-        return $user->hasPermissionTo('force delete inventories');
+        return $user->hasPermissionTo('force delete inventory') &&
+                $inventory->status !== InventoryStatus::DELETED->value;
     }
 
     /**
@@ -75,7 +88,7 @@ class InventoryPolicy
      */
     public function allocate(User $user, Inventory $inventory, Task $task): bool
     {
-        return $user->hasPermissionTo('allocate inventories') &&
+        return $user->hasPermissionTo('allocate inventory') &&
                $inventory->status === InventoryStatus::ACTIVE->value &&
                $user->hasPermissionTo('edit', $task->project);
     }
@@ -85,7 +98,7 @@ class InventoryPolicy
      */
     public function viewCosts(User $user, Inventory $inventory): bool
     {
-        return $user->hasPermissionTo('view Inventories costs') &&
+        return $user->hasPermissionTo('view Inventory costs') &&
                $inventory->status === InventoryStatus::ACTIVE->value;
     }
 
@@ -94,7 +107,7 @@ class InventoryPolicy
      */
     public function manageCosts(User $user, Inventory $inventory): bool
     {
-        return $user->hasPermissionTo('manage Inventories costs') &&
+        return $user->hasPermissionTo('manage Inventory costs') &&
                $inventory->status === InventoryStatus::ACTIVE->value;
     }
 
@@ -103,6 +116,6 @@ class InventoryPolicy
      */
     public function export(User $user): bool
     {
-        return $user->hasPermissionTo('export inventories');
+        return $user->hasPermissionTo('export inventory');
     }
 }

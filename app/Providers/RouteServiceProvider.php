@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\ClientCompany;
+use App\Models\Inventory;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\TaskGroup;
@@ -44,6 +45,12 @@ class RouteServiceProvider extends ServiceProvider
 
         Route::model('task', Task::class, function ($value) {
             return Task::where('id', $value)
+                ->when(auth()->user()->isAdmin(), fn ($query) => $query->withArchived())
+                ->firstOrFail();
+        });
+
+        Route::model('inventory', Inventory::class, function ($value) {
+            return Inventory::where('id', $value)
                 ->when(auth()->user()->isAdmin(), fn ($query) => $query->withArchived())
                 ->firstOrFail();
         });

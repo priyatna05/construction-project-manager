@@ -4,87 +4,139 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Enums\InventoryStatus;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Enums\InventoryType;
+use App\Enums\InventoryStatus;
 use App\Enums\InventoryUnit;
+use Lacodix\LaravelModelFilter\Traits\HasFilters;
+use LaravelArchivable\Archivable;
 
+/**
+ * @property int                     $id
+ * @property string                  $code_inventory
+ * @property string                  $name_inventory
+ * @property string|null             $description_inventory
+ * @property InventoryStatus         $status
+ * @property InventoryType           $type
+ * @property InventoryUnit|null      $unit
+ * @property float                   $unit_cost
+ * @property float|null              $quantity_inventory
+ * @property int|null                $location_inventory
+ * @property \App\Models\Project  $location
+ * @property float                   $total_value
+ * @property \Illuminate\Support\Collection|InventoryAllocation[] $allocations
+ * @property \Illuminate\Support\Collection|User[]               $users
+ */
 class Inventory extends Model
 {
+    use HasFactory, SoftDeletes, Archivable, HasFilters;
+
     protected $fillable = [
+        'code_inventory',
         'name_inventory',
-        'code_inventory',
-        'code_inventory',
-        'type',
         'description_inventory',
+        'status',
+        'type',
         'unit',
         'unit_cost',
-        'sum_cost',
-        'status',
+        'quantity_inventory',
+        'location_inventory',
     ];
 
+    // Auto-cast attributes
     protected $casts = [
-        'unit_cost' => 'decimal:2',
-        'sum_cost' => 'decimal:2',
-        'type' => InventoryType::class,
-        'unit' => InventoryUnit::class,
-        'status' => InventoryStatus::class,
+        'type'               => InventoryType::class,
+        'status'             => InventoryStatus::class,
+        'unit'               => InventoryUnit::class,
+        'unit_cost'          => 'decimal:2',
+        'quantity_inventory' => 'decimal:2',
+        'deleted_at'         => 'datetime',
     ];
 
-    // Scopes for filtering
-    public function scopeOfType($query, InventoryType $type)
+    // Append computed attributes
+    protected $appends = ['total_value'];
+
+    // Default eager loading
+    protected $with = ['location', 'allocations'];
+
+    // ModelFilter class for query filtering
+    protected $filter = \App\Models\Filters\InventoryFilter::class;
+
+    /**
+     * Relationship: Project location
+     */
+    public function location(): BelongsTo
     {
-        return $query->where('type', $type);
+        return $this->belongsTo(Project::class, 'location_inventory');
     }
 
+    /**
+     * Relationship: Inventory allocations
+     */
+    public function allocations(): HasMany
+    {
+        return $this->hasMany(InventoryAllocation::class);
+    }
+
+    /**
+     * Relationship: Users via pivot
+     */
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            User::class,
+            'inventory_user',
+            'inventory_id',
+            'user_id'
+        )
+        ->withTimestamps();
+    }
+
+    /**
+     * Scope: only active inventories
+     */
     public function scopeActive($query)
     {
         return $query->where('status', InventoryStatus::ACTIVE);
     }
 
-    public function scopeInactive($query)
+    /**
+     * Scope: inventories in stock
+     */
+    public function scopeInStock($query)
     {
-        return $query->where('status', InventoryStatus::INACTIVE);
+        return $query->where('quantity_inventory', '>', 0);
     }
 
-    public function scopeSearchByQueryString($query)
+    /**
+     * Scope: filter by type
+     */
+    public function scopeOfType($query, InventoryType|string $type)
     {
-        if (request()->has('search')) {
-            $search = request()->get('search');
-            return $query->where(function($q) use ($search) {
-                $q->where('name_inventory', 'like', "%{$search}%")
-                  ->orWhere('code_inventory', 'like', "%{$search}%")
-                  ->orWhere('description_inventory', 'like', "%{$search}%");
-            });
-        }
-        return $query;
+        $value = $type instanceof InventoryType ? $type->value : $type;
+        return $query->where('type', $value);
     }
 
-    public function scopeFilterByQueryString($query)
+    /**
+     * Accessor: total value of inventory
+     */
+    public function getTotalValueAttribute(): float
     {
-        return $query->when(request()->has('type'), function($q) {
-            $q->where('type', request()->get('type'));
-        })->when(request()->has('status'), function($q) {
-            $q->where('status', request()->get('status'));
-        });
+        return (float) $this->unit_cost * (float) $this->quantity_inventory;
     }
 
-    public function inventoriesAllocations()
+    /**
+     * Mutator: uppercase code
+     */
+    public function setCodeInventoryAttribute($value)
     {
-        return $this->hasMany(InventoryAllocation::class);
+        $this->attributes['code_inventory'] = strtoupper($value);
     }
 
-    public function clientCompany()
-    {
-        return $this->belongsTo(ClientCompany::class);
-    }
-
-    public function currency()
-    {
-        return $this->belongsTo(Currency::class);
-    }
-
-    public function users()
-    {
-        return $this->belongsToMany(User::class, 'inventory_user', 'inventory_id', 'user_id');
-    }
+    /**
+     * Add: more in here!
+     */
 }

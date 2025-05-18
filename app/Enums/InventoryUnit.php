@@ -9,6 +9,9 @@ enum InventoryUnit: string
     case KG = 'kg';
     case TON = 'ton';
     case PIECE = 'piece';
+    case SAK = 'sak';
+    case M2 = 'm2';
+    case M3 = 'm3';
     case HOUR = 'hour';
     case DAY = 'day';
     case MONTH = 'month';

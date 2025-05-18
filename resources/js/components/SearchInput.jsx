@@ -133,7 +133,7 @@ export function SearchInput({ renderTriger }) {
                     }, 100);
                   }}
                 >
-                  <Group justify="space-between">
+                  <Group justify="space-between" className={classes.itemsMenu}>
                     <Group gap="xs">
                       {item.icon ? (
                         <item.icon size={16} />

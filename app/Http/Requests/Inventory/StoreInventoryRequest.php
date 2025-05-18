@@ -3,8 +3,6 @@
 namespace App\Http\Requests\Inventory;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Enum;
 use App\Enums\InventoryType;
 use App\Enums\InventoryStatus;
 use App\Enums\InventoryUnit;
@@ -27,14 +25,15 @@ class StoreInventoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name_inventory' => ['required', 'string', Rule::unique('inventories', 'name_inventory')],
-            'code_inventory' => ['required', 'string', Rule::unique('inventories', 'code_inventory')],
-            'type' => ['required', new Enum(InventoryType::class)],
-            'description_inventory' => 'string|nullable',
-            'unit' => ['required', new Enum(InventoryUnit::class)],
-            'unit_cost' => 'required|numeric|min:0',
-            'sum_cost' => 'numeric|min:0|nullable',
-            'status' => ['required', new Enum(InventoryStatus::class)],
+            'code_inventory'      => ['nullable','unique:inventories,code_inventory'],
+            'name_inventory'      => ['required','string','max:255'],
+            'description_inventory'=> ['nullable','string'],
+            'status'              => ['required', 'in:' . implode(',', array_map(fn($case) => $case->value, InventoryStatus::cases()))],
+            'type'                => ['required', 'in:' . implode(',', array_map(fn($case) => $case->value, InventoryType::cases()))],
+            'unit'                => ['nullable','in:' . implode(',', array_map(fn($case) => $case->value, InventoryUnit::cases()))],
+            'unit_cost'           => ['required','numeric','min:0'],
+            'quantity_inventory'  => ['nullable','numeric','min:0'],
+            'location_inventory'  => ['nullable','exists:projects,id'],
         ];
     }
 }

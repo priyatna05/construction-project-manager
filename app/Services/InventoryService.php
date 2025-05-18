@@ -1,7 +1,10 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Inventory;
 
+use App\Enums\InventoryStatus;
+use App\Events\InventoryAllocated;
+use App\Events\InventoryCostUpdated;
 use App\Models\Inventory;
 use App\Models\InventoryAllocation;
 use App\Models\Project;
@@ -11,14 +14,18 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Builder;
 
 class InventoryService
-{
+{   /**
+     * Created inventory
+     */
     public function createInventory(array $data): Inventory
     {
         return DB::transaction(function () use ($data) {
             return Inventory::create($data);
         });
     }
-
+    /**
+     * note
+     */
     public function updateInventory(Inventory $inventory, array $data): Inventory
     {
         return DB::transaction(function () use ($inventory, $data) {
@@ -30,7 +37,9 @@ class InventoryService
             return $inventory->fresh();
         });
     }
-
+    /**
+     * note
+     */
     public function deleteInventory(Inventory $inventory): bool
     {
         return DB::transaction(function () use ($inventory) {
@@ -43,7 +52,27 @@ class InventoryService
             return true;
         });
     }
-
+    /**
+     * note
+     */
+    public function archiveInventory(Inventory $inventory): bool
+    {
+        return DB::transaction(function() use ($inventory) {
+            //logic here!
+        });
+    }
+    /**
+     * note
+     */
+    public function restoreInventory(Inventory $inventory): bool
+    {
+        return DB::transaction(function() use ($inventory) {
+            //logic here!
+        });
+    }
+    /**
+     * note
+     */
     public function allocateInventory(Inventory $inventory, Task $task, array $data): InventoryAllocation
     {
         return DB::transaction(function () use ($inventory, $task, $data) {
@@ -61,12 +90,16 @@ class InventoryService
             return $allocation;
         });
     }
-
+    /**
+     * note
+     */
     public function calculateInventoryCost(Inventory $inventory, $quantity): float
     {
         return $inventory->unit_cost * $quantity;
     }
-
+    /**
+     * note
+     */
     public function updateInventoryCosts(Inventory $inventory): void
     {
         $totalCost = $inventory->resourceAllocations()
@@ -75,7 +108,9 @@ class InventoryService
         $inventory->update(['sum_cost' => $totalCost]);
         event(new InventoryCostUpdated($inventory));
     }
-
+    /**
+     * note
+     */
     public function searchInventory(array $filters = []): Builder
     {
         $query = Inventory::query();
@@ -99,7 +134,9 @@ class InventoryService
 
         return $query;
     }
-
+    /**
+     * note
+     */
     public function getProjectInventory(Project $project, array $filters = []): Builder
     {
         $query = $project->inventories();
@@ -123,7 +160,9 @@ class InventoryService
 
         return $query;
     }
-
+    /**
+     * note
+     */
     public function getTaskInventory(Task $task): Collection
     {
         return Inventory::whereHas('inventoryAllocations', function ($query) use ($task) {
@@ -134,14 +173,17 @@ class InventoryService
         }])
         ->get();
     }
-
+    /**
+     * note
+     */
     public function getAvailableInventory(Project $project, $date): Collection
     {
-        return Inventory::where('status', ResourceStatus::ACTIVE)
+        return Inventory::where('status', InventoryStatus::ACTIVE)
             ->whereDoesntHave('inventoryAllocations', function ($query) use ($project, $date) {
                 $query->where('project_id', '<>', $project->id)
                       ->where('allocated_date', $date);
             })
             ->get();
     }
+
 }

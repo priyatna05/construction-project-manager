@@ -80,9 +80,9 @@ class Project extends Model implements AuditableContract
             config('favorite.favorites_table'),
             'favoriteable_id',
             config('favorite.user_foreign_key')
-        )
-            ->where('favoriteable_type', $this->getMorphClass())
-            ->where('user_id', auth()->id());
+        )->withTimestamps()
+        ->where('favoriteable_type', $this->getMorphClass())
+        ->where('user_id', auth()->id());
     }
 
     /**

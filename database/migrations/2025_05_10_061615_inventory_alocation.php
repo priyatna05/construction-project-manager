@@ -11,12 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('inventories_allocation', function (Blueprint $table) {
+        Schema::create('inventory_allocation', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('inventory_id')->constrained('inventories')->onDelete('cascade');
-            $table->foreignId('project_id')->constrained('projects')->onDelete('cascade');
-            $table->foreignId('task_id')->constrained('tasks')->onDelete('cascade');
-            $table->decimal('quantity', 10, 2);
+            $table->foreignId('inventory_id')->constrained()->onDelete('cascade');
+            $table->foreignId('project_id')->nullable()->constrained()->onDelete('set null');
+            $table->foreignId('task_id')->nullable()->constrained()->onDelete('set null');
+            $table->decimal('quantity_allocation', 15, 2);
             $table->date('allocated_date');
             $table->timestamps();
         });

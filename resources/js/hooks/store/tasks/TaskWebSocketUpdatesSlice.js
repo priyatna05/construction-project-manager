@@ -57,6 +57,15 @@ const createTaskWebSocketUpdatesSlice = (set, get) => ({
       state.tasks[task.group_id][index].attachments = state.tasks[task.group_id][index].attachments.filter(i => i.id !== attachmentId);
     }));
   },
+  // adding inventories to task
+  addInventoryLocally: (taskId, inventory) => {
+    return set(produce(state => {
+      const inventory = get().findInventory(inventory);
+      const index = state.inventories[inventory.group_id].findIndex(i => i.id === inventoryId);
+
+      state.inventories[inventory.group_id[index]].inventories = state.inventories[inventory.group_id][index].inventories.filter(i => i.id !== inventoryId);
+    }));
+  },
   addTimeLogLocally: (timeLog) => {
     return set(produce(state => {
       const task = get().findTask(timeLog.task_id);

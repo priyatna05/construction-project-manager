@@ -31,6 +31,7 @@ class AppServiceProvider extends ServiceProvider
             RedirectResponse::macro(
                 $type,
                 function ($title, $message = null) use ($type) {
+                    /** @var \Illuminate\Http\RedirectResponse $this */
                     return $this->with('flash', ['type' => $type, 'title' => $title, 'message' => $message]);
                 }
             );

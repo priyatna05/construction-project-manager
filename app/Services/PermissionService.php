@@ -26,17 +26,17 @@ class PermissionService
             'Invoices' => ['view invoices', 'create invoice', 'edit invoice', 'archive invoice', 'restore invoice', 'change invoice status', 'download invoice', 'print invoice'],
             'Reports' => ['view logged time sum report', 'view daily logged time report'],
             'Activities' => ['view activities'],
-            'Inventories' => [
-                'view inventories',
-                'create inventories',
-                'edit inventories',
-                'delete inventories',
-                'restore inventories',
-                'force delete inventories',
-                'allocate inventories',
-                'view inventories costs',
-                'manage inventories costs',
-                'export inventories'
+            'inventory' => [
+                'view inventory',
+                'create inventory',
+                'edit inventory',
+                'delete inventory',
+                'force delete inventory',
+                'restore inventory',
+                'allocate inventory',
+                'view inventory costs',
+                'manage inventory costs',
+                'export inventory'
             ],
         ],
         'manager' => [
@@ -48,13 +48,13 @@ class PermissionService
                 'view time logs', 'view comments',
             ],
             'Reports' => ['view logged time sum report', 'view daily logged time report'],
-            'Inventories' => [
-                'view inventories',
-                'create inventories',
-                'edit inventories',
-                'allocate inventories',
-                'view inventories costs',
-                'manage inventories costs'
+            'inventory' => [
+                'view inventory',
+                'create inventory',
+                'edit inventory',
+                'allocate inventory',
+                'view inventory costs',
+                'manage inventory costs'
             ],
         ],
         'team member' => [
@@ -63,9 +63,9 @@ class PermissionService
                 'view tasks', 'create task', 'edit task', 'restore task', 'reorder task', 'complete task', 'add time log', 'delete time log',
                 'view time logs', 'view comments',
             ],
-            'Inventories' => [
-                'view inventories',
-                'view inventories costs'
+            'inventory' => [
+                'view inventory',
+                'view inventory costs'
             ],
         ],
         'client' => [
@@ -73,8 +73,8 @@ class PermissionService
             'Tasks' => [
                 'view tasks', 'create task', 'view time logs', 'view comments',
             ],
-            'Inventories' => [
-                'view inventories'
+            'inventory' => [
+                'view inventory'
             ],
         ],
     ];

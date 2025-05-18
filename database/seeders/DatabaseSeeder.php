@@ -30,13 +30,15 @@ class DatabaseSeeder extends Seeder
 
             ]);
 
-            auth()->setUser(User::role('admin')->first());
+            $admin = User::role('admin')->first();
 
             $this->call([
                 ProjectSeeder::class,
                 TaskGroupSeeder::class,
                 TasksSeeder::class,
-                InventoriesSeeder::class,
+                InventorySeeder::class,
+                InventoryAllocationSeeder::class,
+                InventoryUserSeeder::class,
             ]);
         } else {
             $this->call([ProductionSeeder::class]);

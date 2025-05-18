@@ -2,27 +2,26 @@
 
 namespace App\Http\Resources\Inventory;
 
-use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Project\ProjectResource;
-use App\Http\Resources\Task\TaskResource;
+use Illuminate\Http\Resources\Json\JsonResource;
+
 
 class InventoryResource extends JsonResource
 {
-    public function toArray(Request $request): array
+    public function toArray($request)
     {
         return [
-            'id' => $this->id,
-            'inventory_id' => $this->inventory_id,
-            'project_id' => $this->project_id,
-            'task_id' => $this->task_id,
-            'quantity' => $this->quantity,
-            'allocated_date' => $this->allocated_date,
-            'inventory' => new InventoryResource($this->whenLoaded('inventory')),
-            'project' => new ProjectResource($this->whenLoaded('project')),
-            // 'task' => new TaskResource($this->whenLoaded('task')),
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
+            'id'                => $this->id,
+            'code'              => $this->code_inventory,
+            'name'              => $this->name_inventory,
+            'status'            => $this->status->value,
+            'type'              => $this->type->value,
+            'unit'              => $this->unit?->value,
+            'unit_cost'         => $this->unit_cost,
+            'quantity'          => $this->quantity_inventory,
+            'total_value'       => $this->total_value,
+            'location'          => new ProjectResource($this->whenLoaded('location')),
+            'created_at'        => $this->created_at->toDateTimeString(),
         ];
     }
 }

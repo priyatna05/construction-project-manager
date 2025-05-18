@@ -57,7 +57,8 @@ class TaskController extends Controller
             'labels' => Label::get(['id', 'name', 'color']),
             'taskGroups' => $groups,
             'groupedTasks' => $groupedTasks,
-            'openedTask' => $task ? $task->loadCount() : null,
+            'openedTask' => $task
+            // ? $task->loadCount() : null,
         ]);
     }
 

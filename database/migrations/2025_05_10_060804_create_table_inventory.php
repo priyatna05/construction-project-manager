@@ -11,17 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('inventories', function (Blueprint $table) {
+        Schema::create('inventory', function (Blueprint $table) {
             $table->id();
-            $table->string('name_inventory');
             $table->string('code_inventory')->unique();
-            $table->string('type');
+            $table->string('name_inventory');
             $table->text('description_inventory')->nullable();
+            $table->string('status');
+            $table->string('type');
             $table->string('unit')->nullable();
-            $table->foreignId('currency_id')->nullable()->constrained('currencies')->onDelete('cascade');
             $table->decimal('unit_cost', 15, 2)->default(0);
-            $table->decimal('sum_cost', 15, 2)->default(0);
-            $table->string('status')->nullable();
+            $table->decimal('quantity_inventory')->nullable();
+            $table->unsignedBigInteger('location_inventory')->nullable()->references('id')->on('projects')->onDelete('set null');
             $table->timestamps();
         });
     }

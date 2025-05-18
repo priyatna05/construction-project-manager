@@ -53,6 +53,7 @@ export default function Header() {
             End : {new Date(project.end_date_project).toLocaleDateString()}
           </Text>
         )}
+        Duration : start to end in here
         {project.budget_project && (
           <Text>
             Budget : {`Rp. ${project.budget_project}`}

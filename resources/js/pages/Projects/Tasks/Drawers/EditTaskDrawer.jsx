@@ -16,6 +16,7 @@ import {
   Text,
   TextInput,
   rem,
+  Button,
 } from "@mantine/core";
 import { DateInput } from "@mantine/dates";
 import dayjs from "dayjs";
@@ -70,11 +71,11 @@ export function EditTaskDrawer() {
       setData({
         group_id: task?.group_id || "",
         assigned_to_user_id: task?.assigned_to_user_id || "",
-        name_task: task?.name || "",
-        description_task: task?.description || "",
-        start_date_task: task?.start_date ? dayjs(task?.start_date).toDate() : "",
-        end_date_task: task?.end_date ? dayjs(task?.end_date).toDate() : "",
-        budget_task: task?.budget || 0,
+        name_task: task?.name_task || "",
+        description_task: task?.description_task || "",
+        start_date_task: task?.start_date_task ? dayjs(task?.start_date_task).toDate() : "",
+        end_date_task: task?.end_date_task ? dayjs(task?.end_date_task).toDate() : "",
+        budget_task: task?.budget_task || 0,
         subscribed_users: (task?.subscribed_users || []).map((i) => i.id.toString()),
         labels: (task?.labels || []).map((i) => i.id),
       });
@@ -281,6 +282,14 @@ export function EditTaskDrawer() {
                 }))}
                 readOnly={!can("edit task")}
               />
+
+              {/* for form subbmit progres team members */}
+              <br/>
+              <Group>
+              <Button>
+                submit progress in here!
+              </Button>
+              </Group>
             </div>
           </form>
         </>

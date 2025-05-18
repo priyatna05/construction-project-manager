@@ -2,102 +2,56 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Http\Requests\StoreInventoryRequest;
-use App\Http\Requests\UpdateInventoryRequest;
+use App\Http\Requests\Inventory\StoreInventoryRequest;
 use App\Http\Resources\Inventory\InventoryResource;
-use Inertia\Inertia;
+use App\Actions\Inventory\CreateInventoryAction;
+use App\Services\Inventory\InventoryService;
 use App\Models\Inventory;
-use App\Models\ClientCompany;
-use App\Models\User;
-use App\Models\Currency;
-use App\Services\InventoryService;
-
+use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class InventoryController extends Controller
 {
     public function __construct()
     {
-        $this->authorizeResource(Inventory::class, 'inventories');
+        $this->authorizeResource(Inventory::class, 'inventory');
     }
 
     public function index(Request $request)
     {
-        return Inertia::render('Inventories/Index', [
-            'items' => InventoryResource::collection(
-                Inventory::searchByQueryString()
-                    ->when($request->user()->isNotAdmin(), function ($query) {
-                        $query->whereHas('clientCompany.clients', fn ($query) => $query->where('users.id', auth()->id()))
-                            ->orWhereHas('users', fn ($query) => $query->where('id', auth()->id()));
-                    })
-                    ->when($request->has('archived'), fn ($query) => $query->onlyArchived())
-                    ->when($request->has('trashed'), fn ($query) => $query->onlyTrashed())
-                    ->with([
-                        'clientCompany:id,name',
-                        'clientCompany.clients:id,name,avatar',
-                        'users:id,name,avatar',
-                    ])
-                    // ->withCount([
-                    //     'inventories AS all_inventories_count',
-                    //     'inventories AS completed_inventories_count',
-                    //     'inventories AS overdue_inventories_count',
-                    // ])
-                    // ->withExists('favoritedByAuthUser AS favorite')
-                    // ->orderBy('favorite', 'desc')
-                    ->orderBy('name_inventory', 'asc')
-                    ->get()
-            ),
+        $inventories = Inventory::filter($request->all())->paginate(15);
+        return Inertia::render('Inventory/Index', [
+            'inventories' => InventoryResource::collection($inventories),
         ]);
     }
 
-    public function create()
+    public function store(StoreInventoryRequest $request, CreateInventoryAction $action)
     {
-        return Inertia::render('Inventories/Create', [
-            'dropdowns' => [
-                'companies' => ClientCompany::dropdownValues(),
-                'users' => User::userDropdownValues(),
-                'currencies' => Currency::dropdownValues(['with' => ['clientCompanies:id,currency_id']]),
-            ],
+        $inventory = $action->execute($request->validated());
+        event(new \App\Events\InventoryCreated($inventory));
+        return redirect()->route('inventories.index')->with('success', 'Inventory created.');
+    }
+
+    public function show(Inventory $inventory)
+    {
+        return Inertia::render('Inventory/Show', [
+            'inventory' => new InventoryResource($inventory),
         ]);
     }
 
-    public function store(StoreInventoryRequest $request)
+    public function update(StoreInventoryRequest $request, Inventory $inventory, InventoryService $service)
     {
-        $inventory = $this->inventoryService->createInventory($request->validated());
-
-        return redirect()
-            ->route('inventories.show', $inventory)
-            ->with('success', __('Inventories created successfully.'));
+        $service->updateInventory($inventory, $request->validated());
+        return back()->with('success', 'Inventory updated.');
     }
 
-    public function edit(Inventory $inventory)
+    public function destroy(Inventory $inventory, InventoryService $service)
     {
-        return Inertia::render('Inventories/Edit', [
-            'inventories' => $inventory->load(['clientCompany:id,name', 'clientCompany.clients:id,name,avatar']),
-            'dropdowns' => [
-                'companies' => ClientCompany::dropdownValues(),
-                'users' => User::userDropdownValues(),
-                'currencies' => Currency::dropdownValues(['with' => ['clientCompanies:id,currency_id']]),
-            ],
-        ]);
+        $service->archiveInventory($inventory);
+        return back()->with('success', 'Inventory archived.');
     }
 
-    public function update(UpdateInventoryRequest $request, Inventory $inventory)
-    {
-        $inventory->update($request->validated());
-
-        return redirect()
-            ->route('inventories.show', $inventory)
-            ->with('success', __('Inventories updated successfully.'));
-    }
-
-    public function destroy(Inventory $inventory)
-    {
-        $inventory->delete();
-
-        return redirect()
-            ->route('inventories.index')
-            ->with('success', __('Inventories deleted successfully.'));
-    }
-
+    /**
+     * adding on here!
+     */
 }

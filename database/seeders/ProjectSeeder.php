@@ -8,6 +8,7 @@ use Illuminate\Database\Seeder;
 
 class ProjectSeeder extends Seeder
 {
+    public static $admin;
     /**
      * Run the database seeds.
      */
