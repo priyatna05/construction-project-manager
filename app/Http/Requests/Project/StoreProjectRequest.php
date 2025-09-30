@@ -23,13 +23,18 @@ class StoreProjectRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name_project' => ['required', 'string', Rule::unique('projects', 'name_project')],
-            'description_project' => 'string|nullable',
-            'client_company_id' => 'required|integer|exists:client_companies,id',
-            'start_date_project' => 'date|nullable',
-            'end_date_project' => 'date|nullable',
-            'budget_project' => 'numeric|min:0|nullable',
-            'users' => 'array',
+            'code'          => 'string|nullable',
+            'name'          => ['required', 'string', Rule::unique('projects', 'name')],
+            'description'   => 'string|nullable',
+            'client_company_id'     => 'required|integer|exists:client_companies,id',
+            'start_date'    => 'required|date',
+            'end_date'      => 'required|date|after_or_equal:start_date',
+            'budget_project'        => 'numeric|min:0|nullable',
+            'users' => 'required|array',
+            'users.*' => 'exists:users,id',
+            'attachments' => 'nullable|array',
+            'attachments.*' => 'file|max:10240',
+            'generate_task_groups' => 'string|nullable',
         ];
     }
 }

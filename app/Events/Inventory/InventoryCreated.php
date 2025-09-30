@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Events;
+namespace App\Events\Inventory;
 
 use App\Models\Inventory;
 use Illuminate\Broadcasting\InteractsWithSockets;
@@ -17,7 +17,7 @@ class InventoryCreated implements ShouldBroadcast
 
     public function __construct(Inventory $inventory)
     {
-        $this->inventory = $inventory->loadDefault();
+        $this->inventory = $inventory;
         $this->dontBroadcastToCurrentUser();
     }
 

@@ -13,6 +13,50 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 use Spatie\EloquentSortable\Sortable;
 use Spatie\EloquentSortable\SortableTrait;
 
+/**
+ * @property int $id
+ * @property int $project_id
+ * @property string $name
+ * @property string|null $description
+ * @property string|null $start_date
+ * @property string|null $end_date
+ * @property string|null $budget_group
+ * @property string|null $weight_group
+ * @property string $progress_group
+ * @property int $order_column
+ * @property \Illuminate\Support\Carbon|null $archived_at
+ * @property string|null $deleted_at
+ * @property string|null $created_at
+ * @property string|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Activity> $activities
+ * @property-read int|null $activities_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \OwenIt\Auditing\Models\Audit> $audits
+ * @property-read int|null $audits_count
+ * @property-read \App\Models\Project $project
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Task> $tasks
+ * @property-read int|null $tasks_count
+ * @method static \Database\Factories\TaskGroupFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskGroup newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskGroup newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskGroup ordered(string $direction = 'asc')
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskGroup query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskGroup whereArchivedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskGroup whereBudgetGroup($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskGroup whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskGroup whereDeletedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskGroup whereDescription($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskGroup whereEndDate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskGroup whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskGroup whereName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskGroup whereOrderColumn($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskGroup whereProgressGroup($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskGroup whereProjectId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskGroup whereStartDate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskGroup whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskGroup whereWeightGroup($value)
+ * @mixin \Eloquent
+ * @mixin IdeHelperTaskGroup
+ */
 class TaskGroup extends Model implements AuditableContract, Sortable
 {
     use Archivable, Auditable, HasFactory, SortableTrait;
@@ -20,10 +64,10 @@ class TaskGroup extends Model implements AuditableContract, Sortable
     public $timestamps = false;
 
     protected $fillable = [
-        'name_group',
-        'description_group',
-        'start_date_group',
-        'end_date_group',
+        'name',
+        'description',
+        'start_date',
+        'end_date',
         'budget_group',
         'weight_group',
         'progress_group',
@@ -52,6 +96,6 @@ class TaskGroup extends Model implements AuditableContract, Sortable
 
     public function activities(): MorphMany
     {
-        return $this->morphMany(Activity::class, 'activity_capable');
+        return $this->morphMany(Activity::class, 'subject');
     }
 }

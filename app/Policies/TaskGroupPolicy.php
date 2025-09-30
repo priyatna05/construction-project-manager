@@ -11,9 +11,9 @@ class TaskGroupPolicy
     /**
      * Determine whether the user can create models.
      */
-    public function create(User $user, Project $project): bool
+    public function create(User $user): bool
     {
-        return $user->hasPermissionTo('create task group') && $user->hasProjectAccess($project);
+        return $user->hasPermissionTo('create task group');
     }
 
     /**
@@ -27,9 +27,9 @@ class TaskGroupPolicy
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(User $user, TaskGroup $taskGroup, Project $project): bool
+    public function delete(User $user): bool
     {
-        return $user->hasPermissionTo('archive task group') && $user->hasProjectAccess($project);
+        return $user->hasPermissionTo('archive task group');
     }
 
     /**

@@ -1,7 +1,8 @@
 <?php
 
 namespace Database\Factories;
-
+use App\Models\Country;
+use App\Models\Currency;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -21,11 +22,13 @@ class ClientCompanyFactory extends Factory
             'address' => fake()->address,
             'postal_code' => fake()->postcode,
             'city' => fake()->city,
-            'country_id' => fake()->numberBetween(1, 249),
-            'currency_id' => 97,
+            // Ensure Country and Currency seeders run first or use ::factory()
+            'country_id' => Country::inRandomOrder()->first()?->id ?? Country::factory(),
+            'currency_id' => Currency::where('code', 'IDR')->first()?->id ?? Currency::factory(['code' => 'IDR']), // Default to IDR
             'phone' => fake()->phoneNumber,
-            'web' => 'https://company.com',
-            'email' => fake()->email,
+            'web' => 'https://'.fake()->domainName, // More realistic web address
+            'email' => fake()->unique()->companyEmail, // Unique company email
+            'archived_at' => null, // Added
         ];
     }
 }

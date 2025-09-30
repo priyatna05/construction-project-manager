@@ -2,46 +2,48 @@
 
 namespace Database\Seeders;
 
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
         $this->call([
             RoleSeeder::class,
             PermissionSeeder::class,
-            LabelSeeder::class,
-            CurrencySeeder::class,
+            CurrencySeeder::class, // Currency and Country before others that use them
             CountrySeeder::class,
+            LabelSeeder::class, // Labels before Tasks
         ]);
 
-        if ($this->command->confirm('Seed development data?', false)) {
+        if ($this->command->confirm('Seed development data?', true)) { // Default to true for dev
             $this->call([
-                UserSeeder::class,
+                UserSeeder::class, // Users first
                 OwnerCompanySeeder::class,
-                ClientSeeder::class,
-                ClientCompanySeeder::class,
-
+                // ClientSeeder::class, // Can be merged into UserSeeder or ClientCompanySeeder
+                ClientCompanySeeder::class, // Depends on Users
+                ProjectSeeder::class,       // Depends on ClientCompanies & Users
+                TaskGroupSeeder::class,     // Depends on Projects
+                InventorySeeder::class,     // Can run in parallel with tasks if allocations are separate
+                TasksSeeder::class,         // Depends on TaskGroups, Users, Labels
+                                            // TasksSeeder now optionally seeds InventoryTaskAllocations
+                InvoiceSeeder::class, // New, depends on ClientCo, Projects, Users. Also seeds InvoiceItems.
+                TimesheetSeeder::class, // New, if implemented. Depends on Users, Tasks, Projects
+                EvmRecordSeeder::class,     // Depends on Projects
             ]);
 
-            $admin = User::role('admin')->first();
+            // You might want to explicitly call factories here for specific complex scenarios
+            // e.g., creating a project that is almost complete with many EVM records.
 
-            $this->call([
-                ProjectSeeder::class,
-                TaskGroupSeeder::class,
-                TasksSeeder::class,
-                InventorySeeder::class,
-                InventoryAllocationSeeder::class,
-                InventoryUserSeeder::class,
-            ]);
         } else {
             $this->call([ProductionSeeder::class]);
+        }
+
+        // Optional: Clear cache after seeding
+        if (app()->environment('local', 'development')) {
+             \Illuminate\Support\Facades\Artisan::call('cache:clear');
+             $this->command->info('Application cache cleared.');
         }
     }
 }

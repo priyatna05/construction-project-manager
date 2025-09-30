@@ -3,7 +3,7 @@
 namespace App\Mail;
 
 use App\Client;
-use App\Project;
+use App\Models\Project;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;

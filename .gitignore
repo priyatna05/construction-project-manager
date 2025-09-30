@@ -5,6 +5,10 @@
 /public/storage
 /storage/*.key
 /vendor
+# IDE Helper Files
+/_ide_helper.php
+/.phpstorm.meta.php
+/_ide_helper_models.php
 .env
 .env.backup
 .env.production

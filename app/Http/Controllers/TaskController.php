@@ -11,12 +11,18 @@ use App\Events\Task\TaskRestored;
 use App\Events\Task\TaskUpdated;
 use App\Http\Requests\Task\StoreTaskRequest;
 use App\Http\Requests\Task\UpdateTaskRequest;
+use App\Http\Resources\Project\ProjectResource;
+use App\Http\Resources\Task\TaskResource;
+use App\Http\Resources\Inventory\InventoryResource;
+use Illuminate\Support\Facades\Log;
 use App\Models\Label;
 use App\Models\OwnerCompany;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\TaskGroup;
+use App\Models\Inventory;
 use App\Services\PermissionService;
+use App\Services\TaskService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,38 +33,91 @@ class TaskController extends Controller
 {
     public function index(Request $request, Project $project, ?Task $task = null): Response
     {
-         $groups = $project
-            ->taskGroups()
-            ->when($request->has('archived'), fn ($query) => $query->onlyArchived())
+        $taskRelations = [
+            'project:id,name',
+            'taskGroup:id,name',
+            'assignedToUser:id,name,avatar',
+            'createdByUser:id,name,avatar',
+            'labels',
+            'attachments',
+            'subscribedUsers:id,name',
+            'dependencies',
+            'allocatedInventories.labels',
+            'inventoryAllocations.inventory.labels',
+        ];
+        $groupsWithTasks = $project->taskGroups()
+                   ->when($request->has('archived'), fn ($query) => $query->onlyArchived())
+                   ->with([
+                       'tasks' => fn ($query) => $query
+                           ->searchByQueryString()
+                           ->filterByQueryString()
+                           ->when($request->user()->hasRole('client'))
+                           ->with($taskRelations)
+                   ])
+                   ->get();
+
+        $groupedTasks = $groupsWithTasks->mapWithKeys(function (TaskGroup $group) use ($taskRelations) {
+            $group->tasks->each(function ($task) use ($taskRelations) {
+            $task->loadMissing($taskRelations);
+        });
+            return [$group->id => TaskResource::collection($group->tasks)];
+        });
+
+        $project->loadMissing('clientCompany');
+        $taskDepends = Task::query()
+            ->where('project_id', $project->id)
+            ->whereNotNull('group_id')
+            ->when($task?->exists, fn ($q) => $q->where('id', '!=', $task->id)->where('group_id', $task->group_id))
+            ->orderBy('name')
+            ->get(['id', 'number', 'name', 'group_id']);
+        $taskRelationLabels = Label::taskRelation()->get(['id', 'name', 'slug', 'color', 'icon'])->map(function ($label) {
+            return [
+                'value' => $label->id,
+                'name' => $label->name,
+                'slug' => $label->slug,
+                'icon' => $label->icon,
+                'color' => $label->color,
+            ];
+        });
+        $openedTaskResource = null;
+        if ($task && $task->exists) {
+            $task->loadMissing($taskRelations);
+            $openedTaskResource = new TaskResource($task);
+        }
+
+       $allInventories = Inventory::orderBy('name')->get();
+
+        // 2. Gunakan Log untuk memastikan query ini berjalan dan menemukan sesuatu.
+        Log::info("Total inventories found in database: " . $allInventories->count());
+
+        // 3. Ini adalah query yang lebih benar yang akan kita gunakan setelah debugging.
+        $availableInventories = Inventory::query()
+            ->where('project_site_location_id', $project->id)
+            ->orWhereNull('project_site_location_id')
+            // ->active() // Komentari scope 'active' sementara untuk debugging
+            ->with('labels')
+            ->orderBy('name')
             ->get();
 
-        $groupedTasks = $project
-            ->taskGroups()
-            ->with(['project' => fn ($query) => $query->withArchived()])
-            ->get()
-            ->mapWithKeys(function (TaskGroup $group) use ($request, $project) {
-                return [
-                    $group->id => Task::where('project_id', $project->id)
-                        ->where('group_id', $group->id)
-                        ->searchByQueryString()
-                        ->filterByQueryString()
-                        ->when($request->user()->hasRole('client')) //, fn ($query) => $query->where('hidden_from_clients', false))
-                        ->when($request->has('archived'), fn ($query) => $query->onlyArchived())
-                        ->when(! $request->has('status')) //, fn ($query) => $query->whereNull('completed_at'))
-                        ->withDefault()
-                        ->when($project->isArchived(), fn ($query) => $query->with(['project' => fn ($query) => $query->withArchived()]))
-                        ->get(),
-                ];
-            });
+        Log::info("Available inventories for Project #{$project->id}: " . $availableInventories->count());
+
+        // =====================================================================
+        // LANGKAH 4: Kirim Semua Data ke View Inertia
+        // =====================================================================
 
         return Inertia::render('Projects/Tasks/Index', [
-            'project' => $project,
+            'project' => new ProjectResource($project),
             'usersWithAccessToProject' => PermissionService::usersWithAccessToProject($project),
-            'labels' => Label::get(['id', 'name', 'color']),
-            'taskGroups' => $groups,
+            'taskGroups' => $groupsWithTasks,
             'groupedTasks' => $groupedTasks,
-            'openedTask' => $task
-            // ? $task->loadCount() : null,
+            'taskDepends' => $taskDepends,
+            'taskRelationLabels' => $taskRelationLabels,
+            'labels' => Label::get(['id', 'name', 'color', 'type', 'icon']),
+            'openedTask' => $openedTaskResource,
+            'availableResources' => InventoryResource::collection($availableInventories),
+            'currency' => [
+                'symbol' => OwnerCompany::first()?->currency?->symbol ?? '$',
+            ],
         ]);
     }
 
@@ -71,13 +130,28 @@ class TaskController extends Controller
         return redirect()->route('projects.tasks', $project)->success('Task added', 'A new task was successfully added.');
     }
 
-    public function update(UpdateTaskRequest $request, Project $project, Task $task): JsonResponse
+    public function update(UpdateTaskRequest $request, Project $project, Task $task)
     {
         $this->authorize('update', [$task, $project]);
+    //         $validated = $request->validated();
 
-        (new TaskService())->updateTask($task, $request->validated());
+    // \Log::info('Subscribers:', $validated['subscribed_users'] ?? []);
 
-        return response()->json();
+
+        $updatedTask = (new TaskService())->updateTask($task, $request->validated());
+
+         $updatedTask->loadMissing([
+        'project:id,name',
+        'taskGroup:id,name',
+        'assignedToUser:id,name,avatar',
+        'createdByUser:id,name,avatar',
+        'labels',
+        'attachments',
+        'subscribedUsers:id,name',
+        'dependencies',
+    ]);
+
+    return response()->json($updatedTask->toArray());
     }
 
     public function reorder(Request $request, Project $project): JsonResponse
@@ -89,6 +163,7 @@ class TaskController extends Controller
         return response()->json();
     }
 
+    //verivy need it!
     public function move(Request $request, Project $project): JsonResponse
     {
         $this->authorize('reorder', [Task::class, $project]);
@@ -102,7 +177,7 @@ class TaskController extends Controller
     {
         $this->authorize('complete', [Task::class, $project]);
 
-        (new TaskService())->completeTask($task, $request->completed);
+        (new TaskService())->completeTask($task, $request->boolean('completed'));
 
         return response()->json();
     }

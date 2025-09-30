@@ -2,7 +2,9 @@
 
 namespace App\Http\Resources\Inventory;
 
+use App\Http\Resources\User\UserResource;
 use App\Http\Resources\Project\ProjectResource;
+use App\Http\Resources\Label\LabelResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 
@@ -12,15 +14,17 @@ class InventoryResource extends JsonResource
     {
         return [
             'id'                => $this->id,
-            'code'              => $this->code_inventory,
-            'name'              => $this->name_inventory,
-            'status'            => $this->status->value,
-            'type'              => $this->type->value,
-            'unit'              => $this->unit?->value,
+            'code'              => $this->code,
+            'name'              => $this->name,
+            'description'       => $this->description,
+            'status' => new LabelResource($this->whenLoaded('labels', fn() => $this->statusLabel)),
+            'type'   => new LabelResource($this->whenLoaded('labels', fn() => $this->typeLabel)),
+            'unit'   => new LabelResource($this->whenLoaded('labels', fn() => $this->unitLabel)),
             'unit_cost'         => $this->unit_cost,
-            'quantity'          => $this->quantity_inventory,
-            'total_value'       => $this->total_value,
-            'location'          => new ProjectResource($this->whenLoaded('location')),
+            'quantity_on_hand'          => $this->quantity_on_hand,
+            'location_site_on_project' => new ProjectResource($this->whenLoaded('projectSiteLocation')),
+            'allocations'       => InventoryAllocationResource::collection($this->whenLoaded('allocations')),
+            'createdBy' => new UserResource($this->whenLoaded('createdByUser')),
             'created_at'        => $this->created_at->toDateTimeString(),
         ];
     }

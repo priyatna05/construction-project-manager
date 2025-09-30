@@ -5,11 +5,16 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Project\StoreProjectRequest;
 use App\Http\Requests\Project\UpdateProjectRequest;
 use App\Http\Resources\Project\ProjectResource;
+use App\Services\ProjectService;
 use App\Models\ClientCompany;
 use App\Models\Currency;
 use App\Models\Project;
 use App\Models\User;
-use App\Services\ProjectService;
+use App\Models\Label;
+use App\Services\PermissionService;
+use Illuminate\Database\Eloquent\Builder;
+use App\Models\OwnerCompany;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -22,30 +27,87 @@ class ProjectController extends Controller
 
     public function index(Request $request)
     {
+        // 1. Definisikan relasi yang ingin dimuat untuk setiap proyek
+        $projectRelations = [
+            'clientCompany:id,name',
+            'users:id,name,avatar',
+            'attachments',
+        ];
+
+        $query = Project::query()
+            ->with($projectRelations)
+            // 2. Gunakan whereHas untuk otorisasi yang lebih bersih
+            ->when($request->user()->isNotAdmin(), function (Builder $query) use ($request) {
+                $query->where(function (Builder $q) use ($request) {
+                    $q->whereHas('users', fn ($subQuery) => $subQuery->where('users.id', $request->user()->id))
+                      ->orWhereHas('clientCompany.clients', fn ($subQuery) => $subQuery->where('users.id', $request->user()->id));
+                });
+            })
+            // 3. Filter status
+            ->when($request->has('archived'), fn (Builder $query) => $query->onlyArchived())
+            ->when($request->has('trashed'), fn (Builder $query) => $query->onlyTrashed())
+            // 4. Hitung task menggunakan relasi label
+            ->withCount([
+                'tasks as all_tasks_count',
+                'tasks as completed_tasks_count' => function (Builder $query) {
+                    $query->whereHas('labels', fn ($q) => $q->where('slug', 'completed'));
+                },
+                'tasks as overdue_tasks_count' => function (Builder $query) {
+                    $query->whereDate('end_date', '<', now())
+                          ->whereDoesntHave('labels', fn ($q) => $q->where('slug', 'completed'));
+                },
+            ])
+            ->withExists('favoritedByAuthUser as favorite')
+            ->searchByQueryString()
+            ->filterByDuration($request->input('duration_min'), $request->input('duration_max'))
+            ->orderBy('favorite', 'desc')
+            ->orderBy('name', 'asc');
+
         return Inertia::render('Projects/Index', [
-            'items' => ProjectResource::collection(
-                Project::searchByQueryString()
-                    ->when($request->user()->isNotAdmin(), function ($query) {
-                        $query->whereHas('clientCompany.clients', fn ($query) => $query->where('users.id', auth()->id()))
-                            ->orWhereHas('users', fn ($query) => $query->where('id', auth()->id()));
-                    })
-                    ->when($request->has('archived'), fn ($query) => $query->onlyArchived())
-                    ->when($request->has('trashed'), fn ($query) => $query->onlyTrashed())
-                    ->with([
-                        'clientCompany:id,name',
-                        'clientCompany.clients:id,name,avatar',
-                        'users:id,name,avatar',
-                    ])
-                    ->withCount([
-                        'tasks AS all_tasks_count',
-                        'tasks AS completed_tasks_count',// => fn ($query) => $query->whereNotNull('completed_at'),
-                        'tasks AS overdue_tasks_count',// => fn ($query) => $query->whereNull('completed_at')->whereDate('due_on', '<', now()),
-                    ])
-                    ->withExists('favoritedByAuthUser AS favorite')
-                    ->orderBy('favorite', 'desc')
-                    ->orderBy('name_project', 'asc')
-                    ->get()
-            ),
+            'items' => ProjectResource::collection($query->get()),
+            'dropdowns' => [
+                'companies' => ClientCompany::dropdownValues(),
+                'users' => User::userDropdownValues(),
+                'currencies' => Currency::dropdownValues(['with' => ['clientCompanies:id,currency_id']]),
+                'labels' => Label::ofType(Label::TYPE_PROJECT_TASK_STATUS)->get(),
+            ],
+        ]);
+    }
+
+    public function show(Project $project)
+    {
+        // 1. Definisikan semua relasi yang dibutuhkan oleh halaman detail
+        $project->load([
+            'clientCompany',
+            'users:id,name,avatar',
+            'taskGroups',
+            'attachments',
+            'evmRecords',
+            'labels',
+            // Muat juga relasi bersarang jika diperlukan oleh komponen lain
+            'tasks.labels',
+            'tasks.dependencies',
+            'inventories',
+            'inventories.allocations',
+            'inventories.labels',
+        ]);
+
+        // 2. Siapkan data untuk dropdown dependensi dengan logika yang benar
+        $taskDepends = $project->tasks()
+            ->whereDoesntHave('labels', fn ($q) => $q->where('slug', 'completed'))
+            ->orderBy('name')
+            ->get(['id', 'number', 'name', 'group_id']);
+
+        return Inertia::render('Projects/Detail', [
+            'project' => new ProjectResource($project),
+
+            // Data untuk komponen di dalam halaman
+            'usersWithAccessToProject' => PermissionService::usersWithAccessToProject($project),
+            'taskGroups' => $project->taskGroups,
+            'taskDepends' => $taskDepends,
+            'taskRelationLabels' => Label::taskRelation()->get(['id', 'name', 'slug', 'color', 'icon']),
+            'labels' => Label::ofType(Label::TYPE_PROJECT_TASK_STATUS)->get(),
+            'currency' => $project->clientCompany?->currency,
         ]);
     }
 
@@ -56,58 +118,51 @@ class ProjectController extends Controller
                 'companies' => ClientCompany::dropdownValues(),
                 'users' => User::userDropdownValues(),
                 'currencies' => Currency::dropdownValues(['with' => ['clientCompanies:id,currency_id']]),
+                'labels' => Label::ofType(Label::TYPE_PROJECT_TASK_STATUS)->get(['id', 'name', 'slug', 'color', 'icon']),
             ],
         ]);
     }
-
-    public function store(StoreProjectRequest $request)
+    /**
+     * Menyimpan proyek baru ke database.
+     */
+    public function store(StoreProjectRequest $request, ProjectService $projectService)
     {
-        $data = $request->validated();
+        $this->authorize('create', Project::class); // penggunaan Policy
 
-        $data['budget_project'] *= 100;
+        // Panggil service untuk melakukan semua pekerjaan berat
+        $project = $projectService->create(
+            $request->validated(),
+            $request->file('attachments', [])
+        );
 
-        $project = Project::create($data);
+        $projectUrl = route('projects.detail', $project->id);
 
-        $project->users()->attach($data['users']);
-
-        $project->taskGroups()->createMany([
-            ['name_group' => 'Pekerjaan Persiapan'],
-            ['name_group' => 'Pekerjaan Tanah'],
-            ['name_group' => 'Pekerjaan Dinding dan Lantai'],
-            ['name_group' => 'Pekerjaan Atap'],
-            ['name_group' => 'Pekerjaan Plafon'],
-            ['name_group' => 'Pekerjaan Pengecatan'],
-            ['name_group' => 'Pekerjaan Sanitari'],
-            ['name_group' => 'Pekerjaan Listrik'],
-            ['name_group' => 'Pekerjaan Taman'],
-        ]);
-
-        return redirect()->route('projects.index')->success('Project created', 'A new project was successfully created.');
-    }
-
-    public function edit(Project $project)
-    {
-        return Inertia::render('Projects/Edit', [
-            'item' => $project,
-            'dropdowns' => [
-                'companies' => ClientCompany::dropdownValues(),
-                'users' => User::userDropdownValues(),
-                'currencies' => Currency::dropdownValues(['with' => ['clientCompanies:id,currency_id']]),
-            ],
+        return redirect()->route('projects.index')->with('flash', [
+            'type' => 'success',
+            'title' => 'Project created',
+            'message' => "A new project was successfully created. <a href='{$projectUrl}' style='color: #fff; text-decoration: underline;'>Open Project</a>",
         ]);
     }
 
-    public function update(UpdateProjectRequest $request, Project $project)
+    /**
+     * Mengupdate proyek yang sudah ada.
+     */
+    public function update(UpdateProjectRequest $request, Project $project, ProjectService $projectService)
     {
-        $data = $request->validated();
+        $this->authorize('update', $project); // Policy
 
-        $data['budget_project'] *= 100;
+        // Panggil service untuk melakukan semua pekerjaan berat
+        $projectService->update(
+            $project,
+            $request->validated(),
+            $request->file('attachments', [])
+        );
 
-        $project->update($data);
-
-        $project->users()->sync($data['users']);
-
-        return redirect()->route('projects.index')->success('Project updated', 'The project was successfully updated.');
+        return redirect()->route('projects.index')->with('flash', [
+            'type' => 'success',
+            'title' => 'Project Updated',
+            'message' => "Project was successfully Updated.",
+        ]);
     }
 
     public function destroy(Project $project)
@@ -128,9 +183,10 @@ class ProjectController extends Controller
         return redirect()->back()->success('Project restored', 'The restoring of the project was completed successfully.');
     }
 
-    public function forceDelete(int $projectId)
+
+    public function forceDelete(Project $project)
     {
-        $project = Project::withArchived()->findOrFail($projectId);
+        $project = Project::withArchived()->findOrFail($project->id);
 
         $this->authorize('forceDelete', $project);
 
@@ -155,7 +211,7 @@ class ProjectController extends Controller
             $request->get('clients', [])
         );
 
-        (new ProjectService($project))->updateUserAccess($userIds);
+        (new ProjectService())->updateUserAccess($project, $userIds);
 
         return redirect()->back();
     }

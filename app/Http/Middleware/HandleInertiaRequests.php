@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -39,11 +40,11 @@ class HandleInertiaRequests extends Middleware
         return array_merge(parent::share($request), [
             'auth' => [
                 'user' => function () {
-                    if (! auth()->check()) {
+                    if (! Auth::check()) {
                         return null;
                     }
                     /** @var User */
-                    $user = auth()->user();
+                    $user = Auth::user();
 
                     return [
                         'id' => $user->id,

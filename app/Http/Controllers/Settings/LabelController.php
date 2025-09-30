@@ -30,35 +30,43 @@ class LabelController extends Controller
         ]);
     }
 
-    public function create()
-    {
-        return Inertia::render('Settings/Labels/Create');
-    }
-
     public function store(StoreLabelRequest $request)
     {
-        Label::create($request->validated());
+        $data = $request->validated();
 
-        return redirect()->route('settings.labels.index')->success('Label created', 'A new label was successfully created.');
-    }
+        if (empty($data['slug']) && !empty($data['name'])) {
+            $data['slug'] = str($data['name'])->slug('_');
+        }
 
-    public function edit(Label $label)
-    {
-        return Inertia::render('Settings/Labels/Edit', ['item' => new LabelResource($label)]);
+        Label::create($data);
+
+        return redirect()
+            ->route('settings.labels.index')
+            ->success('Label created', 'A new label was successfully created.');
     }
 
     public function update(Label $label, UpdateLabelRequest $request)
     {
-        $label->update($request->validated());
+        $data = $request->validated();
 
-        return redirect()->route('settings.labels.index')->success('Label updated', 'The label was successfully updated.');
+        if (empty($data['slug']) && !empty($data['name'])) {
+            $data['slug'] = str($data['name'])->slug('_');
+        }
+
+        $label->update($data);
+
+        return redirect()
+            ->route('settings.labels.index')
+            ->success('Label updated', 'The label was successfully updated.');
     }
 
-    public function destroy(Label $label)
+    public function archive(Label $label)
     {
+        $this->authorize('archive', $label);
+
         $label->archive();
 
-        return redirect()->back()->success('Label archived', 'The label was successfully archived.');
+        return redirect()->back()->success('Archived', 'Label has been archived.');
     }
 
     public function restore(int $labelId)
@@ -71,4 +79,14 @@ class LabelController extends Controller
 
         return redirect()->back()->success('Label restored', 'The restoring of the label was completed successfully.');
     }
+
+    public function forceDelete(Label $label)
+    {
+        $this->authorize('delete', $label);
+
+        $label->forceDelete();
+
+        return redirect()->back()->success('Deleted', 'Label has been permanently deleted.');
+    }
+
 }

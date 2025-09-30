@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Currency;
 use App\Models\OwnerCompany;
 use App\Models\Role;
 use App\Models\User;
@@ -9,9 +10,6 @@ use Illuminate\Database\Seeder;
 
 class ProductionSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         User::create([
@@ -24,14 +22,15 @@ class ProductionSeeder extends Seeder
             'remember_token' => null,
         ])->assignRole(Role::firstWhere('name', 'admin'));
 
+        $currency = Currency::where('code', 'IDR')->first();
         OwnerCompany::create([
-            'name' => '',
+            'name' => 'My Company',
             'logo' => null,
             'address' => '',
             'postal_code' => '',
             'city' => '',
             'country_id' => null,
-            'currency_id' => 97,
+            'currency_id' => $currency?->id,
             'phone' => '',
             'web' => '',
             'email' => '',

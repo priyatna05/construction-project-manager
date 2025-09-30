@@ -38,18 +38,28 @@ const CompanyEdit = () => {
 
   return (
     <>
-    <Card shadow='sm' padding='xl' radius='md' withBorder>
-      <Grid
-        justify='space-between'
-        align='flex-end'
-        gutter='xl'
-        mb={35}
+      <Card
+        shadow='sm'
+        padding='xl'
+        radius='md'
+        withBorder
       >
-        <Grid.Col span='auto'>
-          <Title order={1} align='center'>My Companies</Title>
-        </Grid.Col>
-        <Grid.Col span='content'></Grid.Col>
-      </Grid>
+        <Grid
+          justify='space-between'
+          align='flex-end'
+          gutter='xl'
+          mb={35}
+        >
+          <Grid.Col span='auto'>
+            <Title
+              order={1}
+              align='center'
+            >
+              My Companies
+            </Title>
+          </Grid.Col>
+          <Grid.Col span='content'></Grid.Col>
+        </Grid>
 
         <form onSubmit={e => submit(e, { forceFormData: true })}>
           <Grid
@@ -106,7 +116,7 @@ const CompanyEdit = () => {
             onChange={e => updateValue('name', e.target.value)}
             error={form.errors.name}
             disabled={!can('edit owner company')}
-            />
+          />
 
           <Fieldset
             legend='Location'
@@ -130,7 +140,7 @@ const CompanyEdit = () => {
                 onChange={e => updateValue('postal_code', e.target.value)}
                 error={form.errors.postal_code}
                 disabled={!can('edit owner company')}
-                />
+              />
 
               <TextInput
                 label='City'
@@ -160,7 +170,7 @@ const CompanyEdit = () => {
             legend='Details'
             mt='xl'
           > */}
-            {/* <TextInput
+          {/* <TextInput
               label='Business ID'
               placeholder='Business ID'
               value={form.data.business_id}
@@ -284,11 +294,16 @@ const CompanyEdit = () => {
             mt='xl'
           >
             {can('edit owner company') && (
-              <ActionButton loading={form.processing}>Save</ActionButton>
+              <ActionButton
+                type='submit'
+                loading={form.processing}
+              >
+                Save
+              </ActionButton>
             )}
           </Group>
         </form>
-   </Card>
+      </Card>
     </>
   );
 };

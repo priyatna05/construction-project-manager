@@ -2,7 +2,7 @@
 
 namespace App\Actions\Client;
 
-use App\Events\UserCreated;
+use App\Events\User\UserCreated;
 use App\Models\User;
 use App\Services\UserService;
 use Illuminate\Support\Facades\DB;
@@ -30,6 +30,7 @@ class CreateClient
                 $user->clientCompanies()->attach($data['companies']);
             }
 
+            $user->sendEmailVerificationNotification();
             UserCreated::dispatch($user, $data['password']);
 
             return $user;

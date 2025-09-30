@@ -2,50 +2,72 @@
 
 namespace App\Services;
 
+use App\Actions\TaskGroup\GenerateTaskGroupsAction;
+use App\Actions\Attachment\StoreAttachmentAction;
 use App\Models\Project;
+use Illuminate\Http\UploadedFile;
 
 class ProjectService
 {
-    public function __construct(public Project $project) {}
-
-    /**
-     * Membuat proyek baru & menambahkan task group default.
-     */
-    public function createProject(array $data): Project
+    public function create(array $validatedData, array $files = []): Project
     {
-        $project = Project::create($data);
-        $project->users()->attach($data['users']);
+        // 1. Siapkan data proyek dasar
+        $validatedData['budget_project'] *= 100;
 
-        // Tambahkan default task groups
-        $project->taskGroups()->createMany([
-            ['name_group' => 'Pekerjaan Persiapan'],
-            ['name_group' => 'Pekerjaan Tanah'],
-            ['name_group' => 'Pekerjaan Dinding dan Lantai'],
-            ['name_group' => 'Pekerjaan Atap'],
-            ['name_group' => 'Pekerjaan Plafon'],
-            ['name_group' => 'Pekerjaan Pengecatan'],
-            ['name_group' => 'Pekerjaan Sanitari'],
-            ['name_group' => 'Pekerjaan Listrik'],
-            ['name_group' => 'Pekerjaan Taman'],
-        ]);
+        // 2. Buat proyek
+        $project = Project::create($validatedData);
+
+        // 3. Lampirkan user
+        $project->users()->attach($validatedData['users']);
+
+        foreach ($project->users as $user) {
+            $user->notify(new \App\Notifications\ProjectCreatedNotification($project));
+        }
+
+        foreach ($project->clientCompany->clients as $client) {
+            $client->notify(new \App\Notifications\ProjectCreatedNotification($project));
+        }
+
+        if ($project->client_company && $project->client_company->user) {
+            $project->client_company->user->notify(new \App\Notifications\ProjectCreatedNotification($project));
+        }
+
+        // 4. Proses lampiran menggunakan Action
+        foreach ($files as $file) {
+            (new StoreAttachmentAction())->execute($project, $file);
+        }
+
+        // 5. Generate task group menggunakan Action
+        (new GenerateTaskGroupsAction())->execute($project, $validatedData['generate_task_groups'] ?? null);
 
         return $project;
     }
 
-    /**
-     * Mengupdate proyek yang sudah ada.
-     */
-    public function updateProject(array $data): void
+    public function update(Project $project, array $validatedData, array $files = []): Project
     {
-        $this->project->update($data);
-        $this->project->users()->sync($data['users']);
+        // 1. Update data proyek dasar
+        if (isset($validatedData['budget_project'])) {
+            $validatedData['budget_project'] *= 100;
+        }
+        $project->update($validatedData);
+
+        // 2. Sinkronkan user
+        if (isset($validatedData['users'])) {
+            $project->users()->sync($validatedData['users']);
+        }
+
+        // 3. Proses lampiran baru
+        foreach ($files as $file) {
+            (new StoreAttachmentAction())->execute($project, $file);
+        }
+
+        // Biasanya kita tidak men-generate task group saat update, tapi bisa ditambahkan jika perlu
+
+        return $project;
     }
 
-    /**
-     * Update akses pengguna untuk proyek.
-     */
-    public function updateUserAccess(array $userIds): void
+    public function updateUserAccess(Project $project, array $userIds): void
     {
-        $this->project->users()->sync($userIds);
+        $project->users()->sync($userIds);
     }
 }

@@ -4,10 +4,7 @@ namespace App\Http\Requests\Inventory;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Enum;
-use App\Enums\InventoryType;
-use App\Enums\InventoryStatus;
-use App\Enums\InventoryUnit;
+use App\Models\Label;
 
 class UpdateInventoryRequest extends FormRequest
 {
@@ -27,14 +24,37 @@ class UpdateInventoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name_inventories' => ['required', 'string', Rule::unique('inventoriess', 'name_inventories')->ignore($this->resource)],
-            'code_inventories' => ['required', 'string', Rule::unique('inventoriess', 'code_inventories')->ignore($this->resource)],
-            'type' => ['required', new Enum(InventoryType::class)],
-            'description_inventories' => 'string|nullable',
-            'unit' => ['required', new Enum(InventoryUnit::class)],
+            'name' => [
+                'sometimes',
+                'required',
+                'string',
+                // Rule::unique('inventories', 'name')->ignore($this->resource)
+            ],
+            'code' => [
+                'sometimes',
+                'required',
+                'string',
+                Rule::unique('inventories', 'code')->ignore($this->resource)
+            ],
+            'type' => [
+                'sometimes',
+                'required',
+                'in:' . Label::slugsForTypeString(Label::TYPE_INVENTORY_TYPE)
+            ],
+            'unit' => [
+                'sometimes',
+                'required',
+                'in:' . Label::slugsForTypeString(Label::TYPE_INVENTORY_UNIT)
+            ],
+            'status' => [
+                'sometimes',
+                'required',
+                'in:' . Label::slugsForTypeString(Label::TYPE_INVENTORY_STATUS)
+            ],
+            'description' => 'nullable|string',
+            'quantity_on_hand' => 'nullable|numeric|min:0',
             'unit_cost' => 'required|numeric|min:0',
-            'sum_cost' => 'numeric|min:0|nullable',
-            'status' => ['required', new Enum(InventoryStatus::class)],
+            'sum_cost' => 'nullable|numeric|min:0',
         ];
     }
 }

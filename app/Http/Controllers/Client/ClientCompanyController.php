@@ -95,4 +95,24 @@ class ClientCompanyController extends Controller
 
         return redirect()->back()->success('Company restored', 'The restoring of the company was completed successfully.');
     }
+
+    public function forceDelete(ClientCompany $company)
+    {
+        abort_if(! request()->user()->can('delete client company'), 401);
+
+        try {
+            $company->forceDelete();
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->getCode() === '23000') {
+                return redirect()
+                    ->route('clients.companies.index')
+                    ->warning('Delete failed', 'Cannot delete company because it has related records.');
+            }
+            throw $e;
+        }
+
+        return redirect()
+            ->route('clients.companies.index')
+            ->success('Company deleted', 'The client company has been permanently deleted.');
+    }
 }

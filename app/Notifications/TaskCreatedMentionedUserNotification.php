@@ -84,12 +84,12 @@ class TaskCreatedMentionedUserNotification extends Notification implements Shoul
     public function toArray(object $notifiable): array
     {
         return [
-            'task_id' => $this->task->id,
-            'title' => "{$this->task->createdByUser->name} has mentioned you in a new \"{$this->task->name}\" task",
-            'subtitle' => "On \"{$this->task->project->name}\" project",
-            'link' => route('projects.tasks.open', [$this->task->project_id, $this->task->id]),
-            'created_at' => $notifiable->created_at,
-            'read_at' => $notifiable->read_at,
+            'task_id'       => $this->task->id,
+            'title'         => "{$this->task->createdByUser->name} has mentioned you in a new \"{$this->task->name}\" task",
+            'description'   => "On \"{$this->task->project->name}\" project",
+            'link'          => route('projects.tasks.open', [$this->task->project_id, $this->task->id]),
+            'created_at'    => $notifiable->created_at,
+            'read_at'       => $notifiable->read_at,
         ];
     }
 }

@@ -2,7 +2,9 @@
 
 namespace App\Observers;
 
+use App\Models\User;
 use App\Models\Task;
+use Illuminate\Support\Facades\Auth;
 
 class TaskObserver
 {
@@ -11,11 +13,18 @@ class TaskObserver
      */
     public function created(Task $task): void
     {
+        $user = Auth::user() ?? User::whereHas('roles', fn($q) =>
+            $q->where('name', 'admin')
+        )->first();
+
+        $userId = $user?->id ?? 1;
+        $userName = $user?->name ?? 'System';
+
         $task->activities()->create([
-            'project_id' => $task->project_id,
-            'user_id' => auth()->id(),
-            'title' => 'New task',
-            'subtitle' => "\"{$task->name_task}\" was created by ".auth()->user()->name,
+            'project_id'    => $task->project_id,
+            'user_id'       => $userId,
+            'title'         => 'New task',
+            'description'   => "\"{$task->name}\" was created by {$userName}",
         ]);
 
         if ($task->assigned_to_user_id !== null) {
@@ -29,72 +38,68 @@ class TaskObserver
      */
     public function updated(Task $task): void
     {
-        if ($task->isDirty('name_task')) {
+        $user = Auth::user() ?? User::whereHas('roles', fn($q) =>
+            $q->where('name', 'admin')
+        )->first();
+
+        $userId = $user?->id ?? 1;
+        $userName = $user?->name ?? 'System';
+
+        if ($task->isDirty('name')) {
             $task->activities()->create([
-                'project_id' => $task->project_id,
-                'user_id' => auth()->id(),
-                'title' => 'Task name was changed',
-                'subtitle' => "from \"{$task->getOriginal('name_task')}\" to \"{$task->name_task}\" by ".auth()->user()->name,
+                'project_id'    => $task->project_id,
+                'user_id'       => $userId,
+                'title'         => 'Task name was changed',
+                'description'   => "from \"{$task->getOriginal('name')}\" to \"{$task->name}\" by {$userName}",
             ]);
         }
-        if ($task->isDirty('description_task')) {
+        if ($task->isDirty('description')) {
             $task->activities()->create([
-                'project_id' => $task->project_id,
-                'user_id' => auth()->id(),
-                'title' => 'Task description was changed',
-                'subtitle' => "on \"{$task->name_task}\" by ".auth()->user()->name,
+                'project_id'    => $task->project_id,
+                'user_id'       => $userId,
+                'title'         => 'Task description was changed',
+                'description'   => "on \"{$task->name}\" by {$userName}",
             ]);
         }
         if ($task->isDirty('assigned_to_user_id')) {
             $task->activities()->create([
-                'project_id' => $task->project_id,
-                'user_id' => auth()->id(),
-                'title' => $task->assigned_to_user_id ? 'Assigned user to task' : 'Assigned user was removed',
-                'subtitle' => $task->assigned_to_user_id
-                    ? "\"{$task->name_task}\" was assigned to {$task->assignedToUser->name} by ".auth()->user()->name
-                    : "on task \"{$task->name_task}\" by ".auth()->user()->name,
+                'project_id'    => $task->project_id,
+                'user_id'       => $userId,
+                'title'         => $task->assigned_to_user_id ? 'Assigned user to task' : 'Assigned user was removed',
+                'description'   => $task->assigned_to_user_id
+                    ? "\"{$task->name}\" was assigned to {$task->assignedToUser->name} by {$userName}"
+                    : "on task \"{$task->name}\" by {$userName}",
             ]);
 
             $task->assigned_at = now();
             $task->saveQuietly();
         }
-        // if ($task->isDirty('due_on')) {
-        //     $task->activities()->create([
-        //         'project_id' => $task->project_id,
-        //         'user_id' => auth()->id(),
-        //         'title' => $task->due_on ? 'Due date was set on task' : 'Due date was removed',
-        //         'subtitle' => $task->due_on
-        //             ? "to {$task->due_on->format('F j, Y')} on \"{$task->name}\" by ".auth()->user()->name
-        //             : "on \"{$task->name}\" task by ".auth()->user()->name,
-        //     ]);
-        // }
-        // if ($task->isDirty('estimation')) {
-        //     $task->activities()->create([
-        //         'project_id' => $task->project_id,
-        //         'user_id' => auth()->id(),
-        //         'title' => 'Estimation was set',
-        //         'subtitle' => "to {$task->estimation}h on \"{$task->name}\" by ".auth()->user()->name,
-        //     ]);
-        // }
-        // if ($task->isDirty('completed_at')) {
-        //     $task->activities()->create([
-        //         'project_id' => $task->project_id,
-        //         'user_id' => auth()->id(),
-        //         'title' => $task->completed_at ? 'Task was completed' : 'Task was set to uncompleted',
-        //         'subtitle' => "\"{$task->name_task}\" was set as ".($task->completed_at ? 'completed' : 'uncompleted').' by '.auth()->user()->name,
-        //     ]);
+
+        // Trigger EVM record recalculation for the related project
+        if ($task->project_id) {
+            app(\App\Services\EvmRecordService::class)->calculateAndSave(
+                $task->project
+            );
         }
+    }
 
     /**
      * Handle the Project "archived" event.
      */
     public function archived(Task $task): void
     {
+        $user = Auth::user() ?? User::whereHas('roles', fn($q) =>
+            $q->where('name', 'admin')
+        )->first();
+
+        $userId = $user?->id ?? 1;
+        $userName = $user?->name ?? 'System';
+
         $task->activities()->create([
             'project_id' => $task->project_id,
-            'user_id' => auth()->id(),
+            'user_id' => $userId,
             'title' => 'Task was archived',
-            'subtitle' => "\"{$task->name_task}\" was archived by ".auth()->user()->name,
+            'description' => "\"{$task->name}\" was archived by {$userName}",
         ]);
     }
 
@@ -103,11 +108,18 @@ class TaskObserver
      */
     public function unArchived(Task $task): void
     {
+        $user = Auth::user() ?? User::whereHas('roles', fn($q) =>
+            $q->where('name', 'admin')
+        )->first();
+
+        $userId = $user?->id ?? 1;
+        $userName = $user?->name ?? 'System';
+
         $task->activities()->create([
             'project_id' => $task->project_id,
-            'user_id' => auth()->id(),
+            'user_id' => $userId,
             'title' => 'Task was unarchived',
-            'subtitle' => "\"{$task->name_task}\" was unarchived by ".auth()->user()->name,
+            'description' => "\"{$task->name}\" was unarchived by {$userName}",
         ]);
     }
 }

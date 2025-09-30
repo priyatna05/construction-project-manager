@@ -6,6 +6,6 @@ export default function useModal(initialState = false) {
   return {
     opened,
     open,
-    close
+    close,
   };
 }

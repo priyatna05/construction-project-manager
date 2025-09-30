@@ -89,4 +89,20 @@ class RoleController extends Controller
 
         return redirect()->back()->success('Role restored', 'The restoring of the role was completed successfully.');
     }
+
+    public function forceDelete(Role $role)
+    {
+        $this->authorize('delete', $role);
+
+        $usersWithRole = DB::table('model_has_roles')->where('role_id', $role->id)->exists();
+
+        if ($usersWithRole) {
+            return redirect()->route('settings.roles.index')->warning('Action stopped', 'You cannot delete a role that is currently assigned to users.');
+        }
+
+        $role->forceDelete();
+
+        return redirect()->route('settings.roles.index')->success('Role deleted', 'The role was permanently deleted.');
+    }
+
 }

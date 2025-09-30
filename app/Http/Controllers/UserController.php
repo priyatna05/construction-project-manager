@@ -8,6 +8,7 @@ use App\Http\Requests\User\StoreUserRequest;
 use App\Http\Requests\User\UpdateUserRequest;
 use App\Http\Resources\User\UserResource;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -59,7 +60,7 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
-        if (auth()->id() === $user->id) {
+        if (Auth::id() === $user->id) {
             return redirect()->route('users.index')->warning('Action stopped', 'You cannot archive the user with whom you are currently logged in.');
         }
         $user->archive();
@@ -77,4 +78,18 @@ class UserController extends Controller
 
         return redirect()->back()->success('User restored', 'The restoring of the user was completed successfully.');
     }
+
+    public function forceDelete(User $user)
+    {
+        $this->authorize('delete', $user);
+
+        if (Auth::id() === $user->id) {
+            return redirect()->route('users.index')->warning('Action stopped', 'You cannot delete the user with whom you are currently logged in.');
+        }
+
+        $user->delete();
+
+        return redirect()->route('users.index')->success('User deleted', 'The user was permanently deleted.');
+    }
+
 }

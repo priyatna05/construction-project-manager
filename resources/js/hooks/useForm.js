@@ -1,23 +1,26 @@
-import { useScrollIntoView } from "@mantine/hooks";
-import { useForm as usePrecognitionForm } from "laravel-precognition-react-inertia";
-import { isObject } from "lodash";
+import { useState } from 'react';
+import { useScrollIntoView } from '@mantine/hooks';
+import { useForm as usePrecognitionForm } from 'laravel-precognition-react-inertia';
+import { isObject } from 'lodash';
 
-export default function useForm(method, url, data) {
-  const form = usePrecognitionForm(method, url, data);
+export default function useForm(initialMethod, initialUrl, initialData) {
+  const [method, setMethod] = useState(initialMethod);
+  const [url, setUrl] = useState(initialUrl);
 
+  const form = usePrecognitionForm(method, url, initialData);
   const { scrollIntoView } = useScrollIntoView({ duration: 1000 });
 
   const submit = (e, props) => {
-    e.preventDefault();
+    e?.preventDefault?.();
 
     form.submit({
       preserveScroll: false,
       onError: () => {
-        scrollIntoView({
-          target: document.querySelector('[data-error="true"]'),
-        });
+        const target = document.querySelector('[data-error="true"]');
+        if (target) {
+          scrollIntoView({ target });
+        }
       },
-
       ...props,
     });
   };
@@ -31,6 +34,9 @@ export default function useForm(method, url, data) {
       form.forgetError(field);
     }
   };
+
+  form.setMethod = setMethod;
+  form.setAction = setUrl;
 
   return [form, submit, updateValue];
 }

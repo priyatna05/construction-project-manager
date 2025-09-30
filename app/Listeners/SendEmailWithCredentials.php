@@ -2,7 +2,7 @@
 
 namespace App\Listeners;
 
-use App\Events\UserCreated as UserCreatedEvent;
+use App\Events\User\UserCreated as UserCreatedEvent;
 use App\Notifications\UserCreatedNotification;
 
 class SendEmailWithCredentials

@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Task;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use App\Models\Label;
 
 class StoreTaskRequest extends FormRequest
 {
@@ -22,14 +24,20 @@ class StoreTaskRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name_task' => ['required', 'string:255'],
+            'name' => ['required', 'string:255'],
             'number' => ['required', 'integer'],
             'group_id' => ['required', 'exists:task_groups,id'],
             'assigned_to_user_id' => ['nullable', 'exists:users,id'],
-            'description_task' => ['nullable'],
-            'start_date_task' => ['nullable'],
-            'end_date_task' => ['nullable'],
-            'budget_task' => ['nullable', 'numeric'],
+            'description' => ['nullable', 'string'],
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            'budget_task' => ['nullable', 'numeric', 'min:0'],
+            'depends_on_task_id' => ['nullable', 'integer', 'exists:tasks,id'],
+            'relation_type_id'   => [
+                'nullable',
+                'integer',
+                Rule::exists('labels', 'id')->where('type', Label::TYPE_TASK_RELATION),
+            ],
             'subscribed_users' => ['array'],
             'labels' => ['array'],
             'attachments' => ['array'],

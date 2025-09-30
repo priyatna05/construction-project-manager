@@ -14,10 +14,20 @@ return new class extends Migration
         Schema::create('labels', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('color');
-            $table->archivedAt();
+            $table->string('slug')->unique();
+            $table->string('type');
+            $table->string('color')->nullable();
+            $table->string('icon')->nullable();
+            $table->boolean('is_default')->default(false);
+            // Consider a specific format like hex #RRGGBB
+            // Assuming 'archivedAt' is a custom macro
+            // If not: $table->timestamp('archived_at')->nullable();
+            $table->timestamp('archived_at')->nullable();
+            $table->index(['type', 'slug']);
             $table->timestamps();
+            $table->softDeletes();
         });
+
     }
 
     /**

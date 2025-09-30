@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import {
-    Button,
-    Grid,
-    Group,
-    Table,
-    Title,
-    TextInput,
-    Select,
-    MultiSelect,
-    Fieldset,
+  Button,
+  Grid,
+  Group,
+  Table,
+  Title,
+  TextInput,
+  Select,
+  MultiSelect,
+  Fieldset,
 } from '@mantine/core';
 import { IconPlus } from '@tabler/icons-react';
 import { usePage } from '@inertiajs/react';
@@ -28,216 +28,255 @@ import { actionColumnVisibility, prepareColumns } from '@/utils/table';
 import ActionButton from '@/components/ActionButton';
 
 const ClientCompaniesIndex = () => {
-    const {items, dropdowns: { clients, countries, currencies }, } = usePage().props;
-    const { opened, open, close } = useModal();
-    const [editingCompany, setEditingCompany] = useState(null);
-    const sort = sort => reloadWithQuery(sort);
+  const {
+    items,
+    dropdowns: { clients, countries, currencies },
+  } = usePage().props;
+  const { opened, open, close } = useModal();
+  const [editingCompany, setEditingCompany] = useState(null);
+  const sort = sort => reloadWithQuery(sort);
 
-    const [form, submit, updateValue] = useForm(
-        editingCompany ? 'put' : 'post',
-        editingCompany
-            ? route('clients.companies.update', editingCompany.id)
-            : route('clients.companies.store'),
-        {
-            name: editingCompany?.name || '',
-            email: editingCompany?.email || '',
-            phone: editingCompany?.phone || '',
-            address: editingCompany?.address || '',
-            postal_code: editingCompany?.postal_code || '',
-            city: editingCompany?.city || '',
-            country_id: editingCompany?.country_id || '',
-            currency_id: editingCompany?.currency_id || '',
-            web: editingCompany?.web || '',
-            clients: route().params?.client_id ? [route().params.client_id] : [],
-        }
-    );
+  const [form, submit, updateValue] = useForm(
+    editingCompany ? 'put' : 'post',
+    editingCompany
+      ? route('clients.companies.update', editingCompany.id)
+      : route('clients.companies.store'),
+    {
+      name: editingCompany?.name || '',
+      email: editingCompany?.email || '',
+      phone: editingCompany?.phone || '',
+      address: editingCompany?.address || '',
+      postal_code: editingCompany?.postal_code || '',
+      city: editingCompany?.city || '',
+      country_id: editingCompany?.country_id || '',
+      currency_id: editingCompany?.currency_id || '',
+      web: editingCompany?.web || '',
+      clients: route().params?.user_id ? [route().params.user_id] : [],
+    }
+  );
 
-    const handleCreate = () => {
-        setEditingCompany(null);
-        open();
-    };
+  const handleCreate = () => {
+    setEditingCompany(null);
+    open();
+  };
 
-    const handleEdit = item => {
-        setEditingCompany(item);
-        open();
-    };
+  const handleEdit = item => {
+    setEditingCompany(item);
+    open();
+  };
 
-    const handleClose = () => {
-        setEditingCompany(null);
-        close();
-    };
+  const handleClose = () => {
+    setEditingCompany(null);
+    close();
+  };
 
-    const columns = prepareColumns([
-        { label: 'Company', column: 'name' },
-        { label: 'Email', column: 'email' },
-        { label: 'Clients', sortable: false },
-        {
-            label: 'Actions',
-            sortable: false,
-            visible: actionColumnVisibility('client company'),
-        },
-    ]);
+  const columns = prepareColumns([
+    { label: 'Company', column: 'name' },
+    { label: 'Email', column: 'email' },
+    { label: 'Clients', sortable: false },
+    {
+      label: 'Actions',
+      sortable: false,
+      visible: actionColumnVisibility('client company'),
+    },
+  ]);
 
-    const rows = items.data.length ? (
-        items.data.map(item => (
-            <TableRow item={item} key={item.id} onEdit={handleEdit} />
-        ))
-    ) : (
-        <TableRowEmpty colSpan={columns.length} />
-    );
+  const rows = items.data.length ? (
+    items.data.map(item => (
+      <TableRow
+        item={item}
+        key={item.id}
+        onEdit={handleEdit}
+      />
+    ))
+  ) : (
+    <TableRowEmpty colSpan={columns.length} />
+  );
 
+  return (
+    <>
+      <Title
+        style={{ color: 'white' }}
+        mb='lg'
+      >
+        List of Client Companies
+      </Title>
 
-    return (
-        <>
-            <Title justify='space-between' align='start' gutter='xl' mb='lg' style={{ color: 'white' }}>
-                List of Client Companies
-            </Title>
+      <Grid
+        justify='space-between'
+        align='center'
+        mb='md'
+      >
+        <Grid.Col span='content'>
+          <Group>
+            {can('create client company') && (
+              <Button
+                leftSection={<IconPlus size={14} />}
+                radius='xl'
+                variant='default'
+                onClick={handleCreate}
+              >
+                Create
+              </Button>
+            )}
+            <ArchivedFilterButton />
+          </Group>
+        </Grid.Col>
+      </Grid>
 
-            <Grid justify='space-between' align='center'>
-                <Grid.Col span='content'>
-                    <Group>
-                    {can('create client company') && (
-                      <Button
-                      leftSection={<IconPlus size={14} />}
-                      radius='xl'
-                      variant='default'
-                      onClick={handleCreate}
-                      >
-                            Create
-                        </Button>
-                    )}
-                    <ArchivedFilterButton />
-                    </Group>
-                </Grid.Col>
-            </Grid>
+      <Card
+        shadow='sm'
+        withBorder
+        my='lg'
+      >
+        <Table
+          stickyHeader
+          highlightOnHover
+          style={{ tableLayout: 'auto' }}
+        >
+          <TableHead
+            columns={columns}
+            sort={sort}
+          />
+          <Table.Tbody>{rows}</Table.Tbody>
+        </Table>
 
-            <br />
+        <Pagination
+          current={items.meta.current_page}
+          pages={items.meta.last_page}
+        />
+      </Card>
 
-            <Card shadow='sm' padding='xl' radius='md' withBorder>
-                <Table.ScrollContainer miw={800} my='lg'>
-                    <Table stickyHeader>
-                        <TableHead columns={columns} sort={sort} />
-                        <Table.Tbody>{rows}</Table.Tbody>
-                    </Table>
-                </Table.ScrollContainer>
+      <Modal
+        opened={opened}
+        onClose={handleClose}
+        title={editingCompany ? 'Edit Company' : 'Create Company'}
+      >
+        <form onSubmit={submit}>
+          <TextInput
+            label='Name'
+            placeholder='Company name'
+            required
+            value={form.data.name}
+            onChange={e => updateValue('name', e.target.value)}
+            error={form.errors.name}
+          />
 
-                <Pagination current={items.meta.current_page} pages={items.meta.last_page} />
-            </Card>
+          <Select
+            label='Default currency'
+            placeholder='Select currency'
+            required
+            mt='md'
+            searchable
+            value={form.data.currency_id}
+            onChange={value => updateValue('currency_id', value)}
+            data={currencies}
+            error={form.errors.currency_id}
+          />
 
-            <Modal opened={opened} onClose={handleClose} title={editingCompany ? 'Edit Company' : 'Create Company'}>
-                <form onSubmit={submit}>
-                    <TextInput
-                        label='Name'
-                        placeholder='Company name'
-                        required
-                        value={form.data.name}
-                        onChange={e => updateValue('name', e.target.value)}
-                        error={form.errors.name}
-                    />
+          <MultiSelect
+            label='Clients'
+            placeholder='Select clients'
+            required
+            mt='md'
+            value={form.data.clients}
+            onChange={values => updateValue('clients', values)}
+            data={clients}
+            error={form.errors.clients}
+          />
 
-                    <Select
-                        label='Default currency'
-                        placeholder='Select currency'
-                        required
-                        mt='md'
-                        searchable
-                        value={form.data.currency_id}
-                        onChange={value => updateValue('currency_id', value)}
-                        data={currencies}
-                        error={form.errors.currency_id}
-                    />
+          <Fieldset
+            legend='Location'
+            mt='xl'
+          >
+            <TextInput
+              label='Address'
+              placeholder='Address'
+              value={form.data.address}
+              onChange={e => updateValue('address', e.target.value)}
+              error={form.errors.address}
+            />
 
-                    <MultiSelect
-                        label='Clients'
-                        placeholder='Select clients'
-                        required
-                        mt='md'
-                        value={form.data.clients}
-                        onChange={values => updateValue('clients', values)}
-                        data={clients}
-                        error={form.errors.clients}
-                    />
+            <Group
+              grow
+              mt='md'
+            >
+              <TextInput
+                label='Postal code'
+                placeholder='Postal code'
+                value={form.data.postal_code}
+                onChange={e => updateValue('postal_code', e.target.value)}
+                error={form.errors.postal_code}
+              />
 
-                    <Fieldset legend='Location' mt='xl'>
-                        <TextInput
-                            label='Address'
-                            placeholder='Address'
-                            value={form.data.address}
-                            onChange={e => updateValue('address', e.target.value)}
-                            error={form.errors.address}
-                        />
+              <TextInput
+                label='City'
+                placeholder='City'
+                value={form.data.city}
+                onChange={e => updateValue('city', e.target.value)}
+                error={form.errors.city}
+              />
+            </Group>
 
-                        <Group grow mt='md'>
-                            <TextInput
-                                label='Postal code'
-                                placeholder='Postal code'
-                                value={form.data.postal_code}
-                                onChange={e => updateValue('postal_code', e.target.value)}
-                                error={form.errors.postal_code}
-                            />
+            <Select
+              label='Country'
+              placeholder='Select country'
+              mt='md'
+              searchable
+              value={form.data.country_id}
+              onChange={value => updateValue('country_id', value)}
+              data={countries}
+              error={form.errors.country_id}
+            />
+          </Fieldset>
 
-                            <TextInput
-                                label='City'
-                                placeholder='City'
-                                value={form.data.city}
-                                onChange={e => updateValue('city', e.target.value)}
-                                error={form.errors.city}
-                            />
-                        </Group>
+          <Fieldset
+            legend='Contact'
+            mt='xl'
+          >
+            <Group grow>
+              <TextInput
+                label='Email'
+                placeholder='Email'
+                value={form.data.email}
+                onChange={e => updateValue('email', e.target.value)}
+                error={form.errors.email}
+              />
 
-                        <Select
-                            label='Country'
-                            placeholder='Select country'
-                            mt='md'
-                            searchable
-                            value={form.data.country_id}
-                            onChange={value => updateValue('country_id', value)}
-                            data={countries}
-                            error={form.errors.country_id}
-                        />
-                    </Fieldset>
+              <TextInput
+                label='Phone'
+                placeholder='Phone'
+                value={form.data.phone}
+                onChange={e => updateValue('phone', e.target.value)}
+                error={form.errors.phone}
+              />
+            </Group>
 
-                    <Fieldset legend='Contact' mt='xl'>
-                        <Group grow>
-                            <TextInput
-                                label='Email'
-                                placeholder='Email'
-                                value={form.data.email}
-                                onChange={e => updateValue('email', e.target.value)}
-                                error={form.errors.email}
-                            />
+            <TextInput
+              label='Web'
+              placeholder='Web'
+              mt='md'
+              value={form.data.web}
+              onChange={e => updateValue('web', e.target.value)}
+              error={form.errors.web}
+            />
+          </Fieldset>
 
-                            <TextInput
-                                label='Phone'
-                                placeholder='Phone'
-                                value={form.data.phone}
-                                onChange={e => updateValue('phone', e.target.value)}
-                                error={form.errors.phone}
-                            />
-                        </Group>
-
-                        <TextInput
-                            label='Web'
-                            placeholder='Web'
-                            mt='md'
-                            value={form.data.web}
-                            onChange={e => updateValue('web', e.target.value)}
-                            error={form.errors.web}
-                        />
-                    </Fieldset>
-
-                    <Group justify='flex-end' mt='xl'>
-                        <ActionButton variant='light' onClick={handleClose}>
-                            Cancel
-                        </ActionButton>
-                        <ActionButton type='submit' loading={form.processing}>
-                            {editingCompany ? 'Update' : 'Create'}
-                        </ActionButton>
-                    </Group>
-                </form>
-            </Modal>
-        </>
-    );
+          <Group
+            justify='flex-end'
+            mt='xl'
+          >
+            <ActionButton
+              type='submit'
+              loading={form.processing}
+            >
+              {editingCompany ? 'Update' : 'Create'}
+            </ActionButton>
+          </Group>
+        </form>
+      </Modal>
+    </>
+  );
 };
 
 ClientCompaniesIndex.layout = page => <Layout title='Clients'>{page}</Layout>;

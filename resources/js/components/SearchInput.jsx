@@ -1,158 +1,137 @@
-import {
-  TextInput,
-  UnstyledButton,
-  ScrollArea,
-  Stack,
-  Text,
-  Box,
-  Modal,
-  Group,
-} from "@mantine/core";
-import { IconSearch, IconCircleDashed } from "@tabler/icons-react";
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useDebouncedValue, useClickOutside } from "@mantine/hooks";
+import { TextInput, UnstyledButton, Stack, Text, Modal, Box, Group, Collapse } from '@mantine/core';
+import { IconSearch, IconCircleDashed, IconChevronDown, IconChevronUp } from '@tabler/icons-react';
+import { useState, useMemo } from 'react';
+import { useDebouncedValue } from '@mantine/hooks';
 import classes from './css/SearchInput.module.css';
-import { getMenuItems } from "@/utils/ListMenu";
+import { getMenuItems } from '@/utils/ListMenu';
 
 export function SearchInput({ renderTriger }) {
   const [opened, setOpened] = useState(false);
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState('');
   const [debounced] = useDebouncedValue(value, 250);
-  const [results, setResults] = useState([]);
-  const ref = useClickOutside(() => setOpened(false));
+  const [expandedMenus, setExpandedMenus] = useState({});
 
-  const handleKeydown = useCallback((e) => {
-    const isMac = navigator.platform.toUpperCase().includes("MAC");
-    const isOpenShortcut = (isMac && e.metaKey && e.key === "k") || (!isMac && e.ctrlKey && e.key === "k");
-
-    if (isOpenShortcut) {
-      e.preventDefault();
-      setOpened((o) => !o);
-    }
+  const structuredMenu = useMemo(() => {
+    return getMenuItems()
+      .filter(item => item.visible)
+      .map(item => ({
+        ...item,
+        links: item.links?.filter(sub => sub.visible) || [],
+      }));
   }, []);
 
-  useEffect(() => {
-    window.addEventListener("keydown", handleKeydown);
-    return () => window.removeEventListener("keydown", handleKeydown);
-  }, [handleKeydown]);
+  const filteredMenu = useMemo(() => {
+    if (!debounced) return structuredMenu;
+    return structuredMenu
+      .filter(item => {
+        const inMain = item.label.toLowerCase().includes(debounced.toLowerCase());
+        const inSub = item.links.some(link =>
+          link.label.toLowerCase().includes(debounced.toLowerCase())
+        );
+        return inMain || inSub;
+      })
+      .map(item => ({
+        ...item,
+        links: item.links.filter(link =>
+          link.label.toLowerCase().includes(debounced.toLowerCase())
+        ),
+      }));
+  }, [debounced, structuredMenu]);
 
-  const localMenuItems = useMemo(() => {
-    return getMenuItems().reduce((acc, item) => {
-      if (item.visible) {
-        acc.push({
-          title: item.label,
-          type: item.type,
-          url: item.link,
-          icon: item.icon,
-        });
-      }
-      if (item.links) {
-        item.links.forEach((subItem) => {
-          if (subItem.visible) {
-            acc.push({
-              title: `${item.label} > ${subItem.label}`,
-              type: subItem.type,
-              url: subItem.link,
-              icon: item.icon,
-            });
-          }
-        });
-      }
-      return acc;
-    }, []);
-  }, []);
-
-  useEffect(() => {
-    const search = async () => {
-      if (!debounced) {
-        setResults(localMenuItems);
-        return;
-      }
-
-      try {
-        const res = await fetch(route("search") + "?query=" + encodeURIComponent(debounced), {
-          headers: {
-            "X-Requested-With": "XMLHttpRequest",
-            Accept: "application/json",
-          },
-          credentials: "same-origin",
-        });
-
-        const data = await res.json();
-        if (Array.isArray(data.results)) {
-          setResults(data.results);
-        } else {
-          setResults([]);
-        }
-      } catch (error) {
-        console.error("Search error", error);
-        setResults([]);
-      }
-    };
-
-    search();
-  }, [debounced, localMenuItems]);
+  const toggleSubmenu = label => {
+    setExpandedMenus(prev => ({
+      ...prev,
+      [label]: !prev[label],
+    }));
+  };
 
   return (
-    <Box ref={ref}>
-      {renderTriger({ onClick: () => setOpened(true) })}
+    <Box>
+      {renderTriger({ onClick: () => setOpened(o => !o) })}
       <Modal
         opened={opened}
         onClose={() => setOpened(false)}
-        shadow="md"
+        shadow='md'
         withCloseButton={false}
+        scrollAreaComponent={Box}
         classNames={classes.modal}
-        size="lg"
+        style={{ overflowX: 'hidden' }}
+        size='lg'
       >
         <TextInput
-          placeholder="Search in Applications..."
+          placeholder='Search in menu...'
           value={value}
-          onChange={(e) => setValue(e.currentTarget.value)}
-          radius="md"
+          onChange={e => setValue(e.currentTarget.value)}
+          radius='md'
           leftSection={<IconSearch size={20} />}
           autoFocus
           classNames={{ input: classes.input }}
         />
-
-        <ScrollArea h={250} mt="xs">
-          <Stack spacing="xs">
-            {results.length === 0 ? (
-              <Text size="sm" c="dimmed" ta="center">
-                No results found.
-              </Text>
-            ) : (
-              results.map((item, idx) => (
+        <Stack
+          spacing='xs'
+          mt='md'
+          className={classes.scrollAreaContent}
+        >
+          {filteredMenu.length === 0 ? (
+            <Text
+              size='sm'
+              c='dimmed'
+              ta='center'
+            >
+              No results found.
+            </Text>
+          ) : (
+            filteredMenu.map((item, idx) => (
+              <Box key={idx}>
                 <UnstyledButton
-                  key={idx}
                   className={classes.resultItem}
-                  data-label={item.title}
-                  onClick={() => {
-                    setOpened(false);
-                    setTimeout(() => {
-                      window.location.href = item.url;
-                    }, 100);
-                  }}
+                  onClick={() =>
+                    item.links.length
+                      ? toggleSubmenu(item.label)
+                      : (window.location.href = item.link)
+                  }
                 >
-                  <Group justify="space-between" className={classes.itemsMenu}>
-                    <Group gap="xs">
-                      {item.icon ? (
-                        <item.icon size={16} />
-                      ) : (
-                        <IconCircleDashed size={16} />
-                      )}
-                      <Text fw={500} truncate>
-                        {item.title}
-                      </Text>
+                  <Group justify='space-between'>
+                    <Group>
+                      {item.icon ? <item.icon size={16} /> : <IconCircleDashed size={16} />}
+                      <Text fw={500}>{item.label}</Text>
                     </Group>
-                    <Text size="xs" c="dimmed">
-                      {item.type}
-                    </Text>
+                    {item.links.length > 0 &&
+                      (expandedMenus[item.label] ? (
+                        <IconChevronUp size={16} />
+                      ) : (
+                        <IconChevronDown size={16} />
+                      ))}
                   </Group>
                 </UnstyledButton>
-              ))
-            )}
-          </Stack>
-        </ScrollArea>
+
+                <Collapse in={expandedMenus[item.label]}>
+                  <Stack
+                    pl='lg'
+                    pt={4}
+                  >
+                    {item.links.map((sub, subIdx) => (
+                      <UnstyledButton
+                        key={subIdx}
+                        className={classes.resultItem}
+                        onClick={() => (window.location.href = sub.link)}
+                      >
+                        <Group>
+                          <Text
+                            size='sm'
+                            fw={400}
+                          >
+                            {sub.label}
+                          </Text>
+                        </Group>
+                      </UnstyledButton>
+                    ))}
+                  </Stack>
+                </Collapse>
+              </Box>
+            ))
+          )}
+        </Stack>
       </Modal>
     </Box>
   );

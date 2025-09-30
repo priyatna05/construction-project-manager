@@ -132,8 +132,8 @@
   background-color: var(--mantine-color-blue-9) !important;
   border-start-start-radius: var(--mantine-radius-xl);
   border-end-start-radius: var(--mantine-radius-xl);
-  border-end-end-radius:unset;
-  border-start-end-radius:unset;
+  border-end-end-radius: unset;
+  border-start-end-radius: unset;
   color: var(--mantine-color-white) !important;
 }
 
@@ -144,7 +144,7 @@
   color: var(--mantine-color-white);
   border-start-start-radius: var(--mantine-radius-xl);
   border-end-start-radius: var(--mantine-radius-xl);
-  border-end-end-radius:unset;
-  border-start-end-radius:unset;
+  border-end-end-radius: unset;
+  border-start-end-radius: unset;
   cursor: pointer;
 }

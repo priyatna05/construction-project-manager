@@ -1,4 +1,4 @@
-developed with Laravel and React, serves as a project management tool. The primary idea behind this initiative is to provide developers or development companies with a free platform to efficiently manage clients, projects, log time, and generate invoices. You may wonder, 'Why another tool when there are already feature-rich options available for free?' Yes, that's a valid point. However, my aim is to offer a project management tool specifically tailored for Laravel developers, giving them option to integrate and customize features according to their unique workflows.
+developed with Laravel and React, serves as a project management tool. The primary idea behind this initiative is to provide developers or development companies with a free platform to efficiently manage clients, projects, log time, and generate invoices. clsYou may wonder, 'Why another tool when there are already feature-rich options available for free?' Yes, that's a valid point. However, my aim is to offer a project management tool specifically tailored for Laravel developers, giving them option to integrate and customize features according to their unique workflows.
 
 ## Features
 
@@ -18,7 +18,11 @@ developed with Laravel and React, serves as a project management tool. The prima
 - Dashboard offering project progress, overdue tasks, recently assigned tasks, and recent comments.
 - Additional reports for daily logged time per user and total logged time.
 - Dark mode support for user preference.
-
+- analytics Earned Value Management for project and generating report ecah project
+- automatic calculation realtime data earned value, plan value, actual cost
+- notification alert for earned value management
+- inventories ( management and allocation material, labor, equipment, service dan other realted for project and tasks)
+- upcomming suporting realtime notification with thrid party on whatsapp and emailing for risk, expanse, analytics earned value management
 
 ## Tech stack
 
@@ -44,13 +48,17 @@ developed with Laravel and React, serves as a project management tool. The prima
 11. Run `npm run dev`
 
 > NOTE: [Laravel Sail](https://laravel.com/docs/10.x/sail#introduction) was used for development, so if you want you can use that.
+> helper for linting if problematic code
+php artisan ide-helper:generate
+php artisan ide-helper:models --write
+php artisan ide-helper:meta
 
 #### Production
 
 9. You will be asked if you want to seed development data, for production enter `no`.
 10. Run `composer install --no-dev` to install project dependencies.
 11. Run `php artisan optimize` to optimize Laravel for production.
-12. Run `php artisan storage:link` to create symbolic link for storage in public directory.
+12. Run `php artisan storage:link` to create symbolic link for storage in public directory. and run `php artisan queue:work` for notifiable
 13. Setup [task scheduler](https://laravel.com/docs/10.x/scheduling#running-the-scheduler) by adding this to cron (to edit cron run `crontab -e`).
     `* * * * * cd /path-to-your-project && php artisan schedule:run >> /dev/null 2>&1`
 14. Emails, notifications and events are queueable. If you want to enable queues then you will have to set `QUEUE_CONNECTION=database` in `.env`. And then run [queue worker](https://laravel.com/docs/10.x/queues#running-the-queue-worker) with [supervisor](https://laravel.com/docs/10.x/queues#supervisor-configuration) using this command `php artisan queue:work --queue=default,email`.
@@ -76,6 +84,7 @@ To use Pusher, sign up, then create a project and copy paste app keys to `.env` 
 1. Setup "OAuth consent screen" on Google Console ([link](https://console.cloud.google.com/apis/credentials/consent)).
 2. Create "OAuth Client ID", select Web application when asked for type ([link](https://console.cloud.google.com/apis/credentials)).
 3. Use generated "Client ID" and "Client secret" in the `.env` (`GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`).
+4. upcomming adding ISO with device identity for auth login and capcha cloudflare
 
 ## Roadmap
 

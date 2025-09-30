@@ -2,7 +2,7 @@
 
 namespace App\Actions\User;
 
-use App\Events\UserCreated;
+use App\Events\User\UserCreated;
 use App\Models\User;
 use App\Services\UserService;
 use Illuminate\Support\Facades\DB;

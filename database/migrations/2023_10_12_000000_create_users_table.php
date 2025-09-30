@@ -15,15 +15,18 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email',125)->unique();
+            $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->string('avatar')->nullable();
             $table->string('phone')->nullable();
             $table->string('job_title')->nullable();
+            $table->decimal('default_hourly_rate', 10, 2)->nullable();
             $table->string('address')->nullable();
             $table->string('google_id')->nullable();
             $table->rememberToken();
             $table->timestamps();
-            $table->archivedAt();
+           // Assuming 'archivedAt' is a custom macro you've defined, e.g., in AppServiceProvider
+            $table->timestamp('archived_at')->nullable();
             $table->softDeletes();
         });
     }

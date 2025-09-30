@@ -18,14 +18,17 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
+            'avatar' => null,
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
+            'email_verified_at' => now(), // Added
+            'password' => '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
             'phone' => fake()->phoneNumber(),
             'address' => fake()->address(),
-            'job_title' => fake()->randomElement(['Team member', 'Manager', 'Client']),
-            'avatar' => null,
-            'password' => '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
+            'job_title' => fake()->randomElement(['Team member', 'Manager', 'Client', 'Admin']),
+            'default_hourly_rate' => fake()->optional(0.8, null)->randomFloat(2, 10, 150), // 80% chance punya rate, sisanya null
             'remember_token' => Str::random(10),
+            'archived_at' => null, // Added if you use this field consistently
         ];
     }
 }

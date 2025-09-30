@@ -1,6 +1,10 @@
-
-export default function FormProgress() {
+function FormProgress() {
   return (
-    <div>FormProgress</div>
-  )
+    <div>
+      FormProgress for attempt form labor how many worked user and how many material, equipment and
+      many thing
+    </div>
+  );
 }
+
+export default FormProgress;

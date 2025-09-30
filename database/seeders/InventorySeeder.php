@@ -4,25 +4,17 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Inventory;
-use App\Enums\InventoryType;
-use App\Enums\InventoryStatus;
-use App\Enums\InventoryUnit;
 
 class InventorySeeder extends Seeder
 {
     public function run()
     {
-        // for inventory as a type randomly
-        foreach (InventoryType::cases() as $type) {
-            foreach (InventoryStatus::cases() as $status) {
-                Inventory::factory()->count(5)->create([
-                    'type'   => $type->value,
-                    'status' => $status->value,
-                ]);
-            }
+        if (\App\Models\Project::count() === 0) {
+             $this->call(ProjectSeeder::class);
         }
 
-        // count random inventory
-        Inventory::factory()->count(20)->create();
+        Inventory::factory(75)->create();
+
+        $this->command->info('Inventories seeded. Observer should have generated codes.');
     }
 }

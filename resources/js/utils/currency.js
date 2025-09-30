@@ -1,9 +1,12 @@
-export const money = (amount, currency = 'IDR', minimumFractionDigits = 2) => {
-  const formatter = new Intl.NumberFormat('en-ID', {
+export const money = (amount, currency = 'IDR') => {
+  if (typeof amount !== 'number') return amount;
+
+  const locale = currency === 'IDR' ? 'id-ID' : 'en-US';
+
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency,
-    minimumFractionDigits,
-  });
-
-  return formatter.format(amount / 100);
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(Math.round(amount));
 };

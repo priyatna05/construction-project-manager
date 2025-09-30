@@ -11,19 +11,21 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('owner_company', function (Blueprint $table) {
+        Schema::create('owner_companies', function (Blueprint $table) { // Singular, as it's one company
             $table->id();
-            $table->foreignId('country_id')->nullable();
-            $table->foreignId('currency_id')->nullable();
+            // Assuming 'countries' and 'currencies' tables exist before this migration runs
+            $table->foreignId('country_id')->nullable()->constrained('countries')->onDelete('set null');
+            $table->foreignId('currency_id')->nullable()->constrained('currencies')->onDelete('set null');
             $table->string('name');
             $table->string('logo')->nullable();
             $table->string('address')->nullable();
             $table->string('postal_code')->nullable();
             $table->string('city')->nullable();
-            $table->string('email')->nullable();
+            $table->string('email')->nullable()->unique();
             $table->string('phone')->nullable();
             $table->string('web')->nullable();
-            $table->smallInteger('tax')->default(0);
+            $table->smallInteger('tax')->default(0); // e.g., percentage 10 for 10%
+            $table->timestamps();
         });
     }
 

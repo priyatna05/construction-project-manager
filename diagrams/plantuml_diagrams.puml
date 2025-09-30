@@ -107,7 +107,7 @@ class Project {
     +name: String
     +description: String
     +startDate: Date
-    +endDate: Date
+    +end_date: Date
     +tasks(): HasMany
     +users(): BelongsToMany
 }
@@ -142,7 +142,7 @@ class Activity {
     +userId: Integer
     +projectId: Integer
     +title: String
-    +subtitle: String
+    +description: String
     +createdAt: Date
 }
 

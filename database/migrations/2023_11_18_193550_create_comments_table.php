@@ -13,10 +13,12 @@ return new class extends Migration
     {
         Schema::create('comments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id');
-            $table->foreignId('task_id');
+            // Ensure 'users' and 'tasks' tables exist
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // Or set null
+            $table->foreignId('task_id')->constrained('tasks')->onDelete('cascade');
             $table->text('content');
             $table->timestamps();
+            $table->softDeletes(); // Good to allow soft deleting comments
         });
     }
 

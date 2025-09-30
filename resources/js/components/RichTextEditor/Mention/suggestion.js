@@ -3,84 +3,93 @@ import axios from 'axios';
 import tippy from 'tippy.js';
 import MentionList from './MentionList.jsx';
 
-const suggestion = {
-  projectId: null,
-  users: [],
+const createSuggestion = projectId => {
+  const suggestion = {
+    projectId: null,
+    users: [],
 
-  fetchItems: () => {
-    if (suggestion.projectId === route().params.project && suggestion.users.length > 0) {
-      return;
-    }
-    axios.get(route('dropdown.values'), {params: {projectId: route().params.project, mentionProjectUsers: true}})
-      .then(({data}) => {
-        suggestion.users = data.mentionProjectUsers;
-        suggestion.projectId = route().params.project;
-      })
-      .catch((e) => console.error('Failed to fetch users for mention feature', e));
-  },
-
-  items: ({ query }) => {
-    return suggestion.users
-      .filter(item => item.toLowerCase().startsWith(query.toLowerCase()))
-      .slice(0, 7);
-  },
-
-  render: () => {
-    let component;
-    let popup;
-
-    suggestion.fetchItems();
-
-    return {
-      onStart: props => {
-        component = new ReactRenderer(MentionList, {
-          props,
-          editor: props.editor,
-        });
-
-        if (!props.clientRect) {
-          return;
-        }
-
-        popup = tippy('body', {
-          getReferenceClientRect: props.clientRect,
-          appendTo: () => document.body,
-          content: component.element,
-          showOnCreate: true,
-          interactive: true,
-          trigger: 'manual',
-          placement: 'bottom-start',
-        });
-      },
-
-      onUpdate(props) {
-        component.updateProps(props);
-
-        if (!props.clientRect) {
-          return;
-        }
-
-        popup[0].setProps({
-          getReferenceClientRect: props.clientRect,
+    fetchItems: () => {
+      if (!projectId) {
+        console.warn('projectId is missing. Skipping fetchItems.');
+        return;
+      }
+      if (suggestion.projectId === projectId && suggestion.users.length > 0) {
+        return;
+      }
+      axios
+        .get(route('dropdown.values'), { params: { projectId, mentionProjectUsers: true } })
+        .then(({ data }) => {
+          suggestion.users = data.mentionProjectUsers;
+          suggestion.projectId = projectId;
         })
-      },
+        .catch(e => console.error('Failed to fetch users for mention feature', e));
+    },
 
-      onKeyDown(props) {
-        if (props.event.key === 'Escape') {
-          popup[0].hide();
+    items: ({ query }) => {
+      return suggestion.users
+        .filter(item => item.toLowerCase().startsWith(query.toLowerCase()))
+        .slice(0, 7);
+    },
 
-          return true;
-        }
+    render: () => {
+      let component;
+      let popup;
 
-        return component.ref?.onKeyDown(props);
-      },
+      suggestion.fetchItems();
 
-      onExit() {
-        if(popup[0].popperInstance) popup[0].destroy();
-        component.destroy();
-      },
-    }
-  },
-}
+      return {
+        onStart: props => {
+          component = new ReactRenderer(MentionList, {
+            props,
+            editor: props.editor,
+          });
 
-export default suggestion;
+          if (!props.clientRect) {
+            return;
+          }
+
+          popup = tippy('body', {
+            getReferenceClientRect: props.clientRect,
+            appendTo: () => document.body,
+            content: component.element,
+            showOnCreate: true,
+            interactive: true,
+            trigger: 'manual',
+            placement: 'bottom-start',
+          });
+        },
+
+        onUpdate(props) {
+          component.updateProps(props);
+
+          if (!props.clientRect) {
+            return;
+          }
+
+          popup[0].setProps({
+            getReferenceClientRect: props.clientRect,
+          });
+        },
+
+        onKeyDown(props) {
+          if (props.event.key === 'Escape') {
+            popup[0].hide();
+
+            return true;
+          }
+
+          return component.ref?.onKeyDown(props);
+        },
+
+        onExit() {
+          if (popup[0].popperInstance) popup[0].destroy();
+          component.destroy();
+        },
+      };
+    },
+  };
+
+  return suggestion;
+};
+
+export default createSuggestion;

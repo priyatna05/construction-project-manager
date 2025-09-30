@@ -2,17 +2,19 @@
 
 namespace App\Actions\Task;
 
-use App\Events\Task\AttachmentsUploaded;
-use App\Events\Task\TaskCreated;
-use App\Models\Project;
+use Throwable;
 use App\Models\Task;
+use App\Models\Project;
+use Illuminate\Support\Str;
+use App\Events\Task\TaskCreated;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use Intervention\Image\ImageManagerStatic as Image;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use Intervention\Image\Facades\Image;
-use Throwable;
+use App\Events\Task\AttachmentsUploaded;
 
 class CreateTask
 {
@@ -20,15 +22,15 @@ class CreateTask
     {
         return DB::transaction(function () use ($project, $data) {
             $task = $project->tasks()->create([
-                'group_id' => $data['group_id'],
-                'created_by_user_id' => auth()->id(),
-                'assigned_to_user_id' => $data['assigned_to_user_id'],
-                'name_task' => $data['name_task'],
-                'number' => $project->tasks()->withArchived()->count() + 1,
-                'description_task' => $data['description_task'],
-                'start_date_task' => $data['start_date_task'],
-                'end_date_task' => $data['end_date_task'],
-                'budget_task' => $data['budget_task'],
+                'group_id'              => $data['group_id'],
+                'created_by_user_id'    => Auth::id(),
+                'assigned_to_user_id'   => $data['assigned_to_user_id'],
+                'name'             => $data['name'],
+                'number'                => $project->tasks()->withArchived()->count() + 1,
+                'description'      => $data['description'],
+                'start_date'       => $data['start_date'],
+                'end_date'         => $data['end_date'],
+                'budget_task'           => $data['budget_task'],
             ]);
 
             $task->moveToStart();
@@ -51,7 +53,7 @@ class CreateTask
     {
         $rows = collect($items)
             ->map(function (UploadedFile $item) use ($task) {
-                $filename = strtolower(Str::ulid()).'.'.$item->getClientOriginalExtension();
+                $filename = strtolower(Str::uuid()).'.'.$item->getClientOriginalExtension();
                 $filepath = "tasks/{$task->id}/{$filename}";
 
                 $item->storeAs('public', $filepath);
@@ -59,7 +61,7 @@ class CreateTask
                 $thumbFilepath = $this->generateThumb($item, $task, $filename);
 
                 return [
-                    'user_id' => auth()->id(),
+                    'user_id' => Auth::id(),
                     'name' => $item->getClientOriginalName(),
                     'path' => "/storage/$filepath",
                     'thumb' => $thumbFilepath ? "/storage/$thumbFilepath" : null,
@@ -72,9 +74,9 @@ class CreateTask
 
         $task->activities()->create([
             'project_id' => $task->project_id,
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'title' => ($attachments->count() > 1 ? 'Attachments where' : 'Attachment was').' uploaded',
-            'subtitle' => "to \"{$task->name}\" by ".auth()->user()->name,
+            'description' => "to \"{$task->name}\" by ".Auth::user()->name,
         ]);
 
         if ($dispatchEvent) {
@@ -89,19 +91,21 @@ class CreateTask
         if (in_array($file->getClientOriginalExtension(), ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'])) {
             try {
                 $thumbFilepath = "tasks/{$task->id}/thumbs/{$filename}";
-
+                /** @var \Intervention\Image\ImageManagerStatic $image */
                 $image = Image::make($file->get())
                     ->fit(100, 100)
                     ->encode(null, 75);
 
-                Storage::put("public/$thumbFilepath", $image);
+                Storage::put("public/{$thumbFilepath}", $image);
 
                 return $thumbFilepath;
             } catch (Throwable $e) {
+                Log::error("Thumbnail generation failed: " . $e->getMessage());
                 return null;
             }
         }
 
         return null;
     }
+
 }

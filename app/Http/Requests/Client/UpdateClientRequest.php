@@ -27,6 +27,7 @@ class UpdateClientRequest extends FormRequest
             'name' => 'required|string',
             'phone' => 'string|nullable',
             'email' => ['required', 'email:rfc,dns', Rule::unique('users')->ignore($this->route('user')->id)],
+            'address' => ['nullable', 'string'],
             'password' => 'nullable|min:8|confirmed',
             'avatar' => [File::image(), 'nullable'],
             'companies' => 'required|array|min:1',

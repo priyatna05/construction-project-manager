@@ -23,16 +23,16 @@ class UpdateTaskGroupRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name_group' => [
+            'name' => [
                 'required',
                 'string',
-                Rule::unique('task_groups', 'name_group')
+                Rule::unique('task_groups', 'name')
                     ->where('project_id', $this->route('project')->id)
                     ->ignore($this->route('taskGroup')->id),
             ],
-            'description_group' => 'string|nullable',
-            'start_date_group' => 'date',
-            'end_date_group' => 'date',
+            'description' => 'string|nullable',
+            'start_date' => 'date',
+            'end_date' => 'date',
             'budget_group' => 'numeric|min:0',
         ];
     }

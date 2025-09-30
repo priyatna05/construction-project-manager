@@ -8,52 +8,50 @@ use Throwable;
 
 class Handler extends ExceptionHandler
 {
-    /**
-     * The list of the inputs that are never flashed to the session on validation exceptions.
-     *
-     * @var array<int, string>
-     */
     protected $dontFlash = [
         'current_password',
         'password',
         'password_confirmation',
     ];
 
-    /**
-     * Register the exception handling callbacks for the application.
-     */
     public function register(): void
     {
         $this->reportable(function (Throwable $e) {
             //
         });
     }
-
-    /**
-     * Prepare exception for rendering.
-     *
-     * @return \Throwable
-     */
     public function render($request, Throwable $e)
     {
-        /** @var \Symfony\Component\HttpFoundation\Response */
         $response = parent::render($request, $e);
+        $status = $response->getStatusCode();
 
-        if ($request->wantsJson()) {
+        // Handle JSON request (e.g. from API)
+        if ($request->expectsJson()) {
             return response()->json([
                 'message' => $e->getMessage(),
-                'trace' => $e->getTrace(),
-            ], $response->status());
+                'trace' => config('app.debug') ? $e->getTrace() : [],
+            ], $status);
         }
 
-        if (! app()->environment(['local', 'testing']) && in_array($response->status(), [500, 503, 404])) {
-            return Inertia::render('Error', ['status' => $response->status()])
+        // Show custom Inertia error page (only in production or staging)
+        if (! app()->environment(['local', 'testing']) && in_array($status, [500, 503, 404])) {
+            return Inertia::render('Error', ['status' => $status])
                 ->toResponse($request)
-                ->setStatusCode($response->status());
-        } elseif ($response->status() === 419) {
-            return back()->error('The page has expired', 'Please refresh your page and try again.');
-        } elseif ($response->status() === 403) {
-            return back()->error('Unauthorized', 'You do not have the necessary permissions to perform this action.');
+                ->setStatusCode($status);
+        }
+
+        // CSRF token mismatch or page expired
+        if ($status === 419) {
+            return redirect()->back()->with([
+                'error' => 'The page has expired. Please refresh your page and try again.',
+            ]);
+        }
+
+        // Forbidden / no permission
+        if ($status === 403) {
+            return redirect()->back()->with([
+                'error' => 'Unauthorized. You do not have permission to access this resource.',
+            ]);
         }
 
         return $response;

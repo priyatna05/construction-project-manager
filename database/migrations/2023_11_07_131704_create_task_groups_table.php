@@ -13,17 +13,21 @@ return new class extends Migration
     {
         Schema::create('task_groups', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('project_id');
-            $table->string('name_group');
-            $table->text('description_group')->nullable();
-            $table->date('start_date_group')->nullable();
-            $table->date('end_date_group')->nullable();
-            $table->unsignedInteger('budget_group')->nullable();
-            $table->unsignedInteger('weight_group')->nullable();
-            $table->unsignedInteger('progress_group')->default(0);
-            $table->unsignedInteger('order_column');
-            $table->archivedAt();
+            // Ensure 'projects' table exists
+            $table->foreignId('project_id')->constrained('projects')->onDelete('cascade');
+            $table->string('name');
+            $table->text('description')->nullable();
+            $table->date('start_date')->nullable(); // acumulate date tasks and task dependents
+            $table->date('end_date')->nullable();
+            $table->decimal('budget_group', 15, 2)->unsigned()->nullable(); // Use decimal
+            $table->decimal('weight_group', 5, 2)->unsigned()->nullable(); // e.g., weight in overall project, sum to 1 or 100
+            $table->decimal('progress_group', 5, 2)->unsigned()->default(0); // Progress as percentage
+            $table->unsignedInteger('order_column')->default(0);
+            // Assuming 'archivedAt' is a custom macro
+            // If not: $table->timestamp('archived_at')->nullable();
+            $table->timestamp('archived_at')->nullable();
             $table->softDeletes();
+            $table->timestamps();
         });
     }
 

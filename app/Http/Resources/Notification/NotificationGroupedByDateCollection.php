@@ -18,13 +18,13 @@ class NotificationGroupedByDateCollection extends ResourceCollection
             ->collection
             ->map(function ($notification) {
                 return [
-                    'id' => $notification->id,
-                    'title' => $notification->data['title'],
-                    'subtitle' => $notification->data['subtitle'],
-                    'link' => $notification->data['link'],
-                    'read_at' => $notification->read_at,
-                    'created_at' => $notification->created_at,
-                    'date' => $notification->created_at->format('F j, Y'),
+                    'id'             => $notification->id,
+                    'title'          => $notification->data['title'],
+                    'description'    => $notification->data['description'],
+                    'link'           => $notification->data['link'],
+                    'read_at'        => $notification->read_at,
+                    'created_at'     => $notification->created_at,
+                    'date'           => $notification->created_at->format('F j, Y'),
                 ];
             })
             ->groupBy('date')

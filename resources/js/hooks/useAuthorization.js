@@ -1,15 +1,18 @@
-import { usePage } from "@inertiajs/react";
+import { usePage } from '@inertiajs/react';
 
 export default function useAuthorization() {
-  const {auth} = usePage().props;
-
-  const can = (permission) => {
-    return auth.user.permissions.includes(permission);
-  };
+  const { auth } = usePage().props;
 
   const isAdmin = () => {
     return auth.user.roles.includes('admin');
   };
 
-  return {can, isAdmin};
+  const can = permission => {
+    if (isAdmin()) {
+      return true;
+    }
+    return auth.user.permissions.includes(permission);
+  };
+
+  return { can, isAdmin };
 }

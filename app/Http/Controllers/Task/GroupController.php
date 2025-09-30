@@ -25,20 +25,19 @@ class GroupController extends Controller
     {
         $taskGroup = Taskgroup::Query()
             ->with([
-                'project:id,name_project',
-                'tasks:id,name_task,task_group_id',
+                'project:id,code,name',
+                'tasks:id,name,task_group_id',
             ])
             ->when($request->user()->isNotAdmin(), function ($query) {
                 $query->whereHas('project.clientCompany.clients', fn ($query) => $query->where('users.id', auth()->id()))
                     ->orWhereHas('users', fn ($query) => $query->where('user_id', $request->user()->id));
             })
             ->when($request->has('archived'), fn ($query) => $query->onlyArchived())
-            ->orderBy('name_group')
+            ->orderBy('name')
             ->get();
 
         return inertia('Tasks/Groups/Index', [
             'items' => $taskGroup,
-            'project' => $project,
         ]);
     }
 
@@ -102,7 +101,7 @@ class GroupController extends Controller
 
         return redirect()->back()->success('Tasks group deleted', 'The tasks group was successfully deleted.');
     }
-    
+
     public function reorder(Request $request, Project $project)
     {
         $this->authorize('reorder', [TaskGroup::class, $project]);

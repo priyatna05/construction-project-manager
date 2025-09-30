@@ -11,6 +11,8 @@ use App\Models\Task;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
 class AttachmentController extends Controller
 {
@@ -21,15 +23,27 @@ class AttachmentController extends Controller
         return response()->json(['files' => $files]);
     }
 
-    public function destroy(Project $project, Task $task, Attachment $attachment): JsonResponse
+    public function destroy(Request $request, Project $project, Task $task, Attachment $attachment)
     {
+           logger([
+            'user_id' => Auth::id(),
+            'input_password' => $request->password,
+            'stored_password' => Auth::user()?->password,
+        ]);
+
+        if (!Auth::check() || !Hash::check($request->password, Auth::user()->password)) {
+            return redirect()->back()->with([
+                'title' => 'Error',
+                'message' => 'Failed to verify password'
+            ]);
+        }
+
         File::delete(public_path($attachment->path));
         File::delete(public_path($attachment->thumb));
-
         $attachment->delete();
 
         AttachmentDeleted::dispatch($task, $attachment->id);
 
-        return response()->json();
+        return redirect()->back()->success('attachment deleted', 'Attachment deleted successfully.');
     }
 }

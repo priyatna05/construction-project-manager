@@ -8,7 +8,9 @@ export default defineConfig({
             input: 'resources/js/app.jsx',
             refresh: true,
         }),
-        react(),
+        react({
+          include: /\.jsx?$/,
+        }),
     ],
     resolve: {
         alias: {

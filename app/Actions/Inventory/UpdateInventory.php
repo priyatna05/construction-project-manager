@@ -5,7 +5,7 @@ namespace App\Actions\Inventory;
 use App\Models\Inventory;
 use App\Services\InventoryService;
 use App\Enums\InventoryStatus;
-use App\Http\Inventory\InventoryResource;
+
 
 class UpdateInventory
 {
@@ -18,17 +18,15 @@ class UpdateInventory
 
     public function execute(Inventory $inventory, array $data): Inventory
     {
-        // Handle status changes
-        if (isset($data['status']) && $data['status'] !== $inventory->status) {
+        if (isset($data['status'])) {
             $this->handleStatusChange($inventory, $data['status']);
+            unset($data['status']);
         }
 
-        // Update the inventory
-        $inventory = $this->inventoryService->updateInventory($inventory, $data);
+        $inventory = $this->inventoryService->update($inventory, $data);
 
-        // Recalculate costs if unit_cost was updated
         if (isset($data['unit_cost']) && $data['unit_cost'] !== $inventory->getOriginal('unit_cost')) {
-            $this->inventoryService->updateResourceCosts($inventory);
+            $this->inventoryService->updateInventoryCosts($inventory);
         }
 
         return $inventory;
@@ -36,17 +34,22 @@ class UpdateInventory
 
     protected function handleStatusChange(Inventory $inventory, string $newStatus): void
     {
-        // If inventory is being deactivated, handle any active allocations
-        if ($newStatus === InventoryStatus::INACTIVE->value || $newStatus === InventoryStatus::DELETED->value) {
-            // You might want to notify project managers or handle active allocations
-            $activeAllocations = $inventory->inventoriesAllocations()
-                ->whereNull('end_date')
-                ->get();
+        $allowedStatuses = ['active', 'inactive', 'archived', 'deleted'];
 
-            foreach ($activeAllocations as $allocation) {
-                // Add logic to handle active allocations
-                // For example, you might want to end the allocation or notify relevant users
+        if (!in_array($newStatus, $allowedStatuses, true)) {
+            throw new \InvalidArgumentException("Invalid inventory status: {$newStatus}");
+        }
+
+        if (in_array($newStatus, ['inactive', 'deleted'])) {
+            $hasActiveAllocations = $inventory->allocations()
+                ->whereNull('end_date')
+                ->exists();
+
+            if ($hasActiveAllocations) {
+                throw new \Exception("Cannot set status '{$newStatus}' on inventory with active allocations.");
             }
         }
+
+        $inventory->setStatusLabel($newStatus);
     }
 }

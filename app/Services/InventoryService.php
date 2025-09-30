@@ -1,189 +1,85 @@
 <?php
 
-namespace App\Services\Inventory;
+namespace App\Services;
 
-use App\Enums\InventoryStatus;
-use App\Events\InventoryAllocated;
-use App\Events\InventoryCostUpdated;
+use App\Events\Inventory\InventoryCostUpdated;
+use App\Events\Inventory\InventoryAllocated;
 use App\Models\Inventory;
-use App\Models\InventoryAllocation;
-use App\Models\Project;
-use App\Models\Task;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Builder;
+use InvalidArgumentException;
 
 class InventoryService
-{   /**
-     * Created inventory
-     */
-    public function createInventory(array $data): Inventory
-    {
-        return DB::transaction(function () use ($data) {
-            return Inventory::create($data);
-        });
-    }
-    /**
-     * note
-     */
-    public function updateInventory(Inventory $inventory, array $data): Inventory
-    {
-        return DB::transaction(function () use ($inventory, $data) {
-            $inventory->update($data);
-            if (isset($data['unit_cost']) && $data['unit_cost'] !== $inventory->getOriginal('unit_cost')) {
-                $this->updateInventoryCosts($inventory);
-            }
-            event(new InventoryCostUpdated($inventory));
-            return $inventory->fresh();
-        });
-    }
-    /**
-     * note
-     */
-    public function deleteInventory(Inventory $inventory): bool
-    {
-        return DB::transaction(function () use ($inventory) {
-            // Check if inventory has active allocations
-            if ($inventory->inventoryAllocation()->whereNull('end_date')->exists()) {
-                throw new \Exception('Cannot delete inventory with active allocations');
-            }
+{
+    public function create(array $data): Inventory { return DB::transaction(function () use ($data) { return Inventory::create($data);}); }
+    public function update(Inventory $inventory, array $data): Inventory { return DB::transaction(function () use ($inventory, $data) {
+        \Log::info('InventoryService update called', ['inventory_id' => $inventory->id, 'data' => $data]);
 
-            $inventory->update(['status' => InventoryStatus::DELETED->value]);
-            return true;
-        });
-    }
-    /**
-     * note
-     */
-    public function archiveInventory(Inventory $inventory): bool
-    {
-        return DB::transaction(function() use ($inventory) {
-            //logic here!
-        });
-    }
-    /**
-     * note
-     */
-    public function restoreInventory(Inventory $inventory): bool
-    {
-        return DB::transaction(function() use ($inventory) {
-            //logic here!
-        });
-    }
-    /**
-     * note
-     */
-    public function allocateInventory(Inventory $inventory, Task $task, array $data): InventoryAllocation
-    {
-        return DB::transaction(function () use ($inventory, $task, $data) {
-            $allocation = InventoryAllocation::create([
-                'inventory_id' => $inventory->id,
-                'project_id' => $task->project_id,
-                'task_id' => $task->id,
-                'quantity' => $data['quantity'],
-                'allocated_date' => $data['allocated_date'] ?? now(),
-            ]);
+        foreach (['type' => 'setTypeLabel', 'status' => 'setStatusLabel', 'unit' => 'setUnitLabel'] as $key => $method) {
+            if (isset($data[$key])) {
+                $inventory->{$method}($data[$key]);
+                unset($data[$key]);
+            }
+        }
 
+        tap($inventory)->update($data);
+
+        \Log::info('InventoryService update result', ['inventory' => $inventory->toArray()]);
+
+        if (array_key_exists('unit_cost', $data) && $data['unit_cost'] !== $inventory->getOriginal('unit_cost')) {
             $this->updateInventoryCosts($inventory);
-            event(new InventoryAllocated($allocation));
+        }
 
-            return $allocation;
-        });
-    }
-    /**
-     * note
-     */
-    public function calculateInventoryCost(Inventory $inventory, $quantity): float
-    {
-        return $inventory->unit_cost * $quantity;
-    }
-    /**
-     * note
-     */
-    public function updateInventoryCosts(Inventory $inventory): void
-    {
-        $totalCost = $inventory->resourceAllocations()
-            ->sum(DB::raw('quantity * ' . $inventory->unit_cost));
-
-        $inventory->update(['sum_cost' => $totalCost]);
         event(new InventoryCostUpdated($inventory));
-    }
-    /**
-     * note
-     */
-    public function searchInventory(array $filters = []): Builder
-    {
-        $query = Inventory::query();
+        event(new \App\Events\Inventory\InventoryUpdated($inventory));
 
+        return $inventory->fresh();
+    });}
+    public function delete(Inventory $inventory): bool { return DB::transaction(function () use ($inventory) {
+        if ($inventory->allocations()->whereNull('end_date')->exists()) {throw new \Exception('Cannot delete inventory with active allocations');
+        }
+        $inventory->setStatusLabel('deleted');
+        return true;
+    });}
+    public function archive(Inventory $inventory): bool { return DB::transaction(function () use ($inventory) {
+        $inventory->setStatusLabel('archived');
+        return true;
+    }); }
+    public function restore(Inventory $inventory): bool { return DB::transaction(function () use ($inventory) {
+        $inventory->setStatusLabel('active');
+        return true;
+    }); }
+
+    public function allocate(Inventory $inventory, array $data): Inventory { if (empty($data['quantity_allocation']) || $data['quantity_allocation'] <= 0) {
+            throw new InvalidArgumentException('Quantity allocation must be greater than zero.');
+        }
+        if ($inventory->quantity_inventory < $data['quantity_allocation']) {
+            throw new InvalidArgumentException('Insufficient stock to allocate.');
+        }
+        return DB::transaction(function () use ($inventory, $data) {
+            $inventory->update([
+                'task_id'            => $data['task_id'],
+                'quantity_allocation'=> $data['quantity_allocation'],
+                'allocated_date'     => $data['allocated_date'] ?? now(),
+                'quantity_inventory' => $inventory->quantity_inventory - $data['quantity_allocation'],
+            ]);
+            event(new InventoryAllocated($inventory));
+            return $inventory;
+    }); }
+    public function calculate(Inventory $inventory, $quantity): float { return $inventory->unit_cost * $quantity; }
+    public function updateInventoryCosts(Inventory $inventory): void { $totalCost = $inventory->resourceAllocations()->sum(DB::raw('quantity * ' . $inventory->unit_cost));
+        $inventory->update(['sum_cost' => $totalCost]);
+        event(new InventoryCostUpdated($inventory)); }
+    public function search(array $filters = []): Builder {  $query = Inventory::query();
         if (isset($filters['search'])) {
             $search = $filters['search'];
-            $query->where(function($q) use ($search) {
-                $q->where('name_inventory', 'like', "%{$search}%")
-                  ->orWhere('code_inventory', 'like', "%{$search}%")
-                  ->orWhere('description_inventory', 'like', "%{$search}%");
+            $query->where(function($q) use ($search) { $q->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%")->orWhere('description', 'like', "%{$search}%");
             });
         }
-
-        if (isset($filters['type'])) {
-            $query->where('type', $filters['type']);
+        if (isset($filters['type'])) { $query->where('type', $filters['type']);
         }
-
         if (isset($filters['status'])) {
             $query->where('status', $filters['status']);
         }
-
-        return $query;
-    }
-    /**
-     * note
-     */
-    public function getProjectInventory(Project $project, array $filters = []): Builder
-    {
-        $query = $project->inventories();
-
-        if (isset($filters['search'])) {
-            $search = $filters['search'];
-            $query->where(function($q) use ($search) {
-                $q->where('name_inventory', 'like', "%{$search}%")
-                  ->orWhere('code_inventory', 'like', "%{$search}%")
-                  ->orWhere('description_inventory', 'like', "%{$search}%");
-            });
-        }
-
-        if (isset($filters['type'])) {
-            $query->where('type', $filters['type']);
-        }
-
-        if (isset($filters['status'])) {
-            $query->where('status', $filters['status']);
-        }
-
-        return $query;
-    }
-    /**
-     * note
-     */
-    public function getTaskInventory(Task $task): Collection
-    {
-        return Inventory::whereHas('inventoryAllocations', function ($query) use ($task) {
-            $query->where('task_id', $task->id);
-        })
-        ->with(['inventoryAllocations' => function ($query) use ($task) {
-            $query->where('task_id', $task->id);
-        }])
-        ->get();
-    }
-    /**
-     * note
-     */
-    public function getAvailableInventory(Project $project, $date): Collection
-    {
-        return Inventory::where('status', InventoryStatus::ACTIVE)
-            ->whereDoesntHave('inventoryAllocations', function ($query) use ($project, $date) {
-                $query->where('project_id', '<>', $project->id)
-                      ->where('allocated_date', $date);
-            })
-            ->get();
-    }
-
+        return $query; }
 }

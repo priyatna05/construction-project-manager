@@ -23,13 +23,17 @@ class UpdateProjectRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', Rule::unique('projects', 'name')->ignore($this->route('project')->id)],
-            'description' => 'string|nullable',
-            'client_company_id' => 'required|integer|exists:client_companies,id',
-            'start_date_project' => 'date|nullable',
-            'end_date_project' => 'date|nullable',
-            'budget_project' => 'numeric|min:0|nullable',
-            'users' => 'array',
+            'code'          => 'string|nullable',
+            'name'                  => ['required', 'string', Rule::unique('projects', 'name')->ignore($this->route('project')->id)],
+            'description'           => 'string|nullable',
+            'client_company_id'     => 'required|integer|exists:client_companies,id',
+            'start_date'    => 'date|nullable',
+            'end_date' => 'date|nullable|after_or_equal:start_date',
+            'budget_project'        => 'numeric|min:0|nullable',
+            'users'                 => 'array',
+            'users.*' => 'integer|exists:users,id',
+            'attachments' => 'nullable|array',
+            'attachments.*' => 'file|max:10240',
         ];
     }
 }

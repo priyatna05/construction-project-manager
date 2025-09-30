@@ -2,33 +2,30 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
     /**
      * Run the migrations.
      */
-    public function up()
+    public function up(): void
     {
         Schema::create('personal_access_tokens', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('tokenable_id');
-            $table->string('tokenable_type', 191)->charset('utf8mb4'); // Limit to 191 characters
-            $table->text('name');
-            $table->text('token');
+            $table->morphs('tokenable'); // Simpler way to define tokenable_id and tokenable_type
+            $table->string('name'); // Changed from text to string, as name is usually not that long
+            $table->string('token', 64)->unique(); // Tokens are usually fixed length and unique
+            $table->text('abilities')->nullable();
+            $table->timestamp('last_used_at')->nullable();
             $table->timestamp('expires_at')->nullable();
             $table->timestamps();
-
-            // Create a prefix index for the first 191 characters of 'tokenable_type'
-            $table->index(['tokenable_type', 'tokenable_id']);
         });
     }
 
     /**
      * Reverse the migrations.
      */
-    public function down()
+    public function down(): void
     {
         Schema::dropIfExists('personal_access_tokens');
     }

@@ -1,18 +1,30 @@
 .th {
-    padding: 0;
+  white-space: nowrap;
+  padding: 8px 12px;
 }
 
 .control {
-    width: 100%;
-    padding: var(--mantine-spacing-xs) var(--mantine-spacing-md);
+  width: 100%;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-md);
 
-    @mixin hover {
-        background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
-    }
+  @mixin hover {
+    background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+  }
+}
+.control {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: transparent;
+  border: none;
+  padding: 0;
 }
 
 .icon {
-    width: rem(21px);
-    height: rem(21px);
-    border-radius: rem(21px);
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }

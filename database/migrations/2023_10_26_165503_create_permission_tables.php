@@ -28,7 +28,10 @@ return new class extends Migration
             $table->bigIncrements('id'); // permission id
             $table->string('name', 191);       // Limit to 191 characters
             $table->string('guard_name', 191); // Limit to 191 characters
-            $table->timestamps();
+            $table->timestamps(); // Assuming 'archivedAt' is a custom macro you've defined
+            // If not: $table->timestamp('archived_at')->nullable();
+            $table->timestamp('archived_at')->nullable();
+            $table->softDeletes();
 
             // Change the unique index definition to avoid exceeding max key length
             $table->unique(['name', 'guard_name'], 'permissions_name_guard_name_unique');
@@ -43,6 +46,8 @@ return new class extends Migration
             $table->string('name', 191);       // Limit to 191 characters
             $table->string('guard_name', 191); // Limit to 191 characters
             $table->timestamps();
+            $table->timestamp('archived_at')->nullable();
+            $table->softDeletes();
             if ($teams || config('permission.testing')) {
                 $table->unique([$columnNames['team_foreign_key'], 'name', 'guard_name']);
             } else {

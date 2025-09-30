@@ -1,5 +1,5 @@
-import { Pagination as MantinePagination, Group } from "@mantine/core";
-import { router } from "@inertiajs/react";
+import { Pagination as MantinePagination, Group } from '@mantine/core';
+import { router } from '@inertiajs/react';
 
 export default function Pagination({ current, pages, routeName = null }) {
   if (!routeName) {
@@ -11,12 +11,14 @@ export default function Pagination({ current, pages, routeName = null }) {
       value={current}
       total={pages}
       siblings={2}
-      variant="dots"
-      onChange={(page) =>
-        router.get(route(routeName, { ...route().params, page }))
-      }
+      variant='dots'
+      onChange={page => router.get(route(routeName, { ...route().params, page }))}
     >
-      <Group gap={5} justify="end" mt="lg">
+      <Group
+        gap={5}
+        justify='center'
+        mt='lg'
+      >
         <MantinePagination.Previous />
         <MantinePagination.Items />
         <MantinePagination.Next />

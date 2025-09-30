@@ -29,7 +29,7 @@ class InventoryFilter extends Filter
             ->in('location_inventory')
 
             // search by name or code (partial match)
-            ->search(['name_inventory', 'code_inventory'])
+            ->search(['name', 'code'])
 
             // quantity range: min and max
             ->between('quantity_inventory', 'min_quantity', 'max_quantity')

@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -9,25 +9,28 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up()
+    public function up(): void // Corrected to up(): void
     {
-        Schema::create(config('favorite.favorites_table', 125), function (Blueprint $table) {
+        // Ensure config('favorite.favorites_table') and config('favorite.user_foreign_key') are set
+        $tableName = config('favorite.favorites_table', 'favorites'); // Default to 'favorites'
+        $userForeignKey = config('favorite.user_foreign_key', 'user_id'); // Default to 'user_id'
+
+        Schema::create($tableName, function (Blueprint $table) use ($userForeignKey) {
             $table->id();
-            $table->unsignedBigInteger(config('favorite.user_foreign_key'))->index()->comment('user_id');
-            $table->string('favoriteable_type', 255)->charset('utf8'); // Use utf8 encoding
-            $table->unsignedBigInteger('favoriteable_id');
+            // Ensure 'users' table exists and user_id is of the correct type
+            $table->foreignId($userForeignKey)->constrained('users')->onDelete('cascade');
+            $table->morphs('favoriteable'); // Creates favoriteable_id (unsignedBigInteger) and favoriteable_type (string)
             $table->timestamps();
 
-            // Create the index for the polymorphic relationship
-            $table->index(['favoriteable_type', 'favoriteable_id']);
+            // Unique constraint to prevent duplicate favorites by the same user for the same item
+            $table->unique([$userForeignKey, 'favoriteable_id', 'favoriteable_type'], 'user_favorite_unique');
+            // Index for favoriteable is automatically created by morphs()
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down()
+    public function down(): void // Corrected to down(): void
     {
-        Schema::dropIfExists(config('favorite.favorites_table'));
+        $tableName = config('favorite.favorites_table', 'favorites');
+        Schema::dropIfExists($tableName);
     }
 };

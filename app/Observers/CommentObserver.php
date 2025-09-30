@@ -2,7 +2,9 @@
 
 namespace App\Observers;
 
+use App\Models\User;
 use App\Models\Comment;
+use Illuminate\Support\Facades\Auth;
 
 class CommentObserver
 {
@@ -11,10 +13,17 @@ class CommentObserver
      */
     public function created(Comment $comment): void
     {
+        $user = Auth::user() ?? User::whereHas('roles', fn($q) =>
+            $q->where('name', 'admin')
+        )->first();
+
+        $userId = $user?->id ?? 1;
+        $userName = $user?->name ?? 'System';
+
         $comment->activities()->create([
             'project_id' => $comment->task->project_id,
-            'user_id' => auth()->id(),
+            'user_id' => $userId,
             'title' => 'New comment',
-            'subtitle' => auth()->user()->name." left a comment on \"{$comment->task->name_task}\" task",
+            'description' => $userName. " left a comment on \"{$comment->task->name}\" task",
         ]);
     }}

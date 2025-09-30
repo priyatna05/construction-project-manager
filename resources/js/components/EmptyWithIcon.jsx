@@ -1,16 +1,19 @@
-import { Group, Text, rem } from "@mantine/core";
+import { Group, Text, rem } from '@mantine/core';
 
 export default function EmptyWithIcon({
   title,
-  subtitle,
+  description,
   icon: Icon,
   titleFontSize = 22,
-  subtitleFontSize = 14,
+  descriptionFontSize = 14,
   iconSize = 50,
   opacity = 0.6,
 }) {
   return (
-    <Group gap={20} opacity={opacity}>
+    <Group
+      gap={20}
+      opacity={opacity}
+    >
       <Icon
         style={{
           width: rem(iconSize),
@@ -18,11 +21,18 @@ export default function EmptyWithIcon({
         }}
       />
       <div>
-        <Text fz={titleFontSize} fw={600} lh={1.2}>
+        <Text
+          fz={titleFontSize}
+          fw={600}
+          lh={1.2}
+        >
           {title}
         </Text>
-        <Text fz={subtitleFontSize} opacity={0.6}>
-          {subtitle}
+        <Text
+          fz={descriptionFontSize}
+          opacity={0.6}
+        >
+          {description}
         </Text>
       </div>
     </Group>

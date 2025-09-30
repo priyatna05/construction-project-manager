@@ -183,7 +183,7 @@ const LoggedTimeSum = () => {
           <Center mih={300}>
             <EmptyWithIcon
               title='No logged time found'
-              subtitle='Try changing selected filters'
+              description='Try changing selected filters'
               icon={IconClock}
             />
           </Center>

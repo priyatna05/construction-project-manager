@@ -3,9 +3,7 @@
 namespace App\Http\Requests\Inventory;
 
 use Illuminate\Foundation\Http\FormRequest;
-use App\Enums\InventoryType;
-use App\Enums\InventoryStatus;
-use App\Enums\InventoryUnit;
+use App\Models\Label;
 
 class StoreInventoryRequest extends FormRequest
 {
@@ -25,15 +23,15 @@ class StoreInventoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code_inventory'      => ['nullable','unique:inventories,code_inventory'],
-            'name_inventory'      => ['required','string','max:255'],
-            'description_inventory'=> ['nullable','string'],
-            'status'              => ['required', 'in:' . implode(',', array_map(fn($case) => $case->value, InventoryStatus::cases()))],
-            'type'                => ['required', 'in:' . implode(',', array_map(fn($case) => $case->value, InventoryType::cases()))],
-            'unit'                => ['nullable','in:' . implode(',', array_map(fn($case) => $case->value, InventoryUnit::cases()))],
-            'unit_cost'           => ['required','numeric','min:0'],
-            'quantity_inventory'  => ['nullable','numeric','min:0'],
-            'location_inventory'  => ['nullable','exists:projects,id'],
+            'code'               => ['nullable', 'unique:inventories,code'],
+            'name'               => ['required', 'string', 'max:255'],
+            'description'        => ['nullable', 'string'],
+            'status'             => ['required', 'in:' . Label::slugsForTypeString(Label::TYPE_INVENTORY_STATUS)],
+            'type'               => ['required', 'in:' . Label::slugsForTypeString(Label::TYPE_INVENTORY_TYPE)],
+            'unit'               => ['nullable', 'in:' . Label::slugsForTypeString(Label::TYPE_INVENTORY_UNIT)],
+            'unit_cost'          => ['required', 'numeric', 'min:0'],
+            'quantity_inventory' => ['nullable', 'numeric', 'min:0'],
+            'location_inventory' => ['nullable', 'exists:projects,id'],
         ];
     }
 }

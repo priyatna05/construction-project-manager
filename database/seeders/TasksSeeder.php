@@ -2,47 +2,53 @@
 
 namespace Database\Seeders;
 
-use App\Models\Label;
 use App\Models\Project;
+use App\Models\Task;
 use App\Models\TaskGroup;
-use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class TasksSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     *
+     * @return void
      */
     public function run(): void
     {
-        $projects = Project::with(['taskGroups'])->get();
-        $admin = User::role('admin')->first();
+        // Ambil semua Task Group yang ada. Seeder ini berasumsi
+        // ProjectSeeder dan TaskGroupSeeder sudah dijalankan.
+        $taskGroups = TaskGroup::with('project')->get();
 
-        foreach ($projects as $project) {
-            $number = 1;
+        if ($taskGroups->isEmpty()) {
+            $this->command->warn('No Task Groups found. Please run ProjectSeeder and TaskGroupSeeder first.');
+            return;
+        }
 
-            $project->taskGroups->each(function (TaskGroup $taskGroup, int $key) use ($project, $admin, &$number) {
-                for ($i = 0; $i < random_int(0, 8); $i++) {
-                    $task = $taskGroup->tasks()->create([
-                        'project_id' => $project->id,
-                        'created_by_user_id' => $admin->id,
-                        'assigned_to_user_id' => $admin->id,
-                        'name_task' => fake()->sentence,
-                        'number' => $number++,
-                        'description_task' => fake()->sentences(4, true),
-                        'start_date_task' => fake()->dateTimeBetween('-1 month', '+1 month'),
-                        'end_date_task' => fake()->dateTimeBetween('+1 month', '+2 month'),
-                        'budget_task' => fake()->randomFloat(2, 0, 1000),
-                    ]);
+        // Iterasi melalui setiap Task Group
+        foreach ($taskGroups as $group) {
+            // Untuk setiap grup, buat 5 sampai 10 task
+            $numberOfTasks = fake()->numberBetween(5, 10);
 
-                    Label::inRandomOrder()
-                        ->limit(random_int(0, 3))
-                        ->get()
-                        ->each(function (Label $label) use ($task) {
-                            $task->labels()->attach($label);
-                        });
-                }
-            });
+            for ($i = 1; $i <= $numberOfTasks; $i++) {
+                // Panggil factory untuk membuat satu task.
+                // Factory akan menangani SEMUANYA:
+                // - Memilih user yang relevan
+                // - Menentukan tanggal & progress
+                // - Menambahkan subscribers
+                // - Menambahkan attachments
+                // - Menambahkan labels
+                // - Membuat dependencies
+                // - Membuat inventory allocations
+
+                Task::factory()->create([
+                    // Seeder HANYA bertanggung jawab untuk data yang bergantung pada konteks loop:
+                    'project_id' => $group->project_id,
+                    'group_id' => $group->id,
+                    'number' => ($group->project->tasks()->max('number') ?? 0) + 1, // Nomor unik per proyek
+                    'order_column' => $i, // Urutan di dalam grup
+                ]);
+            }
         }
     }
 }

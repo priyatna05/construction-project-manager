@@ -23,16 +23,13 @@ class StoreTaskGroupRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name_group' => [
+            'name' => [
                 'required',
                 'string',
-                Rule::unique('task_groups', 'name_group')
+                Rule::unique('task_groups', 'name')
                     ->where('project_id', $this->route('project')->id),
             ],
-            'description_group' => 'string|nullable',
-            'start_date_group' => 'date',
-            'end_date_group' => 'date',
-            'budget_group' => 'numeric|min:0',
+            'description' => 'string|nullable',
         ];
     }
 }

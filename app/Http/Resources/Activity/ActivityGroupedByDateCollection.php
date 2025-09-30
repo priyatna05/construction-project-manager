@@ -18,13 +18,13 @@ class ActivityGroupedByDateCollection extends ResourceCollection
             ->collection
             ->map(function ($activity) {
                 return [
-                    'id' => $activity->id,
-                    'activity_capable' => $activity->activityCapable,
-                    'project' => $activity->project,
-                    'title' => $activity->title,
-                    'subtitle' => $activity->subtitle,
-                    'created_at' => $activity->created_at,
-                    'date' => $activity->created_at->format('F j, Y'),
+                    'id'                => $activity->id,
+                    'subject'           => $activity->activityCapable,
+                    'project'           => $activity->project,
+                    'title'             => $activity->title,
+                    'description'       => $activity->description,
+                    'created_at'        => $activity->created_at,
+                    'date'              => $activity->created_at->format('F j, Y'),
                 ];
             })
             ->groupBy('date')
