@@ -52,15 +52,20 @@ Route::post('/check-password', function (Request $request) {
 // 1. Route yang akan dituju saat pengguna yang belum terverifikasi mencoba mengakses halaman yang dilindungi.
 //    Ini akan menampilkan halaman "Tolong verifikasi email Anda".
 Route::get('/email/verify', function () {
-    return inertia('Auth/VerifyEmail'); // Pastikan Anda punya komponen React ini
+    return redirect()->route('otp.verify'); // Redirect to OTP verification
 })->middleware('auth')->name('verification.notice');
+
+// OTP Verification Routes
+Route::get('/otp/verify', [App\Http\Controllers\Auth\VerifyOtpController::class, 'show'])->middleware('auth')->name('otp.verify');
+Route::post('/otp/verify', [App\Http\Controllers\Auth\VerifyOtpController::class, 'verify'])->middleware('auth')->name('otp.verify.post');
+Route::post('/otp/resend', [App\Http\Controllers\Auth\VerifyOtpController::class, 'resend'])->middleware(['auth', 'throttle:6,1'])->name('otp.resend');
 
 // 2. Route yang akan dituju saat pengguna mengklik link dari emailnya.
 //    Laravel akan menangani validasi hash secara otomatis.
 Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
     $request->fulfill(); // Tandai email sebagai terverifikasi
     return redirect()->route('dashboard')->with('success', 'Email successfully verified!'); // Arahkan ke dashboard
-})->middleware(['auth', 'signed'])->name('verification.verify');
+})->middleware(['signed'])->name('verification.verify');
 
 // 3. Route untuk menangani permintaan "kirim ulang email verifikasi".
 Route::post('/email/verification-notification', function (Request $request) {

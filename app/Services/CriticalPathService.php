@@ -62,7 +62,7 @@ class CriticalPathService
         }
 
         // Project finish time is max earliest finish
-        $projectFinish = max($earliestFinish);
+        $projectFinish = $earliestFinish ? max($earliestFinish) : 0;
 
         // Helper function to calculate latest finish recursively
         $calculateLatestFinish = function ($taskId) use (&$tasks, &$latestStart, &$latestFinish, &$calculateLatestFinish, $projectFinish) {

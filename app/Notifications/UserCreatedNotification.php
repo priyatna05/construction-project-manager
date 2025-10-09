@@ -7,6 +7,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Cache;
 
 class UserCreatedNotification extends Notification implements ShouldQueue
 {
@@ -35,12 +36,26 @@ class UserCreatedNotification extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
+        $otp = $this->generateOtpCode($notifiable);
+
         return (new MailMessage)
-            ->subject(config('app.name').' - Your account was created!')
-            ->greeting("{$notifiable->getFirstName()}, welcome aboard!")
-            ->line('An account has been set up for you by the administrator. You can click the button below to log in with the provided password. It might be a good idea to change the password when you login.')
+            ->subject('Welcome to '.config('app.name').' - Your Account Has Been Created')
+            ->greeting("Hello {$notifiable->getFirstName()},")
+            ->line('Your account has been successfully created by the administrator.')
+            ->line("Email: {$notifiable->email}")
             ->line("Password: **{$this->password}**")
-            ->action('Login', route('auth.login.form', ['email' => $notifiable->email]))
-            ->salutation('See you soon!');
+            ->line("Kode OTP untuk aktivasi akun: **{$otp}**")
+            ->line('Silakan login menggunakan email dan password di atas,')
+            ->line('lalu masukkan kode OTP untuk mengaktifkan akun Anda.')
+            ->line('link login here!' . route('auth.login.form', ['email' => $notifiable->email]))
+            ->line('Kode OTP berlaku selama 24 jam.')
+            ->salutation('Best regards, '.config('app.name').' Team');
+    }
+
+    private function generateOtpCode($user): string
+    {
+        $otp = str_pad(\random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        Cache::put('otp_user_' . $user->id, $otp, now()->addHours(24));
+        return $otp;
     }
 }

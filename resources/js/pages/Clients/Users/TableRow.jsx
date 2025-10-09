@@ -37,6 +37,9 @@ export default function TableRow({ item, onEdit }) {
         <Text fz='sm'>{item.email || '-'}</Text>
       </Table.Td>
       <Table.Td>
+        <Text fz='sm'>{item.email_verified_at ? new Date(item.email_verified_at).toLocaleString() : '-'}</Text>
+      </Table.Td>
+      <Table.Td>
         <Text fz='sm'>{item.phone || '-'}</Text>
       </Table.Td>
       <Table.Td>

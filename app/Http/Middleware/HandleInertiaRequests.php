@@ -61,7 +61,11 @@ class HandleInertiaRequests extends Middleware
             'shared' => [
                 'roles' => fn () => Role::orderBy('name')->get(['id', 'name'])->toArray(),
             ],
-            'flash' => session()->get('flash'),
+            'flash' => function () {
+                $flash = session()->get('flash');
+                session()->forget('flash');
+                return $flash;
+            },
             'version' => config('app.version'),
         ]);
     }

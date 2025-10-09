@@ -71,10 +71,7 @@ export default function TableRowActions({
       requirePassword: true,
       confirmProps: { color: 'red' },
       onConfirm: (password) =>
-        deleteForm.submit({
-          data: { password },
-          preserveScroll: true,
-        }),
+        deleteForm.submit({ data: { password }, preserveScroll: true }),
     });
   };
 

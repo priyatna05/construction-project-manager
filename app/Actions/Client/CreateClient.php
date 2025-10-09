@@ -30,7 +30,6 @@ class CreateClient
                 $user->clientCompanies()->attach($data['companies']);
             }
 
-            $user->sendEmailVerificationNotification();
             UserCreated::dispatch($user, $data['password']);
 
             return $user;

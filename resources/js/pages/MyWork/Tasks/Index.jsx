@@ -30,6 +30,7 @@ const TasksIndex = () => {
       <Title
         order={1}
         mb={20}
+        c="white"
       >
         Tasks assigned to you
       </Title>

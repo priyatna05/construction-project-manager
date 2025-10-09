@@ -74,6 +74,7 @@ const ActivityIndex = () => {
       <Title
         order={1}
         mb={20}
+        c="white"
       >
         Projects activity
       </Title>

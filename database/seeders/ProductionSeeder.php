@@ -19,6 +19,7 @@ class ProductionSeeder extends Seeder
             'job_title' => 'Owner',
             'avatar' => null,
             'password' => bcrypt(config('auth.admin.password')),
+            'email_verified_at' => now(),
             'remember_token' => null,
         ])->assignRole(Role::firstWhere('name', 'admin'));
 

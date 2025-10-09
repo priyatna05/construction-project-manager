@@ -47,20 +47,32 @@ class ClientUserController extends Controller
         ]);
     }
 
-    public function store(StoreClientRequest $request)
-    {
-        abort_if(! request()->user()->can('create client user'), 401);
+   public function store(StoreClientRequest $request)
+{
+    abort_if(! $request->user()->can('create client user'), 401);
 
-        $client = (new CreateClient)->create($request->validated());
+    $client = (new CreateClient)->create($request->validated());
 
-        if (empty($request->companies)) {
-            return redirect()
-                ->route('clients.companies.create', ['user_id' => $client->id])
-                ->success('Client created', 'A new client was successfully created. Now you can create a company for the client.');
-        }
+    // Default pesan & redirect
+    $message = 'Client created successfully.';
+    $title   = 'Success';
+    $redirectRoute = 'clients.index';
 
-        return redirect()->route('clients.users.index')->success('Client created', 'A new client was successfully created.');
+    // Kalau belum punya company, arahkan ke halaman create company
+    if (empty($request->companies)) {
+        $message = 'A new client was successfully created. Now you can create a company for the client.';
+        $title   = 'Client Created - Next Step';
+        $redirectRoute = 'clients.companies.index';
     }
+
+    return redirect()
+    ->route($redirectRoute, ['user_id' => $client->id])
+    ->with('flash', [
+        'type' => 'success',
+        'title' => $title,
+        'message' => $message,
+    ]);
+}
 
     public function edit(User $user)
     {

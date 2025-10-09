@@ -100,6 +100,7 @@ const ClientsIndex = () => {
   const columns = prepareColumns([
     { label: 'User', column: 'name' },
     { label: 'Email', column: 'email' },
+    { label: 'Verified', column: 'verified' },
     { label: 'Phone', column: 'phone' },
     { label: 'Address', column: 'address' },
     { label: 'Companies', sortable: false },
@@ -180,7 +181,7 @@ const ClientsIndex = () => {
         onClose={handleClose}
         title={editingUser ? 'Edit Client User' : 'Create Client User'}
       >
-        <form onSubmit={e => submit(e, { onSuccess: () => handleClose() })}>
+      <form onSubmit={submit}>
           <Grid
             justify='flex-start'
             align='flex-start'
