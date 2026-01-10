@@ -3,6 +3,7 @@
 namespace App\Http\Requests\ClientCompany;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreClientCompanyRequest extends FormRequest
 {
@@ -22,13 +23,14 @@ class StoreClientCompanyRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'logo' => 'file|image|mimes:jpeg,png,jpg,gif,svg|max:2048|nullable',
             'name' => 'required|string',
             'address' => 'string|nullable',
             'postal_code' => 'string|nullable',
             'city' => 'string|nullable',
             'country_id' => 'integer|nullable',
             'currency_id' => 'integer|nullable',
-            'email' => 'email:rfc,dns|nullable',
+            'email' => ['nullable', 'email:rfc,dns', Rule::unique('client_companies')],
             'phone' => 'string|nullable',
             'web' => 'string|nullable',
             'clients' => 'array|nullable',

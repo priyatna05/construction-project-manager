@@ -29,22 +29,16 @@ class ClientCompanyController extends Controller
             'items' => ClientCompanyResource::collection(
                 ClientCompany::searchByQueryString()
                     ->sortByQueryString()
-                    ->with(['clients', 'currency'])
-                    ->when($request->has('archived'), fn ($query) => $query->onlyArchived())
+                    ->with([
+                        'clients:id,name,avatar',
+                        'currency',
+                        'country',
+                    ])
+                    ->when($request->has('archived'), fn($query) => $query->onlyArchived())
                     ->paginate(12)
             ),
             'dropdowns' => [
-                'clients' => User::clientDropdownValues(),
-                'countries' => Country::dropdownValues(),
-                'currencies' => Currency::dropdownValues(),
-            ],
-        ]);
-    }
-
-    public function create()
-    {
-        return Inertia::render('Clients/Companies/Create', [
-            'dropdowns' => [
+                'users' => User::userDropdownValues(),
                 'clients' => User::clientDropdownValues(),
                 'countries' => Country::dropdownValues(),
                 'currencies' => Currency::dropdownValues(),
@@ -57,18 +51,6 @@ class ClientCompanyController extends Controller
         (new CreateClientCompany)->create($request->validated());
 
         return redirect()->route('clients.companies.index')->success('Company created', 'A new company was successfully created.');
-    }
-
-    public function edit(ClientCompany $company)
-    {
-        return Inertia::render('Clients/Companies/Edit', [
-            'item' => new ClientCompanyResource($company),
-            'dropdowns' => [
-                'clients' => User::clientDropdownValues(),
-                'countries' => Country::dropdownValues(),
-                'currencies' => Currency::dropdownValues(),
-            ],
-        ]);
     }
 
     public function update(ClientCompany $company, UpdateClientCompanyRequest $request)
@@ -96,23 +78,26 @@ class ClientCompanyController extends Controller
         return redirect()->back()->success('Company restored', 'The restoring of the company was completed successfully.');
     }
 
-    public function forceDelete(ClientCompany $company)
+    public function forceDelete(int $companyId)
     {
         abort_if(! request()->user()->can('delete client company'), 401);
+
+        $company = ClientCompany::withArchived()->findOrFail($companyId);
 
         try {
             $company->forceDelete();
         } catch (\Illuminate\Database\QueryException $e) {
             if ($e->getCode() === '23000') {
                 return redirect()
-                    ->route('clients.companies.index')
+                    ->route('clients.companies.index', $redirectParams ?? [])
                     ->warning('Delete failed', 'Cannot delete company because it has related records.');
             }
             throw $e;
         }
+         $redirectParams = request()->boolean('archived') ? ['archived' => 1] : [];
 
         return redirect()
-            ->route('clients.companies.index')
+            ->route('clients.companies.index', $redirectParams)
             ->success('Company deleted', 'The client company has been permanently deleted.');
     }
 }

@@ -5,12 +5,17 @@ import TaskRow from './Task/TaskRow';
 
 export default function Task({ task, index, allTasks }) {
   const { tasksView } = usePreferences();
+  const isDragDisabled = !can('reorder task') || route().params.archived;
+
+  if (!task || !task.id) {
+    return null;
+  }
 
   return (
     <Draggable
-      key={task.id}
       draggableId={task.id.toString()}
       index={index}
+      isDragDisabled={isDragDisabled}
     >
       {provided => (
         <div

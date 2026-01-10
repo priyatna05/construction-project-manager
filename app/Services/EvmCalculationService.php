@@ -5,112 +5,140 @@ namespace App\Services;
 use App\Models\Project;
 use App\Models\Task;
 use Carbon\Carbon;
-use Illuminate\Support\Collection;
 
 class EvmCalculationService
 {
+
     /**
      * Calculate Planned Value (PV) for a single task as of a specific date.
      * PV represents the budgeted cost of work scheduled.
-     *
+     * BCWS = % Progress Pekerjaan yang direncanakan pada durasi waktu tertentu x BAC
      * @param Task $task The task to calculate PV for.
      * @param Carbon $asOfDate The date to calculate PV as of.
      * @return float The planned value.
      */
-    public function calculateTaskPv(Task $task, Carbon $asOfDate): float
+    public function calculatePv(Task $task, Carbon $asOfDate, float $bac, float $totalWeight): float
     {
-        $startDate = $task->start_date;
-        $endDate = $task->end_date;
-        $budget = (float) $task->budget_task;
+        if (!$task->start_date || !$task->end_date || !$task->weight_task) return 0;
 
-        // If no start or end date, or budget is zero, or asOfDate is before start, PV is zero
-        if (!$startDate || !$endDate || $budget == 0 || $asOfDate->lt($startDate)) {
-            return 0.0;
-        }
-        // If asOfDate is after or equal to end date, PV is full budget
-        if ($asOfDate->gte($endDate)) {
-            return $budget;
-        }
+        // Clean date strings to remove extra timezone info that causes parsing errors
+        $startDateStr = preg_replace('/\s*\([^)]*\)$/', '', $task->start_date);
+        $endDateStr = preg_replace('/\s*\([^)]*\)$/', '', $task->end_date);
 
-        // Calculate total duration in days and elapsed days as of asOfDate
-        $totalDurationDays = $startDate->diffInDays($endDate) + 1;
-        $elapsedDays = $startDate->diffInDays($asOfDate) + 1;
+        $start = Carbon::parse($startDateStr);
+        $end = Carbon::parse($endDateStr);
+        $totalDuration = max($start->diffInDays($end), 1);
 
-        // PV is proportional to elapsed days over total duration times budget
-        return $totalDurationDays > 0 ? ($budget / $totalDurationDays) * $elapsedDays : $budget;
+        // Gunakan selisih bertanda supaya tanggal sebelum start tidak menghasilkan progres
+        $elapsed = $start->diffInDays(min($asOfDate, $end), false);
+        $elapsed = max(min($elapsed, $totalDuration), 0);
+        $plannedProgress = $elapsed / $totalDuration;
+
+        // proporsional berdasarkan bobot task
+        $taskBAC = ($task->weight_task / $totalWeight) * $bac;
+
+        return round($taskBAC * $plannedProgress, 2);
     }
+
 
     /**
      * Calculate Earned Value (EV) for a single task.
      * EV represents the budgeted cost of work actually performed.
-     *
+     *BCWP = % Progress Pekerjaan yang telah diselesaikan pada durasi waktu tertentu x BAC
      * @param Task $task The task to calculate EV for.
      * @return float The earned value.
      */
-    public function calculateTaskEv(Task $task): float
+    public function calculateEv(Task $task, float $bac, float $totalWeight): float
     {
-        // EV is budget times progress percentage (0-100)
-        return (float) $task->budget_task * ((float) $task->progress_task / 100);
+        if (!$task->progress_task || !$task->weight_task) return 0;
+
+        $taskBAC = ($task->weight_task / $totalWeight) * $bac;
+
+        return round($taskBAC * ($task->progress_task / 100), 2);
     }
 
-    /**
+    /** Sum(budget_task_actual)
      * Calculate Actual Cost (AC) for a single task.
      * AC represents the actual cost incurred for work performed.
-     *
+     * ACWP = Seluruh Biaya Pengeluaran Proyek sampai Durasi Waktu Tertentu
      * @param Task $task The task to calculate AC for.
      * @return float The actual cost.
      */
-    public function calculateTaskAc(Task $task): float
+    public function calculateAC(Task $task): float
     {
-        // Eager load timesheets and allocated inventories for performance
-        $task->loadMissing(['timesheets', 'allocatedInventories']);
-
-        // Sum labor cost from timesheets
-        $laborCost = $task->timesheets->sum(function ($timesheet) {
-            return (float) $timesheet->cost;
-        });
-
-        // Sum material cost from allocated inventories
-        $materialCost = $task->allocatedInventories->sum(function ($inventory) {
-            return (float) $inventory->quantity_allocation * (float) $inventory->unit_cost;
-        });
-
-        // Total actual cost is labor plus material cost
-        return $laborCost + $materialCost;
+        return round($task->budget_task_actual ?? 0, 2);
     }
+
+    /**
+     * Resolve BAC (Budget at Completion) as total contract value before VAT/PPN.
+     * Priority:
+     * 1) budget_project_estimate (contract value)
+     * 2) budget_project_grandtotal_plan minus tax_cost_plan (pre-tax total)
+     * 3) budget_project_final_plan
+     * 4) sum of budget_task_plan
+     *
+     * @param Project $project
+     * @param \Illuminate\Database\Eloquent\Collection $tasks
+     * @return float
+     */
+    private function resolveBac(Project $project, \Illuminate\Database\Eloquent\Collection $tasks): float
+    {
+        $estimate = $project->budget_project_estimate;
+        if (!is_null($estimate) && $estimate > 0) {
+            return round((float) $estimate, 2);
+        }
+
+        $grandTotalPlan = $project->budget_project_grandtotal_plan;
+        if (!is_null($grandTotalPlan) && $grandTotalPlan > 0) {
+            $taxPlan = $project->tax_cost_plan ?? 0;
+            $preTaxPlan = (float) $grandTotalPlan - (float) $taxPlan;
+            if ($preTaxPlan > 0) {
+                return round($preTaxPlan, 2);
+            }
+        }
+
+        $finalPlan = $project->budget_project_final_plan;
+        if (!is_null($finalPlan) && $finalPlan > 0) {
+            return round((float) $finalPlan, 2);
+        }
+
+        return round($tasks->sum('budget_task_plan'), 2);
+    }
+
 
     /**
      * Calculate all core EVM metrics for a project.
      * Core metrics include PV, EV, AC, and BAC (budget at completion).
-     *
+     * BAC = total contract value before VAT/PPN.
      * @param Project $project The project to calculate metrics for.
      * @param Carbon $asOfDate The date to calculate metrics as of.
+     * @param \Illuminate\Database\Eloquent\Collection|null $tasks Pre-loaded tasks collection (optional, will load if not provided)
      * @return array Associative array with keys 'pv', 'ev', 'ac', 'bac'.
      */
-    public function calculateProjectCoreMetrics(Project $project, Carbon $asOfDate): array
+    public function calculateProjectCoreMetrics(Project $project, Carbon $asOfDate, ?\Illuminate\Database\Eloquent\Collection $tasks = null): array
     {
-        // Eager load timesheets and allocated inventories for all tasks
-        $project->loadMissing('tasks.timesheets', 'tasks.allocatedInventories');
-
-        $totalPv = 0;
-        $totalEv = 0;
-        $totalAc = 0;
-
-        // Sum PV, EV, AC for all tasks
-        foreach ($project->tasks as $task) {
-            $totalPv += $this->calculateTaskPv($task, $asOfDate);
-            $totalEv += $this->calculateTaskEv($task);
-            $totalAc += $this->calculateTaskAc($task);
+        if ($tasks === null) {
+            $tasks = Task::where('project_id', $project->id)->get();
         }
 
-        // Return rounded core metrics and BAC from project budget
-        return [
-            'pv' => round($totalPv, 2),
-            'ev' => round($totalEv, 2),
-            'ac' => round($totalAc, 2),
-            'bac' => round((float) $project->budget, 2),
-        ];
+        if ($tasks->isEmpty()) {
+            return ['pv' => 0, 'ev' => 0, 'ac' => 0, 'bac' => 0];
+        }
+
+        $bac = $this->resolveBac($project, $tasks);
+        $totalWeight = max($tasks->sum('weight_task'), 1); // pastikan tidak 0
+
+        $pv = $ev = $ac = 0;
+
+        foreach ($tasks as $task) {
+            $pv += $this->calculatePv($task, $asOfDate, $bac, $totalWeight);
+            $ev += $this->calculateEv($task, $bac, $totalWeight);
+            $ac += $this->calculateAC($task);
+        }
+
+        return compact('pv', 'ev', 'ac', 'bac');
     }
+
 
     /**
      * Calculate derived EVM metrics for a project.

@@ -21,6 +21,7 @@ class TaskUpdated implements ShouldBroadcast
 
     public mixed $value;
 
+
     /**
      * Create a new event instance.
      */
@@ -28,11 +29,19 @@ class TaskUpdated implements ShouldBroadcast
         Task $task,
         string $updateField,
     ) {
-        $this->task = $task->loadDefault();
+        $this->task = $task->fresh();
 
         $this->taskId = $task->id;
         $this->property = $updateField;
-        $this->value = $this->task->toArray()[$updateField];
+
+        if ($updateField === 'assigned_to_user') {
+            $this->task->loadMissing(['assignedToUser:id,name,avatar']);
+            $this->value = $this->task->assignedToUser
+                ? $this->task->assignedToUser->only(['id', 'name', 'avatar'])
+                : null;
+        } else {
+            $this->value = $this->task->toArray()[$updateField] ?? null;
+        }
 
         $this->dontBroadcastToCurrentUser();
     }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Task;
 use App\Actions\Task\CreateTask;
 use App\Events\Task\AttachmentDeleted;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Attachments\AttachmentResource;
 use App\Models\Attachment;
 use App\Models\Project;
 use App\Models\Task;
@@ -18,32 +19,55 @@ class AttachmentController extends Controller
 {
     public function store(Request $request, Project $project, Task $task): JsonResponse
     {
-        $files = (new CreateTask)->uploadAttachments($task, $request->attachments);
-
-        return response()->json(['files' => $files]);
-    }
-
-    public function destroy(Request $request, Project $project, Task $task, Attachment $attachment)
-    {
-           logger([
-            'user_id' => Auth::id(),
-            'input_password' => $request->password,
-            'stored_password' => Auth::user()?->password,
+        $request->validate([
+            'attachments' => 'required|array',
+            'attachments.*' => 'required|file|max:10240', // 10MB max
         ]);
 
-        if (!Auth::check() || !Hash::check($request->password, Auth::user()->password)) {
-            return redirect()->back()->with([
-                'title' => 'Error',
-                'message' => 'Failed to verify password'
+        $files = app(CreateTask::class)->uploadAttachments($task, $request->attachments);
+
+        return response()->json(['files' => $files->map(fn($file) => new AttachmentResource($file))]);
+    }
+
+    public function destroy(Request $request, Project $project, Task $task, $workReportOrAttachment, Attachment $attachment = null): JsonResponse
+    {
+        try {
+            // Handle both task attachments and work report attachments
+            if ($attachment) {
+                // This is for task attachments: /projects/{project}/tasks/{task}/attachments/{attachment}
+                if ($attachment->task_id !== $task->id) {
+                    return response()->json([
+                        'message' => 'Attachment does not belong to this task'
+                    ], 403);
+                }
+            } else {
+                // This is for work report attachments: /projects/{project}/tasks/{task}/work-reports/{workReport}/attachments/{attachment}
+                $attachment = $workReportOrAttachment;
+                // Check if attachment belongs to a work report of this task
+                $workReport = $task->workReports()->whereHas('attachments', function($query) use ($attachment) {
+                    $query->where('id', $attachment->id);
+                })->first();
+
+                if (!$workReport) {
+                    return response()->json([
+                        'message' => 'Attachment does not belong to this task\'s work reports'
+                    ], 403);
+                }
+            }
+
+            File::delete(public_path($attachment->path));
+            File::delete(public_path($attachment->thumb));
+            $attachment->delete();
+
+            AttachmentDeleted::dispatch($task, $attachment->id);
+
+            return response()->json([
+                'message' => 'Attachment deleted successfully.'
             ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to delete attachment.'
+            ], 500);
         }
-
-        File::delete(public_path($attachment->path));
-        File::delete(public_path($attachment->thumb));
-        $attachment->delete();
-
-        AttachmentDeleted::dispatch($task, $attachment->id);
-
-        return redirect()->back()->success('attachment deleted', 'Attachment deleted successfully.');
     }
 }

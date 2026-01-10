@@ -19,7 +19,7 @@ class ResetPasswordController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request)
     {
         $request->validate([
             'email' => 'required|email',
@@ -30,7 +30,10 @@ class ResetPasswordController extends Controller
         );
 
         if ($status == Password::RESET_LINK_SENT) {
-            return back()->with('status', 'Email with reset link was sent');
+            return Inertia::render('Auth/Login', [
+                'status' => 'Email with reset link was sent',
+                'notify' => session('notify'),
+            ]);
         }
 
         $message = match ($status) {

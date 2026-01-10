@@ -23,15 +23,21 @@ class StoreInventoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code'               => ['nullable', 'unique:inventories,code'],
-            'name'               => ['required', 'string', 'max:255'],
-            'description'        => ['nullable', 'string'],
-            'status'             => ['required', 'in:' . Label::slugsForTypeString(Label::TYPE_INVENTORY_STATUS)],
-            'type'               => ['required', 'in:' . Label::slugsForTypeString(Label::TYPE_INVENTORY_TYPE)],
-            'unit'               => ['nullable', 'in:' . Label::slugsForTypeString(Label::TYPE_INVENTORY_UNIT)],
-            'unit_cost'          => ['required', 'numeric', 'min:0'],
-            'quantity_inventory' => ['nullable', 'numeric', 'min:0'],
-            'location_inventory' => ['nullable', 'exists:projects,id'],
+            'code'                    => ['nullable', 'unique:inventories,code'],
+            'name'                    => ['required', 'string', 'max:255'],
+            'description'             => ['nullable', 'string'],
+            'status'                  => ['nullable', 'in:' . Label::slugsForTypeString(Label::TYPE_INVENTORY_STATUS)],
+            'type'                    => ['required', 'in:' . Label::slugsForTypeString(Label::TYPE_INVENTORY_TYPE)],
+            'unit'                    => ['nullable', 'in:' . Label::slugsForTypeString(Label::TYPE_TASK_INVENTORY_UNIT)],
+            'unit_cost'               => ['required', 'numeric', 'min:0'],
+            'quantity_on_hand'        => ['nullable', 'numeric', 'min:0'],
         ];
+    }
+
+    protected function prepareForValidation()
+    {
+        $this->merge([
+            'status' => $this->status ?? 'active',
+        ]);
     }
 }

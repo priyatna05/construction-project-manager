@@ -24,7 +24,6 @@ return new class extends Migration
             $table->string('email')->nullable()->unique();
             $table->string('phone')->nullable();
             $table->string('web')->nullable();
-            $table->smallInteger('tax')->default(0); // e.g., percentage 10 for 10%
             $table->timestamps();
         });
     }

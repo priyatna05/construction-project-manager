@@ -20,11 +20,12 @@ class NotificationGroupedByDateCollection extends ResourceCollection
                 return [
                     'id'             => $notification->id,
                     'title'          => $notification->data['title'],
-                    'description'    => $notification->data['description'],
-                    'link'           => $notification->data['link'],
+                    'description'    => $notification->data['body'] ?? $notification->data['description'] ?? '',
+                    'link'           => $notification->data['link'] ?? null,
                     'read_at'        => $notification->read_at,
                     'created_at'     => $notification->created_at,
                     'date'           => $notification->created_at->format('F j, Y'),
+                    'type'           => $notification->data['type'] ?? null,
                 ];
             })
             ->groupBy('date')

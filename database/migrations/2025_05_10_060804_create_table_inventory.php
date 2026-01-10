@@ -18,21 +18,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->decimal('unit_cost', 15, 2)->unsigned()->default(0);
             $table->decimal('quantity_on_hand', 15, 2)->default(0);
-            // $table->decimal('total_value', 15, 2)->nullable(); // unit_cost * quantity_on_hand - BEST TO CALCULATE THIS IN MODEL
-
             $table->foreignId('created_by_user_id')->nullable()->constrained('users')->onDelete('set null');
-
-            // Location can be a generic string or linked to a specific entity (e.g., warehouse, project site)
-            // If linked to project site:
-            $table->foreignId('project_site_location_id')->nullable()->constrained('projects')->onDelete('set null');
-            // Or a generic text field: $table->string('location_description')->nullable();
-
-            // Removed task_id, quantity_allocation, allocated_date from here.
-            // These should be in a separate 'inventory_allocations' or 'material_issue_slips' table.
-            // See suggestion below.
-
-            // Assuming 'archivedAt' is a custom macro
-            // If not: $table->timestamp('archived_at')->nullable();
             $table->timestamp('archived_at')->nullable();
             $table->softDeletes();
             $table->timestamps();
@@ -44,9 +30,8 @@ return new class extends Migration
             $table->foreignId('inventory_id')->constrained('inventories')->onDelete('cascade');
             $table->foreignId('task_id')->constrained('tasks')->onDelete('cascade');
             $table->foreignId('allocated_by_user_id')->nullable()->constrained('users')->onDelete('set null');
-            $table->decimal('quantity_allocated', 15, 4);
+            $table->decimal('quantity_allocated', 15, 2);
             $table->decimal('cost_at_allocation', 15, 2); // quantity_allocated * inventory.unit_cost at time of allocation
-            $table->date('allocation_date');
             $table->text('notes')->nullable();
             $table->timestamps();
         });

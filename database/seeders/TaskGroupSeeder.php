@@ -14,8 +14,8 @@ class TaskGroupSeeder extends Seeder
      */
     private $templates = [
         'wbs' => [
-            'Pekerjaan Persiapan', 'Pekerjaan Tanah', 'Pekerjaan Dinding dan Lantai',
-            'Pekerjaan Atap', 'Pekerjaan Plafon', 'Pekerjaan Pengecatan',
+            'Pekerjaan Persiapan', 'Pekerjaan Tanah', 'Pekerjaan Struktur', 'Pekerjaan Atap',
+            'Pekerjaan Dinding dan Lantai', 'Pekerjaan Plafon', 'Pekerjaan Pengecatan',
             'Pekerjaan Sanitari', 'Pekerjaan Listrik', 'Pekerjaan Taman',
         ],
         'scrum' => [

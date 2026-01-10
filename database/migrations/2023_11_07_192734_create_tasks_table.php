@@ -25,11 +25,13 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->date('start_date')->nullable();
             $table->date('end_date')->nullable();
-            $table->decimal('budget_task', 15, 2)->unsigned()->nullable(); // Planned Value for this task (Portion of BAC)
-            $table->decimal('weight_task', 5, 2)->unsigned()->nullable(); // e.g., weight in overall group/project
-            $table->decimal('progress_task', 5, 2)->unsigned()->default(0); // Physical Percent Complete (0.00-1.00 or 0-100)
-            $table->decimal('actual_cost', 15, 2)->unsigned()->default(0); // Actual Cost incurred
-            // Assuming 'archivedAt' is a custom macro
+            $table->decimal('budget_task_plan', 15, 2)->unsigned()->nullable();   // Rencana biaya untuk task
+            $table->decimal('budget_task_actual', 15, 2)->unsigned()->nullable(); // Realisasi biaya task
+            $table->decimal('weight_task', 8, 2)->default(0);
+            $table->decimal('volume', 12, 3)->unsigned()->nullable(); // e.g., weight in overall group/project
+            $table->decimal('unit_cost_task', 15, 2)->unsigned()->default(0); // Physical Percent Complete (0.00-1.00 or 0-100)
+            $table->decimal('progress_task', 5, 2)->default(0);// 0-100
+            // Assuming 'archivedAt' is a custom macro``
             // If not: $table->timestamp('archived_at')->nullable();
             $table->boolean('is_completed')->default(false);
             $table->timestamp('completed_at')->nullable();
@@ -45,8 +47,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('task_id')->constrained('tasks')->onDelete('cascade');
             $table->foreignId('depends_on_task_id')->constrained('tasks')->onDelete('cascade');
-            $table->foreignId('relation_type_id')->constrained('labels')->onDelete('restrict'); // reference on labels slug and type (relation_type)
-            $table->integer('lag_days')->default(0); // Lag in days (can be negative for lead)
+            $table->foreignId('relation_type_id')->constrained('labels')->onDelete('restrict');
+            $table->integer('lag_days')->default(0);
             $table->timestamps();
             $table->unique(['task_id', 'depends_on_task_id', 'relation_type_id'], 'task_dependency_unique');
         });

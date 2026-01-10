@@ -15,12 +15,17 @@ const useNotificationsStore = create(set => ({
   addNotification: notification => {
     return set(
       produce(state => {
-        const oldNotifications =
-          state.notifications.length >= 6
-            ? state.notifications.slice(0, state.notifications.length - 1)
+        // Deduplicate by id: if exists, remove old and re-prepend
+        const existingIdx = state.notifications.findIndex(n => n.id === notification.id);
+        const filtered =
+          existingIdx !== -1
+            ? state.notifications.filter(n => n.id !== notification.id)
             : state.notifications;
 
-        state.notifications = [notification, ...oldNotifications];
+        const trimmed =
+          filtered.length >= 6 ? filtered.slice(0, filtered.length - 1) : filtered;
+
+        state.notifications = [notification, ...trimmed];
       })
     );
   },
@@ -53,6 +58,33 @@ const useNotificationsStore = create(set => ({
       console.warn('Failed to set notifications as read', e);
     }
   },
+  deleteNotification: async notificationId => {
+    try {
+      await axios.delete(route('notifications.destroy', notificationId));
+
+      return set(
+        produce(state => {
+          state.notifications = state.notifications.filter(n => n.id !== notificationId);
+        })
+      );
+    } catch (e) {
+      console.warn('Failed to delete notification', e);
+    }
+  },
+  clearAllNotifications: async () => {
+    try {
+      await axios.delete(route('notifications.clear.all'));
+
+      return set(
+        produce(state => {
+          state.notifications = [];
+        })
+      );
+    } catch (e) {
+      console.warn('Failed to clear all notifications', e);
+    }
+  },
+
 }));
 
 export default useNotificationsStore;

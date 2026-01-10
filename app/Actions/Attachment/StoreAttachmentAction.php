@@ -27,6 +27,7 @@ class StoreAttachmentAction
         if (Str::startsWith($file->getMimeType(), 'image/')) {
             $thumbnailPath = $this->createThumbnail($originalPath);
         }
+        $fileType = $this->determineFileType($file);
 
         $model->attachments()->create([
             'user_id'   => Auth::id(),
@@ -36,10 +37,11 @@ class StoreAttachmentAction
             'disk'      => 'public',
             'size'      => $file->getSize(),
             'mime_type' => $file->getMimeType(),
+            'file_type' => $fileType,
         ]);
     }
 
-   private function createThumbnail(string $path): string
+    private function createThumbnail(string $path): string
     {
         $thumbnailFilename = 'thumb-' . basename($path);
         $thumbnailPath = dirname($path) . '/' . $thumbnailFilename;
@@ -47,7 +49,7 @@ class StoreAttachmentAction
         $manager = new ImageManager(new GdDriver());
 
         $image = $manager->read(Storage::disk('public')->get($path))
-            ->resize(150, null, fn ($constraint) => $constraint->aspectRatio())
+            ->resize(150, null, fn($constraint) => $constraint->aspectRatio())
             ->toJpeg();
         Storage::disk('public')->put($thumbnailPath, (string) $image);
 
@@ -56,9 +58,33 @@ class StoreAttachmentAction
 
     private function getFolderName(Model $model): string
     {
-        // Membuat nama folder berdasarkan nama model, misal: 'projects', 'tasks'
-        return Str::lower(Str::plural(class_basename($model)));
+        $modelName = class_basename($model);
+
+        if ($modelName === 'Project') {
+            return "projects/{$model->id}";
+        }
+
+        if ($modelName === 'Task') {
+            $project = $model->project;
+            if ($project) {
+                return "projects/{$project->id}/tasks/{$model->id}";
+            }
+            return "tasks/{$model->id}";
+        }
+
+        if ($modelName === 'WorkReport') {
+            $task = $model->task;
+            $project = $task?->project;
+            if ($project && $task) {
+                return "projects/{$project->id}/tasks/{$task->id}/workreports";
+            }
+            return "workreports";
+        }
+
+        // Default fallback untuk model lain
+        return Str::lower(Str::plural($modelName));
     }
+
 
     private function determineFileType(UploadedFile $file): string
     {
@@ -93,5 +119,4 @@ class StoreAttachmentAction
         }
         return 'other';
     }
-
 }

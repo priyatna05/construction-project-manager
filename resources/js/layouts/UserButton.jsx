@@ -3,105 +3,131 @@ import { getInitials } from '@/utils/user';
 import { router, usePage } from '@inertiajs/react';
 import {
   Avatar,
-  Affix,
   Group,
   Menu,
   Text,
-  rem,
   useComputedColorScheme,
-  useMantineColorScheme,
+  Tooltip,
 } from '@mantine/core';
-import { upperFirst } from '@mantine/hooks';
-import { IconLogout, IconMoon, IconSun, IconUser } from '@tabler/icons-react';
+import { IconLogout, IconUser } from '@tabler/icons-react';
+import { useState } from 'react';
 
 export default function UserButton() {
   const { user } = usePage().props.auth;
-  const { setColorScheme } = useMantineColorScheme({ keepTransition: true });
   const computedColorScheme = useComputedColorScheme();
 
+  const [menuOpened, setMenuOpened] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const goToProfile = () => {
+    setMenuOpened(false);
+    redirectTo('account.profile.edit');
+  };
+
   const logout = () => {
-    router.delete(route('logout'), {
-      onSuccess: redirectTo('auth.login.form'),
+    if (isLoggingOut) return;
+
+    setIsLoggingOut(true);
+
+    // gunakan Inertia agar redirect & state dibersihkan otomatis
+    router.post(route('logout'), {}, {
+      preserveState: false,
+      onError: error => console.error('Logout failed', error),
+      onFinish: () => {
+        setIsLoggingOut(false);
+        setMenuOpened(false);
+      },
     });
   };
 
   return (
-    <Affix
-      position={{ bottom: 10, left: 110 }}
-      zIndex={1000}
-    >
+    <>
       <Menu
-        position='right'
-        offset={10}
+        opened={menuOpened}
+        onChange={setMenuOpened}
+        closeOnItemClick={false}
+        position='top'
+        offset={20}
         withArrow
-        width={200}
         shadow='md'
-        styles={{ dropdown: { translate: '0 -12px' } }}
+        styles={{
+          dropdown: { translate: '0 -12px' },
+          cursor: 'pointer',
+        }}
       >
         <Menu.Target>
-          <Group>
-            <Avatar
-              src={user.avatar}
-              radius='xl'
-              color={computedColorScheme === 'light' ? 'white' : 'blue'}
-              alt={user.name}
-            >
-              {getInitials(user.name)}
-            </Avatar>
-          </Group>
+          <Tooltip
+            label={user.name + ' Profile'}
+            color='blue'
+            withArrow
+          >
+            <Group>
+              <Avatar
+                data-tour='user-menu'
+                src={user.avatar}
+                radius='xl'
+                color={computedColorScheme === 'light' ? 'white' : 'blue'}
+                alt={user.name}
+                style={{ cursor: 'pointer',  border: "2px solid light-dark(var(--mantine-color-white), var(--mantine-color-dark-4))" }}
+              >
+                {getInitials(user.name)}
+              </Avatar>
+            </Group>
+          </Tooltip>
         </Menu.Target>
 
         <Menu.Dropdown>
           <Menu.Label>Your Account</Menu.Label>
-          <Text
-            size='sm'
-            fw={500}
-            sx={theme => ({
-              color: theme.colorScheme === 'dark' ? theme.colors.dark[0] : theme.colors.dark[9],
-            })}
-            mb={10}
-            ml={15}
-            mt={5}
-            mr={10}
+          <div
             style={{
-              textTransform: 'capitalize',
+              marginBottom: 10,
+              marginLeft: 15,
+              marginTop: 5,
+              marginRight: 10,
             }}
           >
-            {user.name.charAt(0).toUpperCase() + user.name.slice(1)}
-          </Text>
+            <Text
+              size='sm'
+              fw={500}
+              sx={theme => ({
+                color: theme.colorScheme === 'dark' ? theme.colors.dark[0] : theme.colors.dark[9],
+              })}
+              style={{
+                textTransform: 'capitalize',
+                lineHeight: 1.3,
+              }}
+            >
+              {user.name.charAt(0).toUpperCase() + user.name.slice(1)}
+            </Text>
+
+            <Text
+              size='xs'
+              c='dimmed'
+              style={{
+                textTransform: 'capitalize',
+              }}
+            >
+              {user.roles && user.roles.length > 0 ? user.roles.join(', ') : user.job_title}
+            </Text>
+          </div>
+          <Menu.Divider />
           <Menu.Item
-            leftSection={<IconUser style={{ width: rem(14), height: rem(14) }} />}
-            onClick={() => redirectTo('account.profile.edit')}
+            leftSection={<IconUser size={14} />}
+            onClick={goToProfile}
           >
             My Profile
           </Menu.Item>
-
           <Menu.Divider />
-
-          <Menu.Item
-            leftSection={
-              computedColorScheme === 'light' ? (
-                <IconSun style={{ width: rem(14), height: rem(14) }} />
-              ) : (
-                <IconMoon style={{ width: rem(14), height: rem(14) }} />
-              )
-            }
-            onClick={() => setColorScheme(computedColorScheme === 'light' ? 'dark' : 'light')}
-          >
-            {upperFirst(computedColorScheme)} mode
-          </Menu.Item>
-
-          <Menu.Divider />
-
           <Menu.Item
             color='red'
-            leftSection={<IconLogout style={{ width: rem(14), height: rem(14) }} />}
+            leftSection={<IconLogout size={14} />}
             onClick={logout}
+            disabled={isLoggingOut}
           >
             Logout
           </Menu.Item>
         </Menu.Dropdown>
       </Menu>
-    </Affix>
+      </>
   );
 }

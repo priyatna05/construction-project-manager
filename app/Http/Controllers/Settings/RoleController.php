@@ -21,20 +21,20 @@ class RoleController extends Controller
     }
 
     public function index(Request $request): Response
-{
-    return Inertia::render('Settings/Roles/Index', [
-        'items' => RoleResource::collection(
-            Role::searchByQueryString()
-                ->sortByQueryString()
-                ->when($request->has('archived'), fn ($query) => $query->onlyArchived())
-                ->withCount('permissions')
-                ->paginate(12)
-        ),
-        'shared' => [
-            'permissions' => PermissionService::allPermissionsGrouped() ?? [],
-        ],
-    ]);
-}
+    {
+        return Inertia::render('Settings/Roles/Index', [
+            'items' => RoleResource::collection(
+                Role::searchByQueryString()
+                    ->sortByQueryString()
+                    ->when($request->has('archived'), fn($query) => $query->onlyArchived())
+                    ->withCount('permissions')
+                    ->paginate(12)
+            ),
+            'shared' => [
+                'permissions' => PermissionService::allPermissionsGrouped() ?? [],
+            ],
+        ]);
+    }
 
     public function create()
     {
@@ -90,13 +90,12 @@ class RoleController extends Controller
         return redirect()->back()->success('Role restored', 'The restoring of the role was completed successfully.');
     }
 
-    public function forceDelete(Role $role)
+    public function forceDelete(int $roleId)
     {
+        $role = Role::withTrashed()->withArchived()->findOrFail($roleId);
         $this->authorize('delete', $role);
 
-        $usersWithRole = DB::table('model_has_roles')->where('role_id', $role->id)->exists();
-
-        if ($usersWithRole) {
+        if (DB::table('model_has_roles')->where('role_id', $role->id)->exists()) {
             return redirect()->route('settings.roles.index')->warning('Action stopped', 'You cannot delete a role that is currently assigned to users.');
         }
 
@@ -104,5 +103,4 @@ class RoleController extends Controller
 
         return redirect()->route('settings.roles.index')->success('Role deleted', 'The role was permanently deleted.');
     }
-
 }

@@ -1,0 +1,5 @@
+1. integrate with oother apps
+2. invoice payment
+3. soft delete data on database for analitics data on future
+4. referse typescript with responsive and choose backend powerfull ex. GO
+5. desktop app and mobile app ios/android with elektron

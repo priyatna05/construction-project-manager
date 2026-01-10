@@ -24,11 +24,10 @@ class UpdateOwnerCompanyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string',
+            'name' => ['sometimes', 'required', 'string'],
             'logo' => [
                 File::image()
-                    ->max(12 * 1024)
-                    ->dimensions(Rule::dimensions()->ratio(15 / 4)),
+                    ->max(12 * 1024),
                 'nullable',
             ],
         ];

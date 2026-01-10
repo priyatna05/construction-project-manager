@@ -1,0 +1,317 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 80
+skinparam backgroundColor #FFFFFF
+skinparam class {
+    BackgroundColor #F8F9FA
+    BorderColor #000000
+    ArrowColor #333333
+}
+
+' ====================================
+' LAYER 1: Core User & Auth
+' ====================================
+package "Authentication & Authorization" {
+    class Users {
+        + id : bigint
+        + name : varchar
+        + email : varchar
+        + phone : varchar
+        + password : varchar
+        + job_title : varchar
+        ..methods..
+        + getFirstName() : string
+        + isAdmin() : bool
+        + hasProjectAccess(Project) : bool
+    }
+
+    class Role {
+        + id : bigint
+        + name : varchar
+        + guard_name : varchar
+    }
+
+    class Permission {
+        + id : bigint
+        + name : varchar
+        + guard_name : varchar
+    }
+}
+
+' ====================================
+' LAYER 2: Company & Project Core
+' ====================================
+package "Company & Projects" {
+    class ClientCompany {
+        + id : int
+        + name : string
+        + address : string
+        + email : string
+        + phone : string
+        ..methods..
+        + dropdownValues() : array
+        + getCodePrefix() : string
+    }
+
+    class OwnerCompany {
+        + id : int
+        + name : string
+        + logo : string
+        + address : string
+        + email : string
+        + phone : string
+    }
+
+    class Country {
+        + id : int
+        + name : string
+    }
+
+    class Currency {
+        + id : int
+        + name : string
+        + code : string
+        + symbol : string
+    }
+
+    class Project {
+        + id : bigint
+        + code : varchar
+        + name : varchar
+        + start_date : date
+        + end_date : date
+        + budget_project_estimate : decimal
+        + progress_project : decimal
+        + client_company_id : bigint
+        + owner_company_id : bigint
+        ..methods..
+        + dropdownValues() : array
+        + scopeByClient(int)
+    }
+}
+
+' ====================================
+' LAYER 3: Task Management
+' ====================================
+package "Task Management" {
+    class TaskGroup {
+        + id : bigint
+        + name : varchar
+        + project_id : bigint
+        + order_column : int
+        ..methods..
+        + scopeOrdered(string)
+    }
+
+    class Task {
+        + id : bigint
+        + number : int
+        + name : varchar
+        + start_date : date
+        + end_date : date
+        + weight_task : decimal
+        + volume : decimal
+        + budget_task_plan : decimal
+        + progress_task : decimal
+        + is_completed : tinyint
+        ..methods..
+        + scopeCompleted()
+        + scopePending()
+    }
+
+    class TaskDependency {
+        + task_id : bigint
+        + depends_on_task_id : bigint
+        + relation_type_id : bigint
+        + lag_days : int
+    }
+
+    class Comment {
+        + id : bigint
+        + user_id : bigint
+        + task_id : bigint
+        + content : text
+    }
+}
+
+' ====================================
+' LAYER 4: Inventory & Resources
+' ====================================
+package "Inventory & Resources" {
+    class Inventory {
+        + id : bigint
+        + name : varchar
+        + code : varchar
+        + unit_cost : decimal
+        + quantity_on_hand : decimal
+        ..methods..
+        + getTotalValueAttribute() : float
+        + scopeActive()
+        + dropdownValues() : array
+    }
+
+    class InventoryTaskAllocation {
+        + id : bigint
+        + inventory_id : bigint
+        + task_id : bigint
+        + quantity_allocated : decimal
+        + cost_at_allocation : decimal
+    }
+}
+
+' ====================================
+' LAYER 5: Reporting & Monitoring
+' ====================================
+package "Reporting & Monitoring" {
+    class WorkReport {
+        + id : bigint
+        + task_id : bigint
+        + user_id : bigint
+        + report_date : date
+        + progress : tinyint
+        + work_done : decimal
+        + actual_cost : decimal
+        ..methods..
+        + loadDefault()
+        + getStatusLabelAttribute() : Label
+    }
+
+    class EvmRecord {
+        + id : bigint
+        + project_id : bigint
+        + task_id : bigint
+        + report_date : date
+        + planned_value : decimal
+        + earned_value : decimal
+        + actual_cost : decimal
+        + schedule_variance : decimal
+        + cost_variance : decimal
+    }
+
+    class Activity {
+        + id : bigint
+        + user_id : bigint
+        + project_id : bigint
+        + title : varchar
+        + subject_type : varchar
+        ..methods..
+        + scopeWorkReports()
+        + scopeTasks()
+    }
+}
+
+' ====================================
+' LAYER 6: Supporting Elements
+' ====================================
+package "Supporting Elements" {
+    class Notification {
+        + id : char
+        + type : varchar
+        + notifiable_type : varchar
+        + data : text
+        + read_at : timestamp
+    }
+
+    class Attachment {
+        + id : bigint
+        + project_id : bigint
+        + task_id : bigint
+        + name : varchar
+        + path : varchar
+        + mime_type : varchar
+        + size : int
+    }
+
+    class Label {
+        + id : bigint
+        + name : varchar
+        + slug : varchar
+        + type : varchar
+        + color : varchar
+        ..methods..
+        + scopeOfType(string)
+    }
+}
+
+' ====================================
+' LAYER 7: Services
+' ====================================
+package "Business Services" {
+    class ProjectService {
+        + create(array) : Project
+        + update(Project) : Project
+        + calculateCosts(Project) : array
+    }
+
+    class TaskService {
+        + createTask(Project, array) : Task
+        + updateTask(Task, array) : Task
+        + completeTask(Task, bool) : Task
+    }
+
+    class InventoryService {
+        + create(array) : Inventory
+        + allocate(Inventory, array) : Inventory
+        + updateInventoryCosts(Inventory) : void
+    }
+
+    class EvmCalculationService {
+        + calculatePv(Task) : float
+        + calculateEv(Task) : float
+        + calculateMetrics(Project) : array
+    }
+
+    class EvmRecordService {
+        + calculateAndSave(Project) : EvmRecord
+    }
+
+    class CriticalPathService {
+        + calculateCriticalPath(int) : Collection
+    }
+}
+
+' ====================================
+' Key Relationships
+' ====================================
+
+' Auth relationships
+Users "m" -- "m" Role
+Role "m" -- "m" Permission
+
+' Project relationships
+Project "m" -- "1" ClientCompany
+Project "m" -- "1" OwnerCompany
+ClientCompany "1" -- "1" Country
+ClientCompany "1" -- "1" Currency
+
+' Task relationships
+Project "1" -- "m" TaskGroup
+TaskGroup "1" -- "m" Task
+Users "1" -- "m" Task : assigned_to
+
+' Inventory relationships
+Task "m" -- "m" Inventory
+Inventory "1" -- "m" InventoryTaskAllocation
+Task "1" -- "m" InventoryTaskAllocation
+
+' Reporting relationships
+Task "1" -- "m" WorkReport
+Users "1" -- "m" WorkReport
+Project "1" -- "m" EvmRecord
+Task "1" -- "m" EvmRecord
+
+' Supporting relationships
+Task "1" -- "m" Comment
+Users "1" -- "m" Notification
+Project "1" -- "m" Attachment
+
+' Service dependencies
+ProjectService ..> Project : manages
+TaskService ..> Task : manages
+InventoryService ..> Inventory : manages
+EvmRecordService ..> EvmCalculationService : uses
+EvmCalculationService ..> Project : calculates
+
+@enduml

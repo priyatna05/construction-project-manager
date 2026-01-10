@@ -1,0 +1,45 @@
+@startuml
+
+start
+:Team Member Login ke Sistem;
+:Team Member Melihat Daftar Tugas dari Project Manager;
+
+:Team Member Input Laporan Harian\n- Tanggal Laporan\n- Material Usage\n- Equipment Usage\n- Labor Usage\n- Work Done Volume\n- Progress %\n- Cuaca\n- Foto Bukti\n- Catatan Tambahan;
+
+:Team Member Submit Laporan;
+
+:Sistem Validasi Laporan;
+:Sistem Catat Aktivitas ke Activity Log Proyek;
+:Sistem Simpan Laporan ke Database;
+
+:Sistem Update Data Proyek\n- Actual Cost\n- Actual Progress\n- Volume Selesai\n- Automatic EVM Calculation;
+
+:Sistem Kirim Notifikasi Realtime\nke Project Manager dan Admin;
+
+
+
+:Project Manager / Admin Terima Notifikasi Realtime;
+:Project Manager / Admin Review Laporan Harian;
+
+if (Laporan Sesuai?) then (Ya)
+  :Approve Laporan;
+  --> Sistem
+
+  :Lock Data & Final Update ke EVM;
+  --> Client
+else (Tidak)
+  :Decline / Minta Revisi;
+  --> Sistem
+
+  :Sistem Kirim Notifikasi Realtime\nke Team Member (Revisi/Tolak);
+  --> Team Member
+endif
+
+
+:Client Login ke Sistem;
+:Client Akses Dashboard Monitoring;
+:Client Lihat Progress Proyek & Task\n(tanpa data sensitif);
+
+
+stop
+@enduml

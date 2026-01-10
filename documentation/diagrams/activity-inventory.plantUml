@@ -1,0 +1,34 @@
+@startuml
+
+start
+
+:Login (PM / Admin);
+:Buka Menu Inventory;
+:Tampilkan Daftar Inventory;
+
+' --- Pilihan Aksi Inventory (Single Decision Block) ---
+switch (Aksi yang dipilih?)
+  case (Tambah)
+    :Isi Form;
+    :Simpan Item;
+    :Audit Trail;
+  case (Edit)
+    :Pilih Item;
+    :Perbarui Data;
+    :Audit Trail;
+  case (Hapus)
+    :Pilih Item;
+    :Hapus Item;
+    :Audit Trail;
+  case (Archive)
+    :Archive Item;
+    :Audit Trail;
+  case (Restore)
+    :Restore Item;
+    :Audit Trail;
+endswitch
+
+:Kembali ke Menu Utama;
+stop
+
+@enduml

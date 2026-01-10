@@ -23,3 +23,17 @@ export const shortName = name => {
 export const hasRoles = (user, roles) => {
   return user.roles.find(i => roles.includes(i.name)) !== undefined;
 };
+
+
+export const getAvatarUrlByValue = (value, users = [], companies = []) => {
+  if (!value) return null;
+
+  if (String(value).startsWith('user_')) {
+    const userId = parseInt(value.replace('user_', ''), 10);
+    const user = users.find(u => u.id === userId);
+    return user?.avatar || null;
+  }
+
+  const company = companies.find(c => c.value === String(value) || c.id === Number(value));
+  return company?.avatar || null;
+};

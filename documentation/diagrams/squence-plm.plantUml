@@ -1,0 +1,55 @@
+@startuml
+!theme plain
+
+actor "Team Member" as TM
+actor "Client" as Client
+
+boundary "Aplikasi Web / UI" as AppUI
+control "Kontrol Autentikasi" as AuthControl
+control "Kontrol Laporan" as ReportControl
+control "Kontrol Dashboard" as DashboardControl
+entity "Entitas Pengguna" as UserEntity
+entity "Entitas Laporan" as ReportEntity
+database "Database Sistem" as SystemDB
+
+group Proses Input Laporan Harian oleh Team Member
+    TM -[#blue]> AppUI: 1. Login & Mengakses Form Laporan
+    AppUI -[#blue]> AuthControl: 2. Meminta Verifikasi Login
+    AuthControl -[#purple]> UserEntity: 3. Memvalidasi Kredensial Pengguna
+    UserEntity -[#purple]> SystemDB: 4. Mencari Data Pengguna
+    SystemDB -[#purple]-> UserEntity: 5. Mengembalikan Data Pengguna
+    UserEntity -[#purple]-> AuthControl: 6. Mengirim Hasil Validasi Login
+    AuthControl -[#darkgreen]-> AppUI: 7. Mengirim Token Sesi & Arahkan ke Form
+    AppUI -[#darkgreen]-> TM: 8. Menampilkan Form Input Laporan Harian
+
+    TM -[#orange]> AppUI: 9. Input Data Laporan Harian (mis. Jam Kerja, Deskripsi)
+    AppUI -[#red]> ReportControl: 10. Mengirim Data Laporan
+    ReportControl -[#brown]> ReportEntity: 11. Membuat Objek Laporan Baru
+    ReportEntity -[#brown]> SystemDB: 12. Menyimpan Laporan ke Database
+    SystemDB -[#brown]-> ReportEntity: 13. Konfirmasi Penyimpanan DB
+    ReportEntity -[#brown]-> ReportControl: 14. Mengirim Konfirmasi Simpan Berhasil
+
+    ReportControl -[#blue]-> AppUI: 15. Mengirim Notifikasi Berhasil
+    AppUI -[#blue]-> TM: 16. Menampilkan Notifikasi Berhasil
+end
+
+group Proses Akses Dashboard oleh Client
+    Client -[#blue]> AppUI: 17. Login & Mengakses Dashboard
+    AppUI -[#blue]> AuthControl: 18. Meminta Verifikasi Login
+    AuthControl -[#purple]> UserEntity: 19. Memvalidasi Kredensial Client
+    UserEntity -[#purple]> SystemDB: 20. Mencari Data Client
+    SystemDB -[#purple]-> UserEntity: 21. Mengembalikan Data Client
+    UserEntity -[#purple]-> AuthControl: 22. Mengirim Hasil Validasi Login
+    AuthControl -[#darkgreen]-> AppUI: 23. Mengirim Token Sesi & Arahkan ke Dashboard
+
+    AppUI -[#green]> DashboardControl: 24. Meminta Data Laporan & Monitoring
+    DashboardControl -[#purple]> ReportEntity: 25. Mengambil Data Laporan (Filter Client)
+    ReportEntity -[#purple]> SystemDB: 26. Mengambil Data Laporan dari DB
+    SystemDB -[#purple]-> ReportEntity: 27. Mengembalikan Data Laporan
+    ReportEntity -[#purple]-> DashboardControl: 28. Mengirim Data Laporan
+
+    DashboardControl -[#blue]-> AppUI: 29. Mengirim Data Laporan & Grafik
+    AppUI -[#blue]-> Client: 30. Menampilkan Laporan & Grafik Monitoring
+end
+
+@enduml

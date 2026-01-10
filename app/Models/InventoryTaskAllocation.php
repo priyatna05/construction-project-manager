@@ -13,7 +13,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $allocated_by_user_id
  * @property string $quantity_allocated
  * @property string $cost_at_allocation
- * @property string $allocation_date
  * @property string|null $notes
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -47,14 +46,12 @@ class InventoryTaskAllocation extends Model
         'allocated_by_user_id',
         'quantity_allocated',
         'cost_at_allocation',
-        'allocation_date',
         'notes',
     ];
     protected $table = 'inventory_task_allocations';
     protected $cast = [
         'quantity_allocated' => 'decimal:4',
         'cost_at_allocation' => 'decimal:2',
-        'allocation_date'    => 'date',
     ];
 
     /**

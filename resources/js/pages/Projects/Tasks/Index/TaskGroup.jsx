@@ -1,17 +1,17 @@
-import useTaskDrawerStore from '@/hooks/store/useTaskDrawerStore';
 import { Draggable, Droppable } from '@hello-pangea/dnd';
-import { ActionIcon, Text, Group, Tooltip, rem } from '@mantine/core';
-import { IconGripVertical, IconPlus } from '@tabler/icons-react';
+import { Text, Group, rem } from '@mantine/core';
+import { IconGripVertical } from '@tabler/icons-react';
 import Task from './Task';
 import TaskGroupActions from './TaskGroupActions';
 import classes from './css/TaskGroup.module.css';
 
 export default function TaskGroup({ group, tasks, allTasks, ...props }) {
-  const { openCreateTask } = useTaskDrawerStore();
+  const isDragDisabled = !can('reorder task group') || route().params.archived;
 
   return (
     <Draggable
       draggableId={group.id.toString()}
+      isDragDisabled={isDragDisabled}
       {...props}
     >
       {(provided, snapshot) => (
@@ -53,25 +53,6 @@ export default function TaskGroup({ group, tasks, allTasks, ...props }) {
                 className={classes.actions}
               />
             </Group>
-            {!route().params.archived && can('create task') && (
-              <Tooltip
-                label='Add task'
-                openDelay={1000}
-                withArrow
-              >
-                <ActionIcon
-                  variant='filled'
-                  size='md'
-                  radius='xl'
-                  onClick={() => openCreateTask(group.id)}
-                >
-                  <IconPlus
-                    style={{ width: rem(18), height: rem(18) }}
-                    stroke={2}
-                  />
-                </ActionIcon>
-              </Tooltip>
-            )}
           </div>
           <Droppable
             droppableId={`group-${group.id}-tasks`}
@@ -83,7 +64,7 @@ export default function TaskGroup({ group, tasks, allTasks, ...props }) {
                 {...provided.droppableProps}
                 className={snapshot.isDraggingOver ? 'isDraggingOver' : ''}
               >
-                {tasks.map((task, index) => (
+                {tasks.filter(task => task && task.id).map((task, index) => (
                   <Task
                     key={task.id}
                     task={task}

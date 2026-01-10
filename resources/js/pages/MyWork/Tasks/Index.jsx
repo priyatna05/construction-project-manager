@@ -19,23 +19,20 @@ const TasksIndex = () => {
 
   return (
     <>
-      <Breadcrumbs
-        fz={14}
-        mb={30}
-      >
-        <div>My Work</div>
-        <div>Tasks</div>
+      <Breadcrumbs fz='sm' mb='xl' separator={<Text c='dimmed'>/</Text>}>
+        <Text c='dimmed'>My Work</Text>
+        <Text c='white' fw={500}>Tasks</Text>
       </Breadcrumbs>
 
       <Title
         order={1}
         mb={20}
-        c="white"
+        c='white'
       >
         Tasks assigned to you
       </Title>
 
-      <Box maw={1000}>
+      <Box maw={2000}>
         {projects.length ? (
           <Accordion
             variant='separated'
@@ -90,7 +87,7 @@ const TasksIndex = () => {
             ))}
           </Accordion>
         ) : (
-          <Center mih={300}>
+          <Center mih={600}>
             <EmptyWithIcon
               title='All caught up!'
               description='No tasks assigned at the moment'

@@ -71,6 +71,7 @@ class ProjectCreatedNotification extends Notification implements ShouldQueue
         return [
             'title' => 'New Project Assigned',
             'body' => "You have been assigned to project: {$this->project->name}",
+            'description' => "You have been assigned to project: {$this->project->name}",
             'project_id' => $this->project->id,
         ];
     }
@@ -84,6 +85,7 @@ class ProjectCreatedNotification extends Notification implements ShouldQueue
         return new BroadcastMessage([
             'title' => 'New Project Assigned',
             'body' => "You have been assigned to project: {$this->project->name}",
+            'description' => "You have been assigned to project: {$this->project->name}",
             'project_id' => $this->project->id,
         ]);
     }

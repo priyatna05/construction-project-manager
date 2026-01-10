@@ -11,7 +11,7 @@ class TaskOverdueFilter extends Filter
 
     public function apply(Builder $query): Builder
     {
-        return $query->whereDate($this->field, '>', now())
+        return $query->whereDate($this->field, '<', now())
             ->whereNull('completed_at');
     }
 }

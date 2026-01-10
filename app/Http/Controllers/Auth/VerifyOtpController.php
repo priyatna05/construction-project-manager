@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Notifications\OtpResendNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
@@ -25,7 +26,7 @@ class VerifyOtpController extends Controller
         $cachedOtp = Cache::get('otp_user_' . $user->id);
 
         if (!$cachedOtp || $cachedOtp !== $request->otp) {
-            return back()->withErrors(['otp' => 'Kode OTP tidak valid atau telah kedaluwarsa.']);
+            return back()->withErrors(['otp' => 'Invalid or Expired OTP Code']);
         }
 
         // Mark email as verified
@@ -46,7 +47,7 @@ class VerifyOtpController extends Controller
             return redirect()->route('dashboard');
         }
 
-        $user->sendEmailVerificationNotification();
+        $user->notify(new OtpResendNotification());
 
         return back()->with('status', 'Kode OTP telah dikirim ulang ke email Anda.');
     }

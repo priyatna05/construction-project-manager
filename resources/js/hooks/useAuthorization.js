@@ -7,6 +7,14 @@ export default function useAuthorization() {
     return auth.user.roles.includes('admin');
   };
 
+  const isManager = () => {
+    return auth.user.roles.includes('manager');
+  };
+
+  const isTeamMember = () => {
+    return auth.user.roles.includes('team member');
+  }
+
   const can = permission => {
     if (isAdmin()) {
       return true;
@@ -14,5 +22,5 @@ export default function useAuthorization() {
     return auth.user.permissions.includes(permission);
   };
 
-  return { can, isAdmin };
+  return { can, isAdmin, isManager, isTeamMember };
 }

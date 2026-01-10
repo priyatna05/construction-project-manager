@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Builder;
  * @property string|null             $description
  * @property float                   $unit_cost
  * @property float|null              $quantity_on_hand
- * @property \App\Models\Project     $projectSiteLocation
+
  * @property float                   $total_value
  * @property \Illuminate\Support\Collection|User[] $users
  * @property \Illuminate\Support\Collection|Label[] $labels
@@ -33,8 +33,6 @@ use Illuminate\Database\Eloquent\Builder;
  * @property string $type
  * @property string|null $unit
  * @property int|null $created_by_user_id
- * @property int|null $project_site_location_id
- * @property \Illuminate\Support\Carbon|null $archived_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -63,7 +61,7 @@ use Illuminate\Database\Eloquent\Builder;
  * @method static Builder<static>|Inventory whereDescription($value)
  * @method static Builder<static>|Inventory whereId($value)
  * @method static Builder<static>|Inventory whereName($value)
- * @method static Builder<static>|Inventory whereProjectSiteLocationId($value)
+
  * @method static Builder<static>|Inventory whereQuantityOnHand($value)
  * @method static Builder<static>|Inventory whereStatus($value)
  * @method static Builder<static>|Inventory whereType($value)
@@ -86,11 +84,14 @@ class Inventory extends Model
         'unit_cost',
         'quantity_on_hand',
         'created_by_user_id',
-        'project_site_location_id',
+    ];
+
+    protected $attributes = [
+        'code' => '',
     ];
 
     // Auto-cast attributes
-   protected $casts = [
+    protected $casts = [
         'unit_cost' => 'decimal:2',
         'quantity_on_hand' => 'decimal:2',
         'archived_at' => 'datetime',
@@ -101,17 +102,17 @@ class Inventory extends Model
      * Append computed attributes, Default eager loading, search, observable
      */
     protected $searchable = ['code', 'name'];
-    protected $sortable = ['name' => 'asc'];
+    protected $sortable = [
+        // Show newest inventories first by default
+        'created_at' => 'desc',
+        // Keep name sortable (and as a tiebreaker)
+        'name' => 'asc',
+    ];
     protected $observables = ['archived', 'unArchived', 'deleted'];
-    protected $with = ['projectSiteLocation', 'allocations'];
+    protected $with = ['allocations'];
 
 
-   // === Relationships ===
-
-    public function projectSiteLocation(): BelongsTo
-    {
-        return $this->belongsTo(Project::class, 'project_site_location_id');
-    }
+    // === Relationships ===
 
     public function tasks(): BelongsToMany
     {
@@ -119,7 +120,6 @@ class Inventory extends Model
             ->withPivot([
                 'quantity_allocated',
                 'cost_at_allocation',
-                'allocation_date',
                 'notes',
                 'allocated_by_user_id'
             ])
@@ -145,14 +145,27 @@ class Inventory extends Model
 
     public function scopeActive(Builder $query): Builder
     {
-        return $query->whereHas('labels', fn ($q) =>
-            $q->where('slug', 'active')->where('type', 'inventory_status_label')
+        return $query->whereHas(
+            'labels',
+            fn($q) =>
+            $q->where('slug', 'active')->where('labels.type', 'inventory_status_label')
+        );
+    }
+
+    public function scopeOnlyArchived(Builder $query): Builder
+    {
+        return $query->whereHas(
+            'labels',
+            fn($q) =>
+            $q->where('slug', 'archived')->where('labels.type', 'inventory_status_label')
         );
     }
 
     public function scopeOfType(Builder $query, string $typeSlug): Builder
     {
-        return $query->whereHas('labels', fn ($q) =>
+        return $query->whereHas(
+            'labels',
+            fn($q) =>
             $q->where('slug', $typeSlug)->where('type', 'inventory_type_label')
         );
     }
@@ -173,7 +186,43 @@ class Inventory extends Model
 
     public function getStatusLabelAttribute(): ?Label
     {
-        return $this->labels->where('type', Label::TYPE_INVENTORY_STATUS)->first();
+        static $statusCache = [];
+
+        $getLabel = function (string $slug) use (&$statusCache) {
+            if (!isset($statusCache[$slug])) {
+                $statusCache[$slug] = Label::where('slug', $slug)
+                    ->where('type', 'inventory_status_label')
+                    ->first();
+            }
+            return $statusCache[$slug];
+        };
+
+        // Jika inventory diarsipkan
+        if ($this->archived_at) {
+            return $getLabel('archived');
+        }
+
+        $quantity = $this->quantity_on_hand ?? 0;
+        $allocated = $this->allocations()->sum('quantity_allocated') ?? 0;
+        $available = $quantity - $allocated;
+
+        // Stok habis (baik karena digunakan penuh atau belum diisi ulang)
+        if ($quantity == 0) {
+            return $getLabel('out_stock');
+        }
+
+        // Ada stok, tapi sebagian sudah dialokasikan
+        if ($available > 0 && $allocated > 0) {
+            return $getLabel('available');
+        }
+
+        // Ada stok penuh dan belum dialokasikan ke proyek/task
+        if ($available == $quantity && $quantity > 0) {
+            return $getLabel('active');
+        }
+
+        // Default fallback
+        return $getLabel('inactive');
     }
 
     public function getTypeLabelAttribute(): ?Label
@@ -183,7 +232,7 @@ class Inventory extends Model
 
     public function getUnitLabelAttribute(): ?Label
     {
-        return $this->labels->where('type', Label::TYPE_INVENTORY_UNIT)->first();
+        return $this->labels->where('type', Label::TYPE_TASK_INVENTORY_UNIT)->first();
     }
 
     // === Mutators ===
@@ -193,43 +242,56 @@ class Inventory extends Model
         $this->attributes['code'] = strtoupper($value);
     }
 
-    public function setTypeLabel(string $slug): void
+    public function setTypeLabel(string $id): void
     {
         try {
-            $label = Label::where('slug', $slug)->where('type', 'inventory_type_label')->first();
+            $label = Label::where('type', 'inventory_type_label')
+                ->where(function ($q) use ($id) {
+                    $q->where('id', $id)->orWhere('slug', $id);
+                })->first();
             if (!$label) {
-                throw ValidationException::withMessages(['type' => "Label type with slug '{$slug}' unknown."]);
+                throw ValidationException::withMessages(['type' => "Label type with id or slug '{$id}' unknown."]);
             }
-            $this->labels()->wherePivot('labelable_type', self::class)->where('type', 'inventory_type_label')->detach();
+            $this->labels()->wherePivot('type', 'inventory_type_label')->detach();
             $this->labels()->attach($label->id, ['type' => 'inventory_type_label']);
         } catch (\Exception $e) {
             throw $e;
         }
     }
 
-    public function setStatusLabel(string $slug): void
+    public function setStatusLabel(string $idOrSlug): void
     {
         try {
-            $label = Label::where('slug', $slug)->where('type', 'inventory_status_label')->first();
+            $label = Label::where('type', 'inventory_status_label')
+                ->where(function ($query) use ($idOrSlug) {
+                    $query->where('id', $idOrSlug)
+                        ->orWhere('slug', $idOrSlug);
+                })
+                ->first();
+
             if (!$label) {
-                throw ValidationException::withMessages(['status' => "Label status with slug '{$slug}' unknown."]);
+                throw ValidationException::withMessages(['status' => "Label status with id or slug '{$idOrSlug}' unknown."]);
             }
-            $this->labels()->wherePivot('labelable_type', self::class)->where('type', 'inventory_status_label')->detach();
+
+            $this->labels()->wherePivot('type', 'inventory_status_label')->detach();
             $this->labels()->attach($label->id, ['type' => 'inventory_status_label']);
         } catch (\Exception $e) {
             throw $e;
         }
     }
 
-    public function setUnitLabel(string $slug): void
+    public function setUnitLabel(string $id): void
     {
         try {
-            $label = Label::where('slug', $slug)->where('type', 'inventory_unit_label')->first();
+            $label = Label::where('type', 'task_inventory_unit_label')
+                ->where(function ($q) use ($id) {
+                    $q->where('id', $id)->orWhere('slug', $id);
+                })->first();
             if (!$label) {
-                throw ValidationException::withMessages(['unit' => "Label unit with slug '{$slug}' unknown."]);
+                throw ValidationException::withMessages(['unit' => "Label unit with id or slug '{$id}' unknown."]);
             }
-            $this->labels()->wherePivot('labelable_type', self::class)->where('type', 'inventory_unit_label')->detach();
-            $this->labels()->attach($label->id, ['type' => 'inventory_unit_label']);
+            $this->labels()->wherePivot('type', 'task_inventory_unit_label')->detach();
+            $this->labels()->attach($label->id, ['type' => 'task_inventory_unit_label']);
         } catch (\Exception $e) {
             throw $e;
         }
@@ -241,7 +303,7 @@ class Inventory extends Model
     {
         return self::orderBy('name')
             ->get(['id', 'name'])
-            ->map(fn ($item) => [
+            ->map(fn($item) => [
                 'value' => (string) $item->id,
                 'label' => $item->name,
             ])
@@ -253,7 +315,7 @@ class Inventory extends Model
         $query = $query ?: self::query();
 
         return $query->with([
-            'projectSiteLocation',
+            // 'projectSiteLocation',
         ]);
     }
 }

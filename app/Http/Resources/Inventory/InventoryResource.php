@@ -22,7 +22,7 @@ class InventoryResource extends JsonResource
             'unit'   => new LabelResource($this->whenLoaded('labels', fn() => $this->unitLabel)),
             'unit_cost'         => $this->unit_cost,
             'quantity_on_hand'          => $this->quantity_on_hand,
-            'location_site_on_project' => new ProjectResource($this->whenLoaded('projectSiteLocation')),
+
             'allocations'       => InventoryAllocationResource::collection($this->whenLoaded('allocations')),
             'createdBy' => new UserResource($this->whenLoaded('createdByUser')),
             'created_at'        => $this->created_at->toDateTimeString(),

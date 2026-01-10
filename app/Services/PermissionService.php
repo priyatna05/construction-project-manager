@@ -71,7 +71,7 @@ class PermissionService
                 'archive task group',
                 'restore task group',
                 'reorder task group',
-                'delete task group'
+                'delete task group',
                 ],
             'Tasks' => [
                 'view tasks',
@@ -80,11 +80,17 @@ class PermissionService
                 'archive task',
                 'restore task',
                 'reorder task',
+                'delete task',
                 'complete task',
-                'add time log',
-                'delete time log',
-                'view time logs',
                 'view comments',
+                ],
+            'WorkReports' => [
+                'view work reports',
+                'create work reports',
+                'edit work reports',
+                'archive work reports',
+                'restore work reports',
+                'delete work reports',
                 ],
             'inventory' => [
                 'archive inventory',
@@ -96,27 +102,33 @@ class PermissionService
                 'allocate inventory',
                 'view inventory costs',
                 'manage inventory costs',
-                'export inventory'
-                ],
-            'Invoices' => [
-                'view invoices',
-                'create invoice',
-                'edit invoice',
-                'archive invoice',
-                'restore invoice',
-                'change invoice status',
-                'download invoice',
-                'print invoice'
-                ],
-            'Reports' => [
-                'view logged time sum report',
-                'view daily logged time report'
+                'export inventory',
+                'create inventory allocation',
+                'edit inventory allocation',
+                'delete inventory allocation'
                 ],
             'Activities' => ['view activities'],
+            'Overall Stats' => ['view overall stats'],
+            'Reports' => [
+                'view reports',
+                'export reports',
+                ],
 
         ],
         'manager' => [
             'User' => ['view users'],
+            'Client User' => [
+                'view client users',
+                'create client user',
+                'archive client user',
+                'restore client user',
+                ],
+            'Client Company' => [
+                'view client companies',
+                'create client company',
+                'archive client company',
+                'restore client company',
+                ],
             'Project' => [
                 'view projects',
                 'view project',
@@ -131,7 +143,8 @@ class PermissionService
                 'edit task group',
                 'archive task group',
                 'restore task group',
-                'reorder task group'
+                'reorder task group',
+                'delete task group',
                 ],
             'Tasks' => [
                 'view tasks',
@@ -140,11 +153,17 @@ class PermissionService
                 'archive task',
                 'restore task',
                 'reorder task',
+                'delete task',
                 'complete task',
-                'add time log',
-                'delete time log',
-                'view time logs',
                 'view comments',
+                ],
+            'WorkReports' => [
+                'view work reports',
+                'create work reports',
+                'edit work reports',
+                'archive work reports',
+                'restore work reports',
+                'delete work reports',
                 ],
             'inventory' => [
                 'archive inventory',
@@ -153,12 +172,17 @@ class PermissionService
                 'edit inventory',
                 'allocate inventory',
                 'view inventory costs',
-                'manage inventory costs'
+                'manage inventory costs',
+                'create inventory allocation',
+                'edit inventory allocation',
+                'delete inventory allocation'
                 ],
-            'Reports' => [
-                'view logged time sum report',
-                'view daily logged time report'
-                ],
+         'Activities' => ['view activities'],
+        'Overall Stats' => ['view overall stats'],
+        'Reports' => [
+            'view reports',
+            'export reports',
+            ],
         ],
         'team member' => [
             'Project' => [
@@ -169,17 +193,15 @@ class PermissionService
                 'view tasks',
                 'create task',
                 'edit task',
-                'restore task',
-                'reorder task',
-                'complete task',
-                'add time log',
-                'delete time log',
-                'view time logs',
                 'view comments',
                 ],
+            'WorkReports' => [
+                'view work reports',
+                'create work reports',
+                'edit work reports',
+                ],
             'inventory' => [
-                'view inventory',
-                'view inventory costs'
+                'view inventory allocation',
                 ],
         ],
         'client' => [
@@ -190,12 +212,11 @@ class PermissionService
             'Tasks' => [
                 'view tasks',
                 'create task',
-                'view time logs',
                 'view comments',
             ],
-            'inventory' => [
-                'view inventory'
-            ],
+            'WorkReports' => [
+                'view work reports',
+                ],
         ],
     ];
 
@@ -214,14 +235,20 @@ class PermissionService
 
         $admins = User::role('admin')
             ->with('roles:id,name')
-            ->get(['id', 'name', 'avatar'])
+            ->get(['id', 'name', 'avatar', 'email'])
             ->map(fn ($user) => [...$user->toArray(), 'reason' => 'admin']);
 
-        $owners = $project
-            ->clientCompany
-            ->clients
-            ->load('roles:id,name')
-            ->map(fn ($user) => [...$user->toArray(), 'reason' => 'company owner']);
+        $owners = collect();
+        if ($project->clientCompany) {
+            $owners = $project
+                ->clientCompany
+                ->clients
+                ->load('roles:id,name')
+                ->map(fn ($user) => [...$user->toArray(), 'reason' => 'company owner']);
+        } elseif ($project->clientUsers) {
+            $owners = collect([$project->clientUsers->load('roles:id,name')])
+                ->map(fn ($user) => [...$user->toArray(), 'reason' => 'individual client']);
+        }
 
         $givenAccess = $project
             ->users
@@ -251,13 +278,19 @@ class PermissionService
         $projects = collect($user->projects->toArray());
         $user->load('clientCompanies.projects');
 
-        return self::$projectsThatUserCanAccess = $projects
+        $clientProjects = $projects
             ->merge(
                 $user
                     ->clientCompanies
                     ->map(fn (ClientCompany $company) => $company->projects->toArray())
                     ->collapse()
-            )
+            );
+
+        // Include projects where the user is the direct client (client_user_id)
+        $directClientProjects = Project::where('client_user_id', $user->id)->get()->toArray();
+
+        return self::$projectsThatUserCanAccess = $clientProjects
+            ->merge($directClientProjects)
             ->unique('id')
             ->sortBy('name')
             ->values();

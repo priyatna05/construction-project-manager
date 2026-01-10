@@ -46,4 +46,11 @@ class ClientCompanyPolicy
     {
         return $user->hasPermissionTo('restore client company');
     }
+    /**
+     * Determine whether the user can permanently delete the model.
+     */
+    public function forceDelete(User $user, ClientCompany $model): bool
+    {
+        return $user->hasPermissionTo('delete client company');
+    }
 }

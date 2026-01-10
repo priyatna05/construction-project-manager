@@ -13,14 +13,16 @@ return new class extends Migration
     {
         Schema::create('attachments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('project_id')->nullable()->constrained('projects') ->onDelete('cascade');
+            $table->foreignId('project_id')->nullable()->constrained('projects')->onDelete('cascade');
             $table->foreignId('task_id')->nullable()->constrained('tasks')->onDelete('cascade');
+            $table->foreignId('work_report_id')->nullable()->constrained('work_reports')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string('name');
             $table->string('path');
             $table->string('thumb')->nullable();
             $table->string('disk')->default('public');
             $table->string('mime_type')->nullable();
+            $table->string('file_type')->nullable();
             $table->unsignedBigInteger('size');
             $table->boolean('is_main')->default(false);
             $table->timestamps();

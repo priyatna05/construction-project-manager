@@ -1,28 +1,27 @@
 .inner {
-  padding: 0 rem(20);
+  padding: 0.5%;
   display: flex;
-  column-gap: rem(30);
+  column-gap: 0.5%;
 }
 
 .content {
-  padding: rem(5);
-  width: 70%;
+  padding: 0.5%;
+  width: 50%;
   flex-grow: 1;
 
-  @media (max-width: $mantine-breakpoint-md) {
+  @media (max-width: var(--mantine-breakpoint-md)) {
     width: 100%;
   }
 }
 
 .sidebar {
-  padding: rem(5);
+  padding: 0.5%;
   width: 30%;
   flex-grow: 1;
 
-  @media (max-width: $mantine-breakpoint-md) {
+  @media (max-width: var(--mantine-breakpoint-md)) {
     width: 100%;
   }
-}
 
 .checkbox input {
   cursor: pointer;
@@ -31,4 +30,5 @@
 .disabledCheckbox input {
   cursor: default;
   pointer-events: none;
+}
 }

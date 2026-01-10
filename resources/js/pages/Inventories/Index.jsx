@@ -1,4 +1,3 @@
-import ActionButton from '@/components/ActionButton';
 import ArchivedFilterButton from '@/components/ArchivedFilterButton';
 import Pagination from '@/components/Pagination';
 import TableHead from '@/components/TableHead';
@@ -7,9 +6,25 @@ import Layout from '@/layouts/MainLayout';
 import { reloadWithQuery } from '@/utils/route';
 import { actionColumnVisibility, prepareColumns } from '@/utils/table';
 import { usePage } from '@inertiajs/react';
-import { useState, useEffect } from 'react';
-import { Grid, Group, Select, TextInput, Title, Button, Table, NumberInput } from '@mantine/core';
-import { IconPlus } from '@tabler/icons-react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import {
+  Grid,
+  Group,
+  TextInput,
+  Title,
+  Button,
+  Table,
+  NumberInput,
+  ActionIcon,
+  Text,
+  Loader,
+  rem,
+  Stack,
+  Center,
+  Box,
+  Breadcrumbs,
+} from '@mantine/core';
+import { IconPlus, IconDeviceFloppy, IconCheck } from '@tabler/icons-react';
 import TableRow from './TableRow';
 import Modal from '@/components/Modal';
 import useModal from '@/components/useModal';
@@ -18,15 +33,16 @@ import Card from '@/components/Card';
 import {
   formatLabelsForDropdown,
   renderSelectOptionWithIcon,
-  getIcon,
 } from '@/components/helperLabel';
-import useWebSockets from '@/hooks/useWebSockets';
+import {} from 'react';
+import StatusSelect from '@/components/StatusSelect';
 
 const InventoryIndex = () => {
   const { items, types, units } = usePage().props;
-  const [inventoryItems, setInventoryItems] = useState(items.data || []);
   const { opened, open, close } = useModal();
+  const formRef = useRef(null);
   const [editingInventory, setEditingInventory] = useState(null);
+  const [saved, setSaved] = useState(false);
   const sort = value => reloadWithQuery(value);
 
   const [form, submit, updateValue] = useForm('post', route('inventories.store'), {
@@ -38,32 +54,18 @@ const InventoryIndex = () => {
     quantity_on_hand: '',
   });
 
-  const { initInventoryWebSocket } = useWebSockets();
-
-  useEffect(() => {
-    const unsubscribe = initInventoryWebSocket(updatedInventory => {
-      setInventoryItems(prevItems => {
-        const exists = prevItems.some(item => item.id === updatedInventory.id);
-        return exists
-          ? prevItems.map(item => (item.id === updatedInventory.id ? updatedInventory : item))
-          : [updatedInventory, ...prevItems];
-      });
-    });
-
-    return unsubscribe;
-  }, []);
-
+  // set form data ketika edit
   useEffect(() => {
     if (editingInventory) {
       form.setMethod('put');
       form.setAction(route('inventories.update', editingInventory.id));
       form.setData({
-        name: editingInventory.name || '',
-        description: editingInventory.description || '',
-        type: editingInventory.type?.slug || '',
-        unit: editingInventory.unit?.slug || '',
-        unit_cost: editingInventory.unit_cost || '',
-        quantity_on_hand: editingInventory.quantity_on_hand || '',
+        name: editingInventory.name ?? '',
+        description: editingInventory.description ?? '',
+        type: editingInventory.type?.slug ?? '',
+        unit: editingInventory.unit?.slug ?? '',
+        unit_cost: parseFloat(editingInventory.unit_cost) || 0,
+        quantity_on_hand: parseFloat(editingInventory.quantity_on_hand) || 0,
       });
     } else {
       form.setMethod('post');
@@ -72,31 +74,146 @@ const InventoryIndex = () => {
     }
   }, [editingInventory]);
 
+  const initialData = useMemo(() => {
+    if (editingInventory) {
+      return {
+        name: editingInventory.name ?? '',
+        description: editingInventory.description ?? '',
+        type: editingInventory.type?.slug ?? '',
+        unit: editingInventory.unit?.slug ?? '',
+        unit_cost: parseFloat(editingInventory.unit_cost) || 0,
+        quantity_on_hand: parseFloat(editingInventory.quantity_on_hand) || 0,
+      };
+    }
+    return {
+      name: '',
+      description: '',
+      type: '',
+      unit: '',
+      unit_cost: '',
+      quantity_on_hand: '',
+    };
+  }, [editingInventory]);
+
+  // Cek apakah ada perubahan dibandingkan data awal
+  const hasChanged = useMemo(() => {
+    const currentData = { ...form.data };
+    const compareData = { ...initialData };
+
+    // Normalize numeric fields for comparison
+    ['unit_cost', 'quantity_on_hand'].forEach(field => {
+      if (currentData[field] !== undefined) {
+        currentData[field] = parseFloat(currentData[field]) || 0;
+      }
+      if (compareData[field] !== undefined) {
+        compareData[field] = parseFloat(compareData[field]) || 0;
+      }
+    });
+
+    return JSON.stringify(currentData) !== JSON.stringify(compareData);
+  }, [form.data, initialData]);
+
+  const processing = form.processing;
+  const isEdit = !!editingInventory;
+
+  const handleSubmit = e => {
+    e.preventDefault();
+    submit({
+      onSuccess: () => {
+        setSaved(true);
+        setTimeout(() => {
+          handleClose();
+        }, 1500);
+      },
+    });
+  };
+
+  // --- TITLE BAR DINAMIS ---
+  const TitleBar = (
+    <Group
+      align='center'
+      ml='lg'
+      mt='sm'
+    >
+      {hasChanged && (
+        <ActionIcon
+          onClick={handleSubmit}
+          loading={processing}
+          color={saved ? 'teal' : 'green'}
+          radius='xl'
+          size='xl'
+          title='Save changes'
+        >
+          {processing ? (
+            <Loader
+              size='sm'
+              color='white'
+            />
+          ) : saved ? (
+            <IconCheck size={20} />
+          ) : (
+            <IconDeviceFloppy size={20} />
+          )}
+        </ActionIcon>
+      )}
+      <Stack spacing={2}>
+        <Text
+          fz={rem(22)}
+          fw={600}
+          ml={6}
+        >
+          {saved ? 'Saved ✓' : isEdit ? 'Update Inventory' : 'Create Inventory'}
+        </Text>
+
+        <Text
+          fz='sm'
+          c='dimmed'
+          ml={6}
+        >
+          {saved
+            ? 'All changes have been successfully saved.'
+            : isEdit
+              ? 'Update inventory details such as name, type, or quantity.'
+              : 'Fill out the form below to create a new inventory item.'}
+        </Text>
+      </Stack>
+    </Group>
+  );
+
+  // tombol create
   const handleCreate = () => {
     setEditingInventory(null);
+    setSaved(false);
     open();
   };
 
+  // tombol edit
   const handleEdit = inventory => {
     updateValue(inventory);
     setEditingInventory(inventory);
     open();
   };
 
+  // close modal
   const handleClose = () => {
     setEditingInventory(null);
     close();
   };
 
+  const typeOptions = formatLabelsForDropdown(types);
+  const unitOptions = formatLabelsForDropdown(units);
+
+  // ==== TABLE COLUMN ====
   const columns = prepareColumns([
     { label: 'Code', column: 'code', sticky: true, width: 150 },
-    { label: 'Location on Site', column: 'location_site_on_project', sticky: true, width: 200 },
-    { label: 'name', column: 'name' },
-    { label: 'description', column: 'description' },
-    { label: 'quantity', column: 'quantity' },
-    { label: 'type', sortable: false },
-    { label: 'unit', sortable: false },
-    { label: 'unit cost', column: 'unit cost' },
+
+    { label: 'Name', column: 'name' },
+    { label: 'Description', column: 'description' },
+    { label: 'Quantity', column: 'quantity_on_hand' },
+    { label: 'Type', column: 'type' },
+    { label: 'Unit', column: 'unit' },
+    { label: 'Unit Cost', column: 'unit_cost' },
+    { label: 'Status', column: 'status' },
     {
       label: 'Actions',
       sortable: false,
@@ -105,8 +222,8 @@ const InventoryIndex = () => {
   ]);
 
   const rows =
-    Array.isArray(inventoryItems) && inventoryItems.length > 0 ? (
-      inventoryItems.map(item => (
+    Array.isArray(items.data) && items.data.length > 0 ? (
+      items.data.map(item => (
         <TableRow
           key={item.id}
           item={item}
@@ -117,24 +234,33 @@ const InventoryIndex = () => {
       <TableRowEmpty colSpan={columns?.length || 1} />
     );
 
-  const typeOptions = formatLabelsForDropdown(types);
-  const unitOptions = formatLabelsForDropdown(units);
-
-  const findLabelBySlug = (slug, labelList) => {
-    if (typeof slug !== 'string') return undefined;
-    return labelList.find(label => label.value.trim().toLowerCase() === slug.trim().toLowerCase());
-  };
-
-  const selectedType = findLabelBySlug(form.data.type, typeOptions);
-  const selectedUnit = findLabelBySlug(form.data.unit, unitOptions);
-
+  // ==== RENDER ====
   return (
     <>
-      <Title style={{ color: 'white' }} mb='lg' >
+      <Breadcrumbs
+        fz={14}
+        mb={30}
+        separator={<Text c='white'>/</Text>}
+      >
+        <Text
+          c='white'
+          fw={500}
+        >
+          Inventories /
+        </Text>
+      </Breadcrumbs>
+      <Title
+        style={{ color: 'white' }}
+        mb='lg'
+      >
         List of Inventories
       </Title>
 
-      <Grid justify='space-between' align='center' mb='lg'>
+      <Grid
+        justify='space-between'
+        align='center'
+        mb='lg'
+      >
         <Grid.Col span='content'>
           <Group>
             {can('create inventory') && (
@@ -152,96 +278,143 @@ const InventoryIndex = () => {
         </Grid.Col>
       </Grid>
 
-      <Card shadow='sm' withBorder my='lg' p={0}>
-        <Table stickyHeader highlightOnHover>
-          <TableHead columns={columns} sort={sort} />
+      <Card
+        shadow='sm'
+        withBorder
+        my='lg'
+        p={0}
+      >
+        <Table
+          stickyHeader
+          highlightOnHover
+        >
+          <TableHead
+            columns={columns}
+            sort={sort}
+          />
           <Table.Tbody>{rows}</Table.Tbody>
         </Table>
-        <Pagination current={items.meta.current_page} pages={items.meta.last_page} />
+        <Pagination
+          current={items.meta.current_page}
+          pages={items.meta.last_page}
+        />
       </Card>
 
+      {/* === MODAL === */}
       <Modal
         key={editingInventory?.id || 'new'}
         opened={opened}
         onClose={handleClose}
-        title={editingInventory ? 'Edit Inventory' : 'Create Inventory'}
+        draggable
+        radius='md'
+        centered
+        closeButtonProps={{ style: { position: 'absolute', top: 12, right: 12 } }}
+        overlayProps={{ backgroundOpacity: 0.45, blur: 6 }}
+        transitionProps={{ transition: 'fade', duration: 200 }}
+        title={TitleBar}
       >
-        <form onSubmit={e => submit(e, { onSuccess: () => handleClose() })}>
-          <TextInput
-            label='Name'
-            placeholder='Input inventory name'
-            required
-            mt='md'
-            value={form.data.name}
-            onChange={e => updateValue('name', e.target.value)}
-            error={form.errors.name}
-          />
+        <Center>
+          <Box
+            w='80%'
+            maw={620}
+            pb='xl'
+          >
+            <form
+              ref={formRef}
+              onSubmit={handleSubmit}
+            >
+              {/* Basic Info */}
+              <TextInput
+                label='Name'
+                mt='md'
+                placeholder='e.g. Steel Bar 12mm'
+                required
+                value={form.data.name}
+                onChange={e => updateValue('name', e.target.value)}
+                error={form.errors.name}
+              />
+              <TextInput
+                label='Description'
+                mt='md'
+                styles={{
+                  input: {
+                    minHeight: 80,
+                    fontSize: '1rem',
+                    paddingTop: 12,
+                    paddingBottom: 12,
+                  },
+                }}
+                placeholder='Short description or specifications'
+                value={form.data.description}
+                onChange={e => updateValue('description', e.target.value)}
+                error={form.errors.description}
+              />
 
-          <TextInput
-            label='Description'
-            placeholder='Input descriptions'
-            mt='md'
-            value={form.data.description}
-            onChange={e => updateValue('description', e.target.value)}
-            error={form.errors.description}
-          />
+              {/* Type & Unit */}
+              <Group
+                align='flex-start'
+                grow
+              >
+                <StatusSelect
+                  label='Type'
+                  placeholder='Select inventory type'
+                  required
+                  mt='md'
+                  clearable
+                  value={form.data.type ?? ''}
+                  onChange={value => updateValue('type', value)}
+                  statuses={typeOptions}
+                  renderOption={renderSelectOptionWithIcon}
+                  error={form.errors.type}
+                />
 
-          <Select
-            label='Type'
-            placeholder='Pick value Type'
-            mt='md'
-            required
-            value={form.data.type ?? ''}
-            onChange={value => updateValue('type', value)}
-            data={typeOptions}
-            leftSection={
-              selectedType ? getIcon(selectedType.icon, { size: 18, color: selectedType.color }) : null
-            }
-            renderOption={renderSelectOptionWithIcon}
-            error={form.errors.type}
-          />
+                <StatusSelect
+                  label='Unit'
+                  placeholder='Select measurement unit'
+                  required
+                  mt='md'
+                  clearable
+                  value={form.data.unit ?? ''}
+                  onChange={value => updateValue('unit', value)}
+                  statuses={unitOptions}
+                  renderOption={renderSelectOptionWithIcon}
+                  error={form.errors.unit}
+                />
+              </Group>
 
-          <Select
-            label='Unit'
-            placeholder='Pick value Unit'
-            mt='md'
-            required
-            value={form.data.unit ?? ''}
-            onChange={value => updateValue('unit', value)}
-            data={unitOptions}
-            leftSection={
-              selectedUnit ? getIcon(selectedUnit.icon, { size: 18, color: selectedUnit.color }) : null
-            }
-            renderOption={renderSelectOptionWithIcon}
-            error={form.errors.unit}
-          />
+              {/* Cost & Quantity */}
 
-          <NumberInput
-            label='Unit Cost'
-            mt='md'
-            required
-            placeholder='Input unit cost'
-            value={form.data.unit_cost}
-            onChange={val => updateValue('unit_cost', val)}
-            error={form.errors.unit_cost}
-          />
+              <Group
+                align='flex-start'
+                grow
+              >
+                <NumberInput
+                  label='Unit Cost'
+                  placeholder='Enter cost per unit'
+                  required
+                  mt='md'
+                  thousandSeparator='.'
+                  decimalSeparator=','
+                  value={form.data.unit_cost}
+                  onChange={val => updateValue('unit_cost', typeof val === 'string' ? parseFloat(val.replace(/\./g, '').replace(',', '.')) : val)}
+                  error={form.errors.unit_cost}
+                />
 
-          <NumberInput
-            label='Quantity'
-            mt='md'
-            required
-            placeholder='Input quantity'
-            value={form.data.quantity_on_hand}
-            onChange={val => updateValue('quantity_on_hand', val)}
-            error={form.errors.quantity_on_hand}
-          />
-
-          <Group justify='flex-end' mt='xl'>
-            <ActionButton type='submit' loading={form.processing}>
-              {editingInventory ? 'Update' : 'Create'}
-            </ActionButton>
-          </Group>
-        </form>
+                <NumberInput
+                  label='Quantity on Hand'
+                  placeholder='Enter available quantity'
+                  required
+                  mt='md'
+                  thousandSeparator='.'
+                  decimalSeparator=','
+                  value={form.data.quantity_on_hand}
+                  onChange={val => updateValue('quantity_on_hand', typeof val === 'string' ? parseFloat(val.replace(/\./g, '').replace(',', '.')) : val)}
+                  error={form.errors.quantity_on_hand}
+                />
+              </Group>
+            </form>
+          </Box>
+        </Center>
       </Modal>
     </>
   );

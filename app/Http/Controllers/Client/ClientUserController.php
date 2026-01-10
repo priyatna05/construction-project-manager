@@ -9,6 +9,8 @@ use App\Http\Requests\Client\StoreClientRequest;
 use App\Http\Requests\Client\UpdateClientRequest;
 use App\Http\Resources\Client\ClientResource;
 use App\Models\ClientCompany;
+use App\Models\Country;
+use App\Models\Currency;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
@@ -27,63 +29,29 @@ class ClientUserController extends Controller
                     ->sortByQueryString()
                     ->role('client')
                     ->with('clientCompanies')
-                    ->when($request->has('archived'), fn ($query) => $query->onlyArchived())
+                    ->when($request->has('archived'), fn($query) => $query->onlyArchived())
                     ->paginate(12)
             ),
             'dropdowns' => [
                 'companies' => ClientCompany::dropdownValues(),
+                'countries' => Country::dropdownValues(),
+                'currencies' => Currency::dropdownValues(),
             ],
         ]);
     }
 
-    public function create()
+    public function store(StoreClientRequest $request)
     {
-        abort_if(! request()->user()->can('create client user'), 401);
+        abort_if(! $request->user()->can('create client user'), 401);
 
-        return Inertia::render('Clients/Users/Create', [
-            'dropdowns' => [
-                'companies' => ClientCompany::dropdownValues(),
-            ],
-        ]);
-    }
+        (new CreateClient)->create($request->validated());
 
-   public function store(StoreClientRequest $request)
-{
-    abort_if(! $request->user()->can('create client user'), 401);
-
-    $client = (new CreateClient)->create($request->validated());
-
-    // Default pesan & redirect
-    $message = 'Client created successfully.';
-    $title   = 'Success';
-    $redirectRoute = 'clients.index';
-
-    // Kalau belum punya company, arahkan ke halaman create company
-    if (empty($request->companies)) {
-        $message = 'A new client was successfully created. Now you can create a company for the client.';
-        $title   = 'Client Created - Next Step';
-        $redirectRoute = 'clients.companies.index';
-    }
-
-    return redirect()
-    ->route($redirectRoute, ['user_id' => $client->id])
-    ->with('flash', [
-        'type' => 'success',
-        'title' => $title,
-        'message' => $message,
-    ]);
-}
-
-    public function edit(User $user)
-    {
-        abort_if(! request()->user()->can('edit client user'), 401);
-
-        return Inertia::render('Clients/Users/Edit', [
-            'item' => new ClientResource($user),
-            'dropdowns' => [
-                'companies' => ClientCompany::dropdownValues(),
-            ],
-        ]);
+        return redirect()->route('clients.users.index')
+            ->with('flash', [
+                'type' => 'success',
+                'title' => 'Client User',
+                'message' => 'Created Success'
+            ]);
     }
 
     public function update(User $user, UpdateClientRequest $request)
@@ -92,7 +60,13 @@ class ClientUserController extends Controller
 
         (new UpdateClient)->update($user, $request->validated());
 
-        return redirect()->route('clients.users.index')->success('Client updated', 'The client was successfully updated.');
+        return redirect()
+            ->route('clients.users.index')
+            ->with('flash', [
+                'type' => 'success',
+                'title' => 'Client User',
+                'message' => 'Updated Successfully'
+            ]);
     }
 
     public function destroy(User $user)
@@ -118,9 +92,11 @@ class ClientUserController extends Controller
         return redirect()->back()->success('Client restored', 'The restoring of the client was completed successfully.');
     }
 
-    public function forceDelete(User $user)
+    public function forceDelete(int $userId)
     {
         abort_if(! request()->user()->can('delete client user'), 401);
+
+        $user = User::withArchived()->findOrFail($userId);
 
         if (Auth::id() === $user->id) {
             return redirect()->route('clients.users.index')
@@ -128,8 +104,10 @@ class ClientUserController extends Controller
         }
         $user->forceDelete();
 
-        return redirect()->route('clients.users.index')
+        $redirectParams = request()->boolean('archived') ? ['archived' => 1] : [];
+
+        return redirect()
+            ->route('clients.users.index', $redirectParams)
             ->success('Client deleted', 'The client user has been permanently deleted.');
     }
-
 }

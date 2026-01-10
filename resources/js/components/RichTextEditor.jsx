@@ -11,7 +11,7 @@ import suggestion from './RichTextEditor/Mention/suggestion.js';
 import classes from './css/RichTextEditor.module.css';
 
 const RichTextEditor = forwardRef(function RichTextEditor(
-  { onChange, placeholder, content, height = 200, readOnly = false, ...props },
+  { onChange, placeholder, content, height = 200, readOnly = false, projectId = null, ...props },
   ref
 ) {
   const editor = useEditor({
@@ -26,7 +26,7 @@ const RichTextEditor = forwardRef(function RichTextEditor(
         HTMLAttributes: {
           class: 'mention',
         },
-        suggestion,
+        suggestion: suggestion(projectId),
       }),
     ],
     content,
@@ -35,9 +35,6 @@ const RichTextEditor = forwardRef(function RichTextEditor(
     },
   });
 
-  // ====================================================================
-  // ===== BLOK KODE PERBAIKAN ADA DI SINI ==============================
-  // ====================================================================
   useImperativeHandle(
     ref,
     () => ({
@@ -47,8 +44,6 @@ const RichTextEditor = forwardRef(function RichTextEditor(
        */
       setContent(newContent) {
         if (editor && editor.getHTML() !== newContent) {
-          // Parameter kedua 'false' mencegah trigger event 'onUpdate'
-          // untuk menghindari infinite loop.
           editor.commands.setContent(newContent, false);
         }
       },
@@ -57,14 +52,14 @@ const RichTextEditor = forwardRef(function RichTextEditor(
        * @returns {string} Konten HTML.
        */
       getContent() {
-        // Mengembalikan konten jika editor sudah siap, jika tidak, string kosong.
         return editor ? editor.getHTML() : '';
       },
     }),
     [editor]
-  ); // <-- Tambahkan `editor` sebagai dependensi.
+  );
 
   const computedColorScheme = useComputedColorScheme();
+  const isLocked = readOnly;
 
   return (
     <Editor
@@ -74,6 +69,7 @@ const RichTextEditor = forwardRef(function RichTextEditor(
       <Editor.Toolbar
         sticky
         stickyOffset={60}
+        style={{ pointerEvents: isLocked ? "none" : "auto", opacity: isLocked ? 0.6 : 1 }}
       >
         <Editor.ControlsGroup>
           <Editor.Bold />
@@ -102,7 +98,7 @@ const RichTextEditor = forwardRef(function RichTextEditor(
       <Editor.Content
         bg={computedColorScheme === 'dark' ? 'dark.6' : 'white'}
         className={classes.content}
-        style={{ '--rich-text-editor-height': `${height}px` }}
+        style={{ '--rich-text-editor-height': `${height}px`, pointerEvents: isLocked ? "none" : "auto", opacity: isLocked ? 0.6 : 1 }}
       />
     </Editor>
   );

@@ -27,6 +27,10 @@
   border-radius: var(--mantine-radius-md);
 }
 
+.linkIcon {
+  color: var(--mantine-color-blue-9);
+}
+
 .controlCollapsed {
   position: relative;
 }
@@ -38,7 +42,7 @@
   transform: translateY(-50%);
   opacity: 0;
   visibility: hidden;
-  background: var(--mantine-color-blue-7);
+  background: var(--mantine-color-blue-9);
   color: white;
   padding: 8px 12px;
   border-radius: 4px;
@@ -59,7 +63,7 @@
   transform: translateX(8px);
   opacity: 0;
   visibility: hidden;
-  background: var(--mantine-color-blue-7);
+  background: var(--mantine-color-blue-9);
   color: white;
   padding: 8px;
   border-radius: 4px;
@@ -87,7 +91,7 @@
 }
 
 .submenuItem:hover {
-  background-color: var(--mantine-color-blue-5);
+  background-color: var(--mantine-color-blue-9);
   border-radius: 5rem;
 }
 
@@ -124,17 +128,39 @@
 /* Chevron rotation */
 .chevron {
   transition: transform 0.3s ease;
+  color: var(--mantine-color-white);
 }
 
 /* Active state */
 .active {
   font-weight: 600;
-  background-color: var(--mantine-color-blue-9) !important;
+}
+
+.control.active {
+  background-color: var(--mantine-color-blue-9);
+  color: var(--mantine-color-white);
   border-start-start-radius: var(--mantine-radius-xl);
   border-end-start-radius: var(--mantine-radius-xl);
   border-end-end-radius: unset;
   border-start-end-radius: unset;
-  color: var(--mantine-color-white) !important;
+}
+
+.control.active .linkIcon {
+  color: var(--mantine-color-white);
+}
+
+.link.active {
+  background-color: var(--mantine-color-blue-9);
+  color: var(--mantine-color-white);
+  border-start-start-radius: var(--mantine-radius-xl);
+  border-end-start-radius: var(--mantine-radius-xl);
+  border-end-end-radius: unset;
+  border-start-end-radius: unset;
+}
+
+.link.active:hover {
+  background-color: var(--mantine-color-blue-9);
+  color: var(--mantine-color-white);
 }
 
 /* Hover state */

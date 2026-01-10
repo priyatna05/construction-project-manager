@@ -24,6 +24,7 @@ return [
         'asset'      => 'AST',
         'vehicle'    => 'VEH',
         'chemical'   => 'CHM',
+        'service'    => 'SVC',
         // Tambah di sini jika ada label slug baru
     ],
 

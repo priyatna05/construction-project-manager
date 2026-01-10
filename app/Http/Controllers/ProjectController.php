@@ -13,9 +13,8 @@ use App\Models\User;
 use App\Models\Label;
 use App\Services\PermissionService;
 use Illuminate\Database\Eloquent\Builder;
-use App\Models\OwnerCompany;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class ProjectController extends Controller
@@ -27,38 +26,46 @@ class ProjectController extends Controller
 
     public function index(Request $request)
     {
-        // 1. Definisikan relasi yang ingin dimuat untuk setiap proyek
         $projectRelations = [
             'clientCompany:id,name',
+            'clientUsers:id,name,email,avatar',
             'users:id,name,avatar',
             'attachments',
+            'labels',
         ];
 
         $query = Project::query()
             ->with($projectRelations)
-            // 2. Gunakan whereHas untuk otorisasi yang lebih bersih
             ->when($request->user()->isNotAdmin(), function (Builder $query) use ($request) {
                 $query->where(function (Builder $q) use ($request) {
-                    $q->whereHas('users', fn ($subQuery) => $subQuery->where('users.id', $request->user()->id))
-                      ->orWhereHas('clientCompany.clients', fn ($subQuery) => $subQuery->where('users.id', $request->user()->id));
+                    $q->whereHas(
+                        'users',
+                        fn($subQuery) =>
+                        $subQuery->where('users.id', $request->user()->id)
+                    )
+                        ->orWhereHas(
+                            'clientCompany.clients',
+                            fn($subQuery) =>
+                            $subQuery->where('users.id', $request->user()->id)
+                        )
+                        ->orWhere('client_user_id', $request->user()->id);
                 });
             })
-            // 3. Filter status
-            ->when($request->has('archived'), fn (Builder $query) => $query->onlyArchived())
-            ->when($request->has('trashed'), fn (Builder $query) => $query->onlyTrashed())
-            // 4. Hitung task menggunakan relasi label
+            ->when($request->has('archived'), fn(Builder $query) => $query->onlyArchived())
+            ->when($request->has('trashed'), fn(Builder $query) => $query->onlyTrashed())
             ->withCount([
                 'tasks as all_tasks_count',
                 'tasks as completed_tasks_count' => function (Builder $query) {
-                    $query->whereHas('labels', fn ($q) => $q->where('slug', 'completed'));
+                    $query->whereHas('labels', fn($q) => $q->where('slug', 'completed'));
                 },
                 'tasks as overdue_tasks_count' => function (Builder $query) {
                     $query->whereDate('end_date', '<', now())
-                          ->whereDoesntHave('labels', fn ($q) => $q->where('slug', 'completed'));
+                        ->whereDoesntHave('labels', fn($q) => $q->where('slug', 'completed'));
                 },
             ])
             ->withExists('favoritedByAuthUser as favorite')
             ->searchByQueryString()
+            ->sortByQueryString()
             ->filterByDuration($request->input('duration_min'), $request->input('duration_max'))
             ->orderBy('favorite', 'desc')
             ->orderBy('name', 'asc');
@@ -66,73 +73,49 @@ class ProjectController extends Controller
         return Inertia::render('Projects/Index', [
             'items' => ProjectResource::collection($query->get()),
             'dropdowns' => [
-                'companies' => ClientCompany::dropdownValues(),
-                'users' => User::userDropdownValues(),
+                'companies' => ClientCompany::has('clients')
+                    ->with(['clients:id,name,avatar'])
+                    ->withCount('clients as users_count')
+                    ->get(['id', 'name'])
+                    ->map(fn($c) => [
+                        'value' => (string) $c->id,
+                        'label' => $c->name,
+                        'users_count' => $c->users_count,
+                        'users' => $c->clients->map(fn($u) => [
+                            'id' => $u->id,
+                            'full_name' => $u->name,
+                            'initial' => strtoupper(substr($u->name, 0, 1)),
+                            'avatar' => $u->avatar,
+                        ]),
+                    ]),
+
+                'users' => User::userDropdownValues(['client'], $request->user()->id),
+                'clients' => User::clientDropdownValues(),
+                'clientUsers' => User::role('client')
+                    ->doesntHave('clientCompanies')
+                    ->get(['id', 'name', 'avatar']),
+
                 'currencies' => Currency::dropdownValues(['with' => ['clientCompanies:id,currency_id']]),
-                'labels' => Label::ofType(Label::TYPE_PROJECT_TASK_STATUS)->get(),
+                'types' => Label::ofType(Label::TYPE_KONTRAK)->get(),
+                'status' => Label::ofType(Label::TYPE_PROJECT_TASK_STATUS)->get(['id', 'name', 'slug', 'color', 'icon']),
             ],
         ]);
     }
 
     public function show(Project $project)
     {
-        // 1. Definisikan semua relasi yang dibutuhkan oleh halaman detail
-        $project->load([
-            'clientCompany',
-            'users:id,name,avatar',
-            'taskGroups',
-            'attachments',
-            'evmRecords',
-            'labels',
-            // Muat juga relasi bersarang jika diperlukan oleh komponen lain
-            'tasks.labels',
-            'tasks.dependencies',
-            'inventories',
-            'inventories.allocations',
-            'inventories.labels',
-        ]);
-
-        // 2. Siapkan data untuk dropdown dependensi dengan logika yang benar
-        $taskDepends = $project->tasks()
-            ->whereDoesntHave('labels', fn ($q) => $q->where('slug', 'completed'))
-            ->orderBy('name')
-            ->get(['id', 'number', 'name', 'group_id']);
-
-        return Inertia::render('Projects/Detail', [
-            'project' => new ProjectResource($project),
-
-            // Data untuk komponen di dalam halaman
-            'usersWithAccessToProject' => PermissionService::usersWithAccessToProject($project),
-            'taskGroups' => $project->taskGroups,
-            'taskDepends' => $taskDepends,
-            'taskRelationLabels' => Label::taskRelation()->get(['id', 'name', 'slug', 'color', 'icon']),
-            'labels' => Label::ofType(Label::TYPE_PROJECT_TASK_STATUS)->get(),
-            'currency' => $project->clientCompany?->currency,
-        ]);
+        return redirect()->route('projects.tasks', $project->id);
     }
 
-    public function create()
-    {
-        return Inertia::render('Projects/Create', [
-            'dropdowns' => [
-                'companies' => ClientCompany::dropdownValues(),
-                'users' => User::userDropdownValues(),
-                'currencies' => Currency::dropdownValues(['with' => ['clientCompanies:id,currency_id']]),
-                'labels' => Label::ofType(Label::TYPE_PROJECT_TASK_STATUS)->get(['id', 'name', 'slug', 'color', 'icon']),
-            ],
-        ]);
-    }
     /**
      * Menyimpan proyek baru ke database.
      */
     public function store(StoreProjectRequest $request, ProjectService $projectService)
     {
-        $this->authorize('create', Project::class); // penggunaan Policy
-
-        // Panggil service untuk melakukan semua pekerjaan berat
+        $this->authorize('create', Project::class);
         $project = $projectService->create(
             $request->validated(),
-            $request->file('attachments', [])
+            $request->file('attachment_files', [])
         );
 
         $projectUrl = route('projects.detail', $project->id);
@@ -149,20 +132,44 @@ class ProjectController extends Controller
      */
     public function update(UpdateProjectRequest $request, Project $project, ProjectService $projectService)
     {
-        $this->authorize('update', $project); // Policy
 
-        // Panggil service untuk melakukan semua pekerjaan berat
+        $this->authorize('update', $project);
+        $validatedData = $request->validated();
+        $newAttachmentFiles = $request->file('attachment_files', []);
+        $validatedData['deleted_attachments_ids'] = $request->get('deleted_attachments_ids', []);
+
+        $wasCompleted = (bool) $project->is_completed;
+
         $projectService->update(
             $project,
-            $request->validated(),
-            $request->file('attachments', [])
+            $validatedData,
+            $newAttachmentFiles
         );
 
-        return redirect()->route('projects.index')->with('flash', [
+        $project->refresh();
+        $isCompletedNow = (bool) $project->is_completed;
+
+        $flash = [
             'type' => 'success',
             'title' => 'Project Updated',
-            'message' => "Project was successfully Updated.",
-        ]);
+            'message' => "Project was successfully updated.",
+        ];
+
+        if ($wasCompleted && !$isCompletedNow) {
+            $flash = [
+                'type' => 'success',
+                'title' => 'Project Unlocked',
+                'message' => 'Project has been unlocked and is editable again.',
+            ];
+        } elseif (!$wasCompleted && $isCompletedNow) {
+            $flash = [
+                'type' => 'success',
+                'title' => 'Project Locked',
+                'message' => 'Project has been marked as completed and locked.',
+            ];
+        }
+
+        return redirect()->route('projects.index')->with('flash', $flash);
     }
 
     public function destroy(Project $project)

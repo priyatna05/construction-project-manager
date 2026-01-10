@@ -16,6 +16,7 @@ use Overtrue\LaravelFavorite\Traits\Favoriteable;
 use OwenIt\Auditing\Auditable;
 use Illuminate\Support\Facades\Auth;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
+use DateTimeInterface;
 
 /**
  * @property int $id
@@ -25,7 +26,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property string|null $description
  * @property \Illuminate\Support\Carbon|null $start_date
  * @property \Illuminate\Support\Carbon|null $end_date
- * @property numeric|null $budget_project
+ * @property numeric|null $budget_project_estimate
  * @property string $progress_project
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -87,27 +88,56 @@ class Project extends Model implements AuditableContract
     use Archivable, Auditable, Favoriteable, IsSearchable, IsSortable, HasFactory;
 
     protected $fillable = [
+        'client_company_id',
+        'client_user_id',
         'code',
         'name',
         'description',
         'start_date',
         'end_date',
-        'budget_project',
-        'progress_project',
-        'client_company_id',
+        'direct_cost_plan',
+        'direct_cost_actual',
+        'overhead_site_rate',
+        'administrative_rate',
+        'contingency_rate',
+        'profit_rate',
+        'tax_rate',
+        'budget_project_estimate',
+        'budget_project_final',
+        'budget_project_actual',
+        'budget_project_grandtotal',
+        // New separate plan and actual cost fields
+        'overhead_site_cost_plan',
+        'administrative_cost_plan',
+        'contingency_cost_plan',
+        'profit_cost_plan',
+        'tax_cost_plan',
+        'budget_project_final_plan',
+        'budget_project_grandtotal_plan',
+        'overhead_site_cost_actual',
+        'administrative_cost_actual',
+        'contingency_cost_actual',
+        'profit_cost_actual',
+        'tax_cost_actual',
+        'budget_project_grandtotal_actual',
+        'is_completed',
+        'completed_at',
     ];
 
     protected $searchable = ['name'];
+    protected $sortable = ['name'];
 
     protected $observables = ['archived', 'unArchived', 'deleted'];
 
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
-        'budget_project' => 'decimal:2',
+        'budget_project_estimate' => 'decimal:2',
+        'is_completed' => 'boolean',
+        'completed_at' => 'datetime',
     ];
 
-     public function filters(): array
+    public function filters(): array
     {
         return [];
     }
@@ -118,6 +148,13 @@ class Project extends Model implements AuditableContract
     public function clientCompany(): BelongsTo
     {
         return $this->belongsTo(ClientCompany::class, 'client_company_id');
+    }
+    /**
+     * Relasi ke user klien (individual)
+     */
+    public function clientUsers(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'client_user_id');
     }
 
     /**
@@ -149,7 +186,7 @@ class Project extends Model implements AuditableContract
      */
     public function inventories()
     {
-        return $this->hasMany(Inventory::class, 'project_site_location_id');
+        return $this->hasMany(Inventory::class);
     }
 
     /**
@@ -159,12 +196,22 @@ class Project extends Model implements AuditableContract
     {
         return $this->hasMany(Attachment::class);
     }
-     /**
+    /**
      * Mendapatkan semua label yang terhubung dengan proyek ini.
      */
     public function labels(): MorphToMany
     {
         return $this->morphToMany(Label::class, 'labelable');
+    }
+
+    public function type()
+    {
+        return $this->labels()->where('type', Label::TYPE_KONTRAK);
+    }
+
+    public function statuses()
+    {
+        return $this->labels()->where('type', Label::TYPE_PROJECT_TASK_STATUS);
     }
     /**
      * Relasi ke favorit proyek oleh pengguna yang sedang login
@@ -177,8 +224,8 @@ class Project extends Model implements AuditableContract
             'favoriteable_id',
             config('favorite.user_foreign_key')
         )->withTimestamps()
-        ->where('favoriteable_type', $this->getMorphClass())
-        ->where('user_id', Auth::id());
+            ->where('favoriteable_type', $this->getMorphClass())
+            ->where('user_id', Auth::id());
     }
 
     /**
@@ -216,6 +263,15 @@ class Project extends Model implements AuditableContract
         }
 
         return $query;
+    }
+
+    /**
+     * Serialize dates as Y-m-d (date-only) to avoid timezone shifts
+     * when converting models to arrays/JSON (broadcasts / API responses).
+     */
+    protected function serializeDate(DateTimeInterface $date)
+    {
+        return $date->format('Y-m-d');
     }
 
     /**

@@ -1,5 +1,4 @@
 import TableRowActions from '@/components/TableRowActions';
-import { getInitials } from '@/utils/user';
 import { Link } from '@inertiajs/react';
 import { Avatar, Badge, Group, Table, Text } from '@mantine/core';
 
@@ -14,9 +13,7 @@ export default function TableRow({ item, onEdit }) {
             radius={40}
             color='blue'
             alt={item.name}
-          >
-            {getInitials(item.name)}
-          </Avatar>
+         />
           <div>
             <Text
               fz='sm'
@@ -37,7 +34,9 @@ export default function TableRow({ item, onEdit }) {
         <Text fz='sm'>{item.email || '-'}</Text>
       </Table.Td>
       <Table.Td>
-        <Text fz='sm'>{item.email_verified_at ? new Date(item.email_verified_at).toLocaleString() : '-'}</Text>
+        <Text fz='sm'>
+          {item.email_verified_at ? new Date(item.email_verified_at).toLocaleString() : '-'}
+        </Text>
       </Table.Td>
       <Table.Td>
         <Text fz='sm'>{item.phone || '-'}</Text>
@@ -47,23 +46,31 @@ export default function TableRow({ item, onEdit }) {
       </Table.Td>
       <Table.Td>
         <Group gap='sm'>
-          {item.companies.map(item => (
-            <Link
-              href={route('clients.companies.edit', item.id)}
-              key={item.id}
-            >
-              <Badge
-                variant='light'
-                color='grape'
-                tt='unset'
+          {item.companies && item.companies.length > 0 ? (
+            item.companies.map(company => (
+              <Link
+                href={route('clients.companies.edit', company.id)}
+                key={company.id}
               >
-                {item.name}
-              </Badge>
-            </Link>
-          ))}
+                <Badge
+                  variant='light'
+                  color='grape'
+                  tt='unset'
+                >
+                  {company.name || '-'}
+                </Badge>
+              </Link>
+            ))
+          ) : (
+            <Text c='dimmed'>-</Text>
+          )}
         </Group>
       </Table.Td>
-      {(can('edit client user') || can('archive client user') || can('restore client user') || can('delete client user')) && (
+
+      {(can('edit client user') ||
+        can('archive client user') ||
+        can('restore client user') ||
+        can('delete client user')) && (
         <Table.Td>
           <TableRowActions
             item={item}

@@ -9,87 +9,116 @@ import {
   Paper,
   Group,
   Pill,
-  Badge,
   Text,
   Tooltip,
   rem,
   Avatar,
   useComputedColorScheme,
+  ActionIcon,
+  Collapse,
+  Stack,
 } from '@mantine/core';
-import { IconGripVertical } from '@tabler/icons-react';
+import {
+  IconGripVertical,
+  IconArrowNarrowDownDashed,
+  IconArrowNarrowUpDashed,
+} from '@tabler/icons-react';
 import TaskActions from '../TaskActions';
 import { getInitials } from '@/utils/user';
-import { isParent, isChild } from '@/utils/depends';
-import React from 'react';
-import * as TablerIcons from '@tabler/icons-react';
 import classes from './css/TaskRow.module.css';
+import { useState, useMemo } from 'react';
+import { day } from '@/utils/datetime';
 
-export default function TaskRow({ task, allTasks }) {
+export default function TaskRow({ task }) {
   const { complete } = useTasksStore();
   const { openEditTask } = useTaskDrawerStore();
   const computedColorScheme = useComputedColorScheme();
-  const isParentTask = isParent(task.id, allTasks);
-  const isChildTask = isChild(task);
-  const isIntermediateTask = isParentTask && isChildTask;
+  const [opened, setOpened] = useState(false);
+
+  const detailItems = useMemo(() => {
+    const progress = `${Math.round(task?.progress_task ?? 0)}%`;
+    const statusLabels = (task?.labels || []).filter(label => label?.type === 'pt_status');
+    const status = statusLabels.length > 0 ? statusLabels.map(label => label.name).join(', ') : '-';
+    const priority = task?.priority?.name ?? task?.priority?.slug ?? '-';
+    const assignee = task?.assigned_to_user?.name ?? 'Unassigned';
+    return [
+      {
+        label: 'Start',
+        value: day(task.start_date) || '-',
+      },
+      {
+        label: 'End',
+        value: day(task.end_date) || '-',
+      },
+      {
+        label: 'Progress',
+        value: progress,
+      },
+      {
+        label: 'Status',
+        value: status,
+      },
+      {
+        label: 'Priority',
+        value: priority,
+      },
+      {
+        label: 'Assignee',
+        value: assignee,
+      },
+    ];
+  }, [task]);
 
   return (
     <Paper
-      className={`${classes.task}
-            ${task.completed_at !== null && classes.completed}
-            ${isParentTask ? classes.parentTask : isChildTask ? classes.dependentTask : ''}`}
+      className={`${classes.task} ${task.completed_at !== null && classes.completed}`}
       wrap='nowrap'
     >
-      <Group
-        gap='sm'
-        wrap='nowrap'
-        w='100%'
-      >
-        <IconGripVertical
-          style={{
-            width: rem(18),
-            height: rem(18),
-            display: can('reorder task') ? 'inline' : 'none',
-          }}
-          stroke={1.5}
-          className={classes.dragHandle}
-        />
-
-        <Checkbox
-          size='sm'
-          radius='xl'
-          color='green'
-          checked={task.completed_at !== null}
-          onChange={e => complete(task, e.currentTarget.checked)}
-          className={can('complete task') ? classes.checkbox : classes.disabledCheckbox}
-        />
-        {task.assigned_to_user && (
-          <Link href={route('users.edit', task.assigned_to_user.id)}>
-            <Tooltip
-              label={task.assigned_to_user.name}
-              openDelay={1000}
-              withArrow
-            >
-              <Pill
-                size='sm'
-                className={classes.user}
-              >
-                {shortName(task.assigned_to_user.name)}
-              </Pill>
-            </Tooltip>
-          </Link>
-        )}
-        <Tooltip
-          label={
-            isIntermediateTask
-              ? 'This task has dependencies and is also depended upon'
-              : isParentTask
-                ? 'Other tasks depend on this task'
-                : isChildTask
-                  ? 'This task depends on another'
-                  : 'Standalone task'
-          }
-          withArrow
+      <Stack gap={4}>
+        <Group
+          gap='sm'
+          wrap='nowrap'
+          w='100%'
         >
+          <IconGripVertical
+            style={{
+              width: rem(18),
+              height: rem(18),
+              display: can('reorder task') ? 'inline' : 'none',
+            }}
+            stroke={1.5}
+            className={classes.dragHandle}
+          />
+          <Tooltip
+            label='Completed a task'
+            withArrow
+          >
+            <Checkbox
+              size='sm'
+              radius='xl'
+              color='green'
+              checked={task.completed_at !== null}
+              onChange={e => complete(task, e.currentTarget.checked)}
+              disabled={!can('complete task')}
+              className={can('complete task') ? classes.checkbox : classes.disabledCheckbox}
+            />
+          </Tooltip>
+          {task.assigned_to_user && (
+            <Link href={route('users.edit', task.assigned_to_user.id)}>
+              <Tooltip
+                label={task.assigned_to_user.name}
+                openDelay={1000}
+                withArrow
+              >
+                <Pill
+                  size='sm'
+                  className={classes.user}
+                >
+                  {shortName(task.assigned_to_user.name)}
+                </Pill>
+              </Tooltip>
+            </Link>
+          )}
           <Text
             className={classes.name}
             size='sm'
@@ -100,104 +129,100 @@ export default function TaskRow({ task, allTasks }) {
             component='div'
           >
             #{task.number ?? '...'} : {task.name}
-            {isIntermediateTask ? (
-              <Badge
-                color='yellow'
-                variant='light'
-              >
-                Intermediate
-              </Badge>
-            ) : isParentTask ? (
-              <Badge
-                color='green'
-                variant='light'
-              >
-                Parent
-              </Badge>
-            ) : isChildTask ? (
-              <Badge
-                color='blue'
-                variant='light'
-              >
-                Child
-              </Badge>
-            ) : null}
           </Text>
-        </Tooltip>
-        {task.dependencies?.map(dep => {
-          if (!dep.relation_type) return null;
-          return (
-            <Tooltip
-              key={dep.id}
-              label={`Depends on #${dep.id} (${dep.name})`}
-              withArrow
-            >
-              <Badge
-                color={dep.relation_type.color || 'gray'}
-                variant='light'
-                size='sm'
-                leftSection={
-                  TablerIcons[dep.relation_type.icon] ? (
-                    React.createElement(TablerIcons[dep.relation_type.icon], {
-                      size: 12,
-                      stroke: 1.5,
-                    })
-                  ) : (
-                    <TablerIcons.IconAlertCircle
-                      size={12}
-                      stroke={1.5}
-                    />
-                  )
-                }
+          {!opened && (
+            <>
+              <Group
+                wrap='nowrap'
+                style={{ rowGap: rem(3), columnGap: rem(12) }}
               >
-                {dep.relation_type.name}
-              </Badge>
-            </Tooltip>
-          );
-        })}
-        <Group
-          wrap='nowrap'
-          style={{ rowGap: rem(3), columnGap: rem(12) }}
-        >
-          {(task.labels || []).map(label => (
-            <Label
-              key={label.id}
-              name={label.name}
-              color={label.color}
-              icon={label.icon}
-              dot={false}
+                {(task.labels || []).map(label => (
+                  <Label
+                    key={label.id}
+                    name={label.name}
+                    color={label.color}
+                    icon={label.icon}
+                    dot={false}
+                  />
+                ))}
+              </Group>
+              {task.assigned_to_user && (
+                <Tooltip
+                  label={task.assigned_to_user.name}
+                  openDelay={1000}
+                  withArrow
+                >
+                  <Link
+                    href={route('users.edit', task.assigned_to_user.id)}
+                    style={{ textDecoration: 'none' }}
+                  >
+                    <Avatar
+                      src={task.assigned_to_user.avatar}
+                      radius='xl'
+                      size={20}
+                      color={computedColorScheme === 'light' ? 'white' : 'blue'}
+                    >
+                      {getInitials(task.assigned_to_user.name)}
+                    </Avatar>
+                  </Link>
+                </Tooltip>
+              )}
+            </>
+          )}
+          {(can('archive task') || can('restore task') || can('delete task')) && (
+            <TaskActions
+              task={task}
+              className={classes.actions}
             />
-          ))}
-        </Group>
-        {task.assigned_to_user && (
-          <Tooltip
-            label={task.assigned_to_user.name}
-            openDelay={1000}
-            withArrow
+          )}
+          <ActionIcon
+            variant='subtle'
+            color='blue'
+            onClick={() => setOpened(prev => !prev)}
+            className={classes.toggle}
           >
-            <Link
-              href={route('users.edit', task.assigned_to_user.id)}
-              style={{ textDecoration: 'none' }}
-            >
-              <Avatar
-                src={task.assigned_to_user.avatar}
-                radius='xl'
-                size={20}
-                color={computedColorScheme === 'light' ? 'white' : 'blue'}
-              >
-                {getInitials(task.assigned_to_user.name)}
-              </Avatar>
-            </Link>
-          </Tooltip>
-        )}
-
-        {(can('archive task') || can('restore task')) && (
-          <TaskActions
-            task={task}
-            className={classes.actions}
-          />
-        )}
-      </Group>
+            {opened ? (
+              <IconArrowNarrowUpDashed
+                className={classes.toggleIcon}
+                style={{ transform: 'rotate(0deg)' }}
+              />
+            ) : (
+              <IconArrowNarrowDownDashed className={classes.toggleIcon} />
+            )}
+          </ActionIcon>
+        </Group>
+        <Collapse in={opened}>
+          <Paper
+            className={classes.detail}
+            p='sm'
+            radius='md'
+          >
+            <div className={classes.detailGrid}>
+              {detailItems.map(item => (
+                <div
+                  key={item.label}
+                  className={classes.detailCell}
+                >
+                  <Text
+                    size='xs'
+                    c='dimmed'
+                    ta='center'
+                  >
+                    {item.label}
+                  </Text>
+                  <Text
+                    size='sm'
+                    fw={500}
+                    ta='center'
+                  >
+                    {item.value}
+                  </Text>
+                </div>
+              ))}
+            </div>
+          </Paper>
+        </Collapse>
+      </Stack>
     </Paper>
   );
 }

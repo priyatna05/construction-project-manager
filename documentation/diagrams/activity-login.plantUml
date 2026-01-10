@@ -1,0 +1,55 @@
+@startuml
+
+start
+:akses aplikasi;
+:input email dan password;
+
+:tampil halaman login;
+
+if (klik "Lupa Password"?) then (ya)
+
+  :tampil form reset password;
+
+  :input email untuk reset password;
+
+  :validasi email ke database;
+
+
+  if (email valid?) then (valid)
+
+      :generate link reset password;
+      :kirim email berisi link reset password;
+
+      :notifikasi terkirim ke email;
+  else (tidak valid)
+
+      :tampilkan pesan error;
+
+      :input ulang email;
+  endif
+
+  stop
+
+endif
+
+
+:validasi ke database;
+
+
+if (validasi login?) then (valid)
+    :data ditemukan;
+else (tidak valid)
+
+
+    :tampilkan pesan error;
+
+
+    :input ulang email & password;
+    stop
+endif
+
+
+:tampil halaman dashboard;
+stop
+
+@enduml

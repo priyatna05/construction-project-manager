@@ -1,4 +1,7 @@
-.modal,
+.modal {
+  z-index: 3000;
+}
+
 .scrollArea {
   padding: 1rem;
   border-radius: 12px;

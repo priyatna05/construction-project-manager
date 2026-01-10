@@ -1,25 +1,41 @@
 import TableRowActions from '@/components/TableRowActions';
-import { ColorSwatch, Table, Text } from '@mantine/core';
+import { ColorSwatch, Group, Table, Text } from '@mantine/core';
+import { getIcon } from '@/components/helperLabel';
 
 export default function TableRow({ item, onEdit }) {
+
   return (
     <Table.Tr>
-      <Table.Td w={80}>
-        <Text fz='sm'>{item.type}</Text>
-      </Table.Td>
       <Table.Td>
-        <ColorSwatch color={item.color} />
-      </Table.Td>
+        {item.type
+    ? item.type
+        .split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1)) // kapital huruf pertama tiap kata
+        .join(' ')
+    : '-'}
+        </Table.Td>
       <Table.Td>
-        <Text fz='sm'>{item.name}</Text>
+        <Group
+          gap='xs'
+          wrap='nowrap'
+        >
+          {/* Warna label */}
+          <ColorSwatch
+            color={item.color}
+            size={14}
+          />
+
+          {/* Icon */}
+          {item.icon && getIcon(item.icon, { size: 16, color: item.color })}
+
+          {/* Nama label */}
+          <Text fz='sm'>{item.name}</Text>
+        </Group>
       </Table.Td>
-      <Table.Td>
-        <Text fz='sm'>{item.slug}</Text>
-      </Table.Td>
-      <Table.Td>
-        <Text fz='sm'>{item.icon}</Text>
-      </Table.Td>
-      {(can('edit label') || can('archive label') || can('restore label') || can('delete label')) && (
+      {(can('edit label') ||
+        can('archive label') ||
+        can('restore label') ||
+        can('delete label')) && (
         <Table.Td w={100}>
           <TableRowActions
             item={item}

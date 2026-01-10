@@ -3,10 +3,13 @@
 namespace App\Http\Middleware;
 
 use App\Models\Role;
+use App\Models\Project;
 use App\Models\User;
+use App\Models\OwnerCompany;
 use Illuminate\Support\Facades\Auth;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Builder;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -46,6 +49,22 @@ class HandleInertiaRequests extends Middleware
                     /** @var User */
                     $user = Auth::user();
 
+                    $hasProjects = $user->hasRole('client')
+                        ? Project::query()
+                            ->where(function (Builder $query) use ($user) {
+                                $query->whereHas(
+                                    'users',
+                                    fn ($subQuery) => $subQuery->where('users.id', $user->id)
+                                )
+                                    ->orWhereHas(
+                                        'clientCompany.clients',
+                                        fn ($subQuery) => $subQuery->where('users.id', $user->id)
+                                    )
+                                    ->orWhere('client_user_id', $user->id);
+                            })
+                            ->exists()
+                        : true;
+
                     return [
                         'id' => $user->id,
                         'name' => $user->name,
@@ -54,10 +73,12 @@ class HandleInertiaRequests extends Middleware
                         'job_title' => $user->job_title,
                         'roles' => $user->getRoleNames(),
                         'permissions' => $user->getAllPermissions()->pluck('name'),
+                        'has_projects' => $hasProjects,
                     ];
                 },
                 'notifications' => NotificationService::getLatest(6),
             ],
+            'item' => fn () => OwnerCompany::first(['name', 'logo']),
             'shared' => [
                 'roles' => fn () => Role::orderBy('name')->get(['id', 'name'])->toArray(),
             ],

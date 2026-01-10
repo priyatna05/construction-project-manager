@@ -25,7 +25,7 @@ export default function TableRow({ item, onEdit }) {
             fz='sm'
             fw={500}
           >
-            {item.name}
+            {item.name || '-'}
           </Text>
         </Group>
       </Table.Td>
@@ -44,14 +44,20 @@ export default function TableRow({ item, onEdit }) {
         </Flex>
       </Table.Td>
       <Table.Td>
-        <Text fz='sm'>{item.email}</Text>
+        <Text fz='sm'>{item.email || '-'}</Text>
       </Table.Td>
       <Table.Td>
-        <Text fz='sm'>{item.phone}</Text>
+        <Text fz='sm'>
+          {item.email_verified_at ? new Date(item.email_verified_at).toLocaleString() : '-'}
+        </Text>
       </Table.Td>
       <Table.Td>
-        <Text fz='sm'>{item.address}</Text>
+        <Text fz='sm'>{item.phone || '-'}</Text>
       </Table.Td>
+      <Table.Td>
+        <Text fz='sm'>{item.address || '-'}</Text>
+      </Table.Td>
+
       {(can('edit user') || can('archive user') || can('restore user') || can('delete user')) && (
         <Table.Td>
           <TableRowActions

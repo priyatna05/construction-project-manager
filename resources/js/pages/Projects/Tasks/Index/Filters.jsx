@@ -1,7 +1,7 @@
 import useTaskGroupsStore from '@/hooks/store/useTaskGroupsStore';
 import useTaskFiltersStore from '@/hooks/store/useTaskFiltersStore';
 import { usePage } from '@inertiajs/react';
-import { ColorSwatch, Stack, Text } from '@mantine/core';
+import { ColorSwatch, Group, Stack, Text } from '@mantine/core';
 import FilterButton from './Filters/FilterButton';
 import * as TablerIcons from '@tabler/icons-react';
 
@@ -9,7 +9,31 @@ export default function Filters() {
   const { usersWithAccessToProject, labels } = usePage().props;
 
   const { groups } = useTaskGroupsStore();
-  const { filters, toggleArrayFilter, toggleValueFilter } = useTaskFiltersStore();
+  const { filters, toggleArrayFilter, toggleValueFilter, toggleObjectFilter } =
+    useTaskFiltersStore();
+
+  const handleGroupClick = item => {
+    const id = Number(item.id);
+    toggleArrayFilter('groups', id);
+  };
+
+  const handleAssigneeClick = item => {
+    const id = Number(item.id);
+    toggleArrayFilter('assignees', id);
+  };
+
+  const handleDueDateClick = property => {
+    toggleObjectFilter('due_date', property);
+  };
+
+  const handleStatusClick = value => {
+    toggleValueFilter('status', value);
+  };
+
+  const handleLabelClick = item => {
+    const id = Number(item.id);
+    toggleArrayFilter('labels', id);
+  };
 
   return (
     <>
@@ -17,6 +41,21 @@ export default function Filters() {
         justify='flex-start'
         gap={24}
       >
+        <Group
+          gap={8}
+          align='center'
+        >
+          <TablerIcons.IconFilter
+            size={18}
+            color='white'
+          />
+          <Text
+            c='white'
+            fw={700}
+          >
+            Filtered
+          </Text>
+        </Group>
         {groups.length > 0 && (
           <div>
             <Text
@@ -32,15 +71,19 @@ export default function Filters() {
               justify='flex-start'
               gap={6}
             >
-              {groups.map(item => (
-                <FilterButton
-                  key={item.id}
-                  selected={filters.groups.includes(item.id)}
-                  onClick={() => toggleArrayFilter('groups', item.id)}
-                >
-                  {item.name}
-                </FilterButton>
-              ))}
+              {groups.map(item => {
+                const id = Number(item.id);
+                const selected = (filters.groups || []).map(Number).includes(id);
+                return (
+                  <FilterButton
+                    key={id}
+                    selected={selected}
+                    onClick={() => handleGroupClick(item)}
+                  >
+                    {item.name}
+                  </FilterButton>
+                );
+              })}
             </Stack>
           </div>
         )}
@@ -60,15 +103,19 @@ export default function Filters() {
               justify='flex-start'
               gap={6}
             >
-              {usersWithAccessToProject.map(item => (
-                <FilterButton
-                  key={item.id}
-                  selected={filters.assignees.includes(item.id)}
-                  onClick={() => toggleArrayFilter('assignees', item.id)}
-                >
-                  {item.name}
-                </FilterButton>
-              ))}
+              {usersWithAccessToProject.map(item => {
+                const id = Number(item.id);
+                const selected = (filters.assignees || []).map(Number).includes(id);
+                return (
+                  <FilterButton
+                    key={id}
+                    selected={selected}
+                    onClick={() => handleAssigneeClick(item)}
+                  >
+                    {item.name}
+                  </FilterButton>
+                );
+              })}
             </Stack>
           </div>
         )}
@@ -88,14 +135,8 @@ export default function Filters() {
             gap={6}
           >
             <FilterButton
-              selected={filters.due_date.not_set === 1}
-              // onClick={() => toggleObjectFilter('due_date', 'not_set')}
-            >
-              Not set
-            </FilterButton>
-            <FilterButton
               selected={filters.due_date.overdue === 1}
-              // onClick={() => toggleObjectFilter('due_date', 'overdue')}
+              onClick={() => handleDueDateClick('overdue')}
             >
               Overdue
             </FilterButton>
@@ -118,7 +159,7 @@ export default function Filters() {
           >
             <FilterButton
               selected={filters.status === 'completed'}
-              onClick={() => toggleValueFilter('status', 'completed')}
+              onClick={() => handleStatusClick('completed')}
             >
               Completed
             </FilterButton>
@@ -139,14 +180,14 @@ export default function Filters() {
             gap={6}
           >
             {labels
-              .filter(label => ['pt_status', 'ptb_status'].includes(label.type))
+              .filter(label => ['pt_status'].includes(label.type))
               .map(item => {
                 const IconComponent = item.icon && TablerIcons[item.icon];
                 return (
                   <FilterButton
                     key={item.id}
-                    selected={filters.labels.includes(item.id)}
-                    onClick={() => toggleArrayFilter('labels', item.id)}
+                    selected={(filters.labels || []).map(Number).includes(Number(item.id))}
+                    onClick={() => handleLabelClick(item)}
                     leftSection={
                       IconComponent ? (
                         <IconComponent

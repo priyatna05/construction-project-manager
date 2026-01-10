@@ -1,0 +1,36 @@
+@startuml
+start
+
+:Login User;
+:akses Fitur Pendukung;
+
+switch (Pilih Fitur?)
+
+  case (Komentar)
+    :Buka Detail Item;
+    :Isi Komentar;
+    :Simpan Komentar;
+    :Audit Trail;
+
+  case (Lampiran)
+    :Buka Detail Item;
+    :Pilih File;
+    :Upload File;
+    :Audit Trail;
+
+  case (Notifikasi)
+    :Tulis Pesan;
+    :Kirim Notifikasi;
+    :Audit Trail;
+    :Baca Notifikasi;
+
+  case (Audit Trail)
+    :Load Riwayat;
+    :Tampilkan Data (Read Only);
+
+endswitch
+
+:Kembali ke Menu Utama;
+stop
+
+@enduml

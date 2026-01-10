@@ -24,9 +24,10 @@ class ActivityController extends Controller
             'groupedActivities' => new ActivityGroupedByDateCollection(
                 Activity::whereIn('project_id', $projects->pluck('id'))
                     ->filterByQueryString()
-                    ->with([
-                        'activityCapable',
+            ->with([
                         'project',
+                        'user',
+                        'subject',
                     ])
                     ->latest()
                     ->limit(100)

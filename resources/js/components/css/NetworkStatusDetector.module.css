@@ -1,0 +1,24 @@
+.signalIcon {
+  /* animasi pulse */
+  animation: signalPulse 1.2s ease-in-out infinite;
+}
+
+/* efek "gelombang" / nafas */
+@keyframes signalPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); /* red-500 */
+  }
+  70% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 12px rgba(239, 68, 68, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+.offline {
+  color: #9ca3af; /* gray-400 */
+  animation: none;
+}

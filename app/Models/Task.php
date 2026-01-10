@@ -7,7 +7,6 @@ use App\Models\Filters\WhereHasFilter;
 use App\Models\Filters\WhereInFilter;
 use App\Models\Filters\TaskCompletedFilter;
 use App\Models\Filters\TaskOverdueFilter;
-use App\Models\Timesheet;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -23,6 +22,7 @@ use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 use Spatie\EloquentSortable\Sortable;
 use Spatie\EloquentSortable\SortableTrait;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property int $id
@@ -37,7 +37,7 @@ use Spatie\EloquentSortable\SortableTrait;
  * @property string|null $description
  * @property \Illuminate\Support\Carbon|null $start_date
  * @property \Illuminate\Support\Carbon|null $end_date
- * @property numeric|null $budget_task
+ * @property numeric|null $budget_task_plan
  * @property string|null $weight_task
  * @property string $progress_task
  * @property string $actual_cost
@@ -59,14 +59,12 @@ use Spatie\EloquentSortable\SortableTrait;
  * @property-read int|null $dependencies_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\InventoryTaskAllocation> $inventoryAllocations
  * @property-read int|null $inventory_allocations_count
- * @property-read \App\Models\Invoice|null $invoice
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Label> $labels
  * @property-read int|null $labels_count
  * @property-read \App\Models\Project $project
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $subscribedUsers
  * @property-read int|null $subscribed_users_count
  * @property-read \App\Models\TaskGroup $taskGroup
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Timesheet> $timesheets
  * @property-read int|null $timesheets_count
  * @method static Builder<static>|Task completed()
  * @method static \Database\Factories\TaskFactory factory($count = null, $state = [])
@@ -105,7 +103,7 @@ use Spatie\EloquentSortable\SortableTrait;
  */
 class Task extends Model implements AuditableContract, Sortable
 {
-    use Archivable, Auditable, HasFactory, HasFilters, IsSearchable, SortableTrait;
+    use Archivable, Auditable, HasFactory, HasFilters, IsSearchable, SortableTrait, SoftDeletes;
 
     protected $fillable = [
         'project_id',
@@ -117,12 +115,16 @@ class Task extends Model implements AuditableContract, Sortable
         'description',
         'start_date',
         'end_date',
-        'budget_task',
+        'budget_task_plan',
+        'budget_task_actual',
+        'volume',
+        'unit_cost_task',
         'weight_task',
-        'progress_task',
         'actual_cost',
+        'progress_task',
         'order_column',
         'assigned_at',
+        'archived_at',
     ];
 
     protected $searchable = ['name', 'number'];
@@ -130,12 +132,12 @@ class Task extends Model implements AuditableContract, Sortable
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
-        'budget_task' => 'decimal:2',
-        'assigned_at' => 'datetime',
-        'order_column' => 'integer'
+        'budget_task_plan' => 'decimal:2',
+        'budget_task_actual' => 'decimal:2',
+        'assigned_at' => 'datetime:Y-m-d',
+        'order_column' => 'integer',
+        'archived_at' => 'datetime:Y-m-d',
     ];
-
-    protected $observables = ['archived', 'unArchived', 'deleted'];
 
     public array $defaultWith = [
         'project:id,name',
@@ -143,11 +145,13 @@ class Task extends Model implements AuditableContract, Sortable
         'createdByUser:id,name,avatar',
         'assignedToUser:id,name,avatar',
         'subscribedUsers:id',
-        'labels:id,name,color,icon',
+        'labels:id,name,color',
         'attachments',
-        'allocatedInventories',
         'dependencies',
+        'dependentTasks',
+        'allocatedInventories'
     ];
+
     /**
      * HANYA atribut ini yang akan diaudit.
      *
@@ -160,12 +164,13 @@ class Task extends Model implements AuditableContract, Sortable
         'description',
         'start_date',
         'end_date',
-        'budget_task',
+        'budget_task_plan',
+        'budget_task_actual',
         'weight_task',
         'progress_task',
         'actual_cost',
     ];
-     /*
+    /*
      * @var array
      */
     protected $dontKeepAuditOf = [
@@ -189,8 +194,7 @@ class Task extends Model implements AuditableContract, Sortable
         return [
             (new WhereInFilter('group_id'))->setQueryName('groups'),
             (new WhereInFilter('assigned_to_user_id'))->setQueryName('assignees'),
-            (new TaskOverdueFilter('due_on'))->setQueryName('overdue'),
-            (new IsNullFilter('due_on'))->setQueryName('not_set'),
+            (new TaskOverdueFilter('end_date'))->setQueryName('overdue'),
             (new TaskCompletedFilter('completed_at'))->setQueryName('status'),
             (new WhereHasFilter('labels'))->setQueryName('labels'),
         ];
@@ -218,6 +222,11 @@ class Task extends Model implements AuditableContract, Sortable
     public function scopePending($query)
     {
         // return $query->whereNull('completed_at');
+    }
+
+    public function scopeOnlyArchived($query)
+    {
+        return $query->whereNotNull('archived_at');
     }
 
     public function project(): BelongsTo
@@ -251,16 +260,10 @@ class Task extends Model implements AuditableContract, Sortable
             ->withPivot([
                 'quantity_allocated',
                 'cost_at_allocation',
-                'allocation_date',
                 'notes',
                 'allocated_by_user_id'
             ])
             ->withTimestamps();
-    }
-
-    public function invoice(): BelongsTo
-    {
-        return $this->belongsTo(Invoice::class);
     }
 
     public function subscribedUsers(): BelongsToMany
@@ -270,17 +273,31 @@ class Task extends Model implements AuditableContract, Sortable
 
     public function labels(): MorphToMany
     {
-        return $this->morphToMany(Label::class,'labelable');
+        return $this->morphToMany(Label::class, 'labelable');
+    }
+
+    public function getRelationLabelAttribute(): ?Label
+    {
+        return $this->labels->where('type', Label::TYPE_TASK_RELATION)->first();
+    }
+
+    public function getUnitLabelAttribute(): ?Label
+    {
+        return $this->labels->where('type', Label::TYPE_TASK_INVENTORY_UNIT)->first();
+    }
+
+    public function getTypeLabelAttribute(): ?Label
+    {
+        return $this->labels->where('type', Label::TYPE_TASK)->first();
+    }
+    public function getPriorityLabelAttribute(): ?Label
+    {
+        return $this->labels->where('type', Label::TYPE_PRIORITY)->first();
     }
 
     public function attachments(): HasMany
     {
         return $this->hasMany(Attachment::class);
-    }
-
-    public function timesheets(): HasMany
-    {
-        return $this->hasMany(Timesheet::class);
     }
 
     public function comments(): HasMany
@@ -299,5 +316,18 @@ class Task extends Model implements AuditableContract, Sortable
             ->using(\App\Models\TaskDependency::class)
             ->withPivot('relation_type_id', 'lag_days')
             ->withTimestamps();
+    }
+
+    public function dependentTasks(): BelongsToMany
+    {
+        return $this->belongsToMany(Task::class, 'task_dependencies', 'depends_on_task_id', 'task_id')
+            ->using(\App\Models\TaskDependency::class)
+            ->withPivot('relation_type_id', 'lag_days')
+            ->withTimestamps();
+    }
+
+    public function workReports(): HasMany
+    {
+        return $this->hasMany(WorkReport::class);
     }
 }

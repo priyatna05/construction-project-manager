@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Project;
 use App\Models\User;
+use App\Services\PermissionService;
 
 class ProjectPolicy
 {
@@ -12,7 +13,15 @@ class ProjectPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasPermissionTo('view projects');
+        if ($user->hasPermissionTo('view projects')) {
+            return true;
+        }
+
+        if ($user->hasPermissionTo('view project')) {
+            return PermissionService::projectsThatUserCanAccess($user)->isNotEmpty();
+        }
+
+        return false;
     }
 
     /**

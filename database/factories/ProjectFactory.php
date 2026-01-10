@@ -59,9 +59,9 @@ class ProjectFactory extends Factory
             'description' => $this->faker->realText(400), // Teks yang lebih realistis
             'start_date' => $startDate,
             'end_date' => $endDate,
-            // --- 4. Budget yang Lebih Realistis (dalam satuan terkecil, misal: sen/rupiah) ---
+            // --- 4. Budget yang Lebih Realistis (dalam rupiah) ---
             // Menghasilkan angka bulat antara 50,000,000 sampai 2,000,000,000
-            'budget_project' =>  $this->faker->numberBetween(500, 20000) * 100000,
+            'budget_project_estimate' =>  $this->faker->numberBetween(500, 20000) * 100000,
             'progress_project' => $progress,
             'archived_at' => null,
         ];
@@ -128,7 +128,7 @@ class ProjectFactory extends Factory
    public function configure(): static
     {
          // Pastikan direktori storage untuk lampiran sudah ada
-        Storage::disk('public')->makeDirectory('attachments');
+        Storage::disk('public')->makeDirectory('attachment_files');
 
         return $this->afterCreating(function (Project $project) {
 

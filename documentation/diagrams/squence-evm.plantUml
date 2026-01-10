@@ -1,0 +1,35 @@
+@startuml
+!theme plain
+
+actor "Project Manager" as P
+
+boundary "Antarmuka Laporan EVM" as EVM_UI
+control "Kontrol Laporan EVM" as EVM_Control
+control "Service Perhitungan EVM" as EVM_Service
+entity "Entitas Data Proyek" as ProjectData
+database "Basis Data Proyek" as ProjectDB
+
+PM -[#blue]> EVM_UI: 1. Login & Pilih Proyek untuk Laporan EVM
+
+EVM_UI -[#green]> EVM_Control: 2. Meminta Laporan EVM Proyek
+
+EVM_Control -[#purple]> EVM_Service: 3. Meneruskan Permintaan Perhitungan
+EVM_Service -[#purple]> ProjectData: 4. Memuat Data Biaya & Progres Proyek
+ProjectData -[#purple]> ProjectDB: 5. Mengambil Data Biaya, Progres dari DB
+ProjectDB -[#purple]-> ProjectData: 6. Mengembalikan Data Proyek (Baseline, Aktual)
+
+EVM_Service -[#darkgreen]> EVM_Service: 7. Hitung PV, EV, AC
+EVM_Service -[#darkgreen]> EVM_Service: 8. Hitung CV, SV, CPI, SPI
+EVM_Service -[#darkgreen]> EVM_Service: 9. Hitung ETC, EAC, ETS, EAS
+
+EVM_Service -[#orange]> ProjectData: 10. Menyimpan Hasil Perhitungan EVM
+ProjectData -[#orange]> ProjectDB: 11. Simpan Hasil Perhitungan ke DB
+ProjectDB -[#orange]-> ProjectData: 12. Konfirmasi Penyimpanan
+ProjectData -[#orange]-> EVM_Service: 13. Mengirim Konfirmasi Simpan
+
+EVM_Service -[#blue]-> EVM_Control: 14. Mengirim Laporan EVM Lengkap
+EVM_Control -[#blue]-> EVM_UI: 15. Menampilkan Laporan EVM
+
+EVM_UI -[#blue]-> PM: 16. Menampilkan Laporan Hasil Perhitungan EVM
+
+@enduml

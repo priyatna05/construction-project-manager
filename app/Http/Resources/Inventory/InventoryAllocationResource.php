@@ -18,8 +18,7 @@ class InventoryAllocationResource extends JsonResource
         'inventory_id' => $this->inventory_id,
         'task_id' => $this->task_id,
         'quantity_allocated' => $this->quantity_allocated,
-        'cost_at_alloaction' => $this->cost_at_allocation,
-        'allocation_date' => $this->allocation_date,
+        'cost_at_allocation' => $this->cost_at_allocation,
         'notes' => $this->notes,
         'inventory' => new InventoryResource($this->whenLoaded('inventory')),
         ];

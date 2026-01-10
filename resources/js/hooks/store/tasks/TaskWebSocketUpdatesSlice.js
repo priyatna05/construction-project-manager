@@ -10,7 +10,7 @@ const createTaskWebSocketUpdatesSlice = (set, get) => ({
     );
   },
   updateTaskLocally: (taskId, property, value) => {
-    return set(
+    set(
       produce(state => {
         const task = get().findTask(taskId);
         const index = state.tasks[task.group_id].findIndex(i => i.id === task.id);
@@ -27,6 +27,8 @@ const createTaskWebSocketUpdatesSlice = (set, get) => ({
         }
       })
     );
+
+
   },
   removeTaskLocally: taskId => {
     return set(
@@ -120,9 +122,22 @@ const createTaskWebSocketUpdatesSlice = (set, get) => ({
           return;
         }
 
-        // 3. Perbarui properti 'inventories' pada objek tugas tersebut.
+        // 3. Transform WebSocket data to match API format for consistency
+        const transformedInventories = inventories.map(allocation => ({
+          inventory_id: allocation.inventory_id,
+          task_id: allocation.task_id,
+          quantity_allocated: allocation.quantity_allocated,
+          cost_at_allocation: allocation.cost_at_allocation,
+          notes: allocation.notes,
+          inventory: allocation.inventory,
+        }));
+
+        // 4. Perbarui properti 'allocated_inventories' pada objek tugas tersebut.
         // Kita mengganti seluruh array dengan data baru dari server.
-        state.tasks[task.group_id][taskIndex].inventories = inventories;
+        state.tasks[task.group_id][taskIndex].allocated_inventories = transformedInventories;
+
+        // 5. Trigger re-render by updating a dummy property to force component updates
+        state.tasks[task.group_id][taskIndex]._inventoryUpdated = Date.now();
       })
     );
   },

@@ -9,17 +9,17 @@ import {
   PillsInput,
   rem,
   useCombobox,
+  Text,
 } from '@mantine/core';
-import useAuthorization from '@/hooks/useAuthorization';
 
 export default function LabelsDropdown({
   items = [],
   selected = [],
   onChange,
   filterTypes = [],
+  readOnly = false,
   ...props
 }) {
-  const { can } = useAuthorization() || { can: () => true };
   const combobox = useCombobox({
     onDropdownClose: () => {
       combobox.resetSelectedOption();
@@ -28,24 +28,52 @@ export default function LabelsDropdown({
     onDropdownOpen: () => combobox.updateSelectedOptionIndex('active'),
   });
 
-  const handleValueSelect = val =>
-    onChange?.(selected.includes(val) ? selected.filter(v => v !== val) : [...selected, val]);
+  const handleValueSelect = (val) => {
+    if (readOnly) return;
 
-  const handleValueRemove = val => onChange?.(selected.filter(v => v !== val));
+    onChange?.(
+      selected.includes(val) ? selected.filter((v) => v !== val) : [...selected, val]
+    );
+  };
+
+  const handleValueRemove = (val) => {
+    if (readOnly) return;
+    onChange?.(selected.filter((v) => v !== val));
+  };
+
+  const disabledFieldStyles = readOnly
+    ? {
+        opacity: 0.6,
+        cursor: 'not-allowed',
+        backgroundColor: 'var(--mantine-color-gray-0)',
+        borderColor: 'var(--mantine-color-gray-3)',
+      }
+    : { cursor: 'pointer' };
 
   return (
     <Box {...props}>
       <Input.Label>Status</Input.Label>
+      <Text
+        size='xs'
+        c='dimmed'
+      >
+        Current status or phase of the task
+      </Text>
       <Combobox
         store={combobox}
         onOptionSubmit={handleValueSelect}
         withinPortal={false}
-        disabled={!can('edit task')}
+        disabled={readOnly}
       >
         <Combobox.DropdownTarget>
           <PillsInput
             pointer
-            onClick={() => combobox.toggleDropdown()}
+            onClick={() => {
+              if (readOnly) return;
+              combobox.toggleDropdown();
+            }}
+            data-disabled={readOnly || undefined}
+            style={disabledFieldStyles}
           >
             <Pill.Group style={{ rowGap: rem(3), columnGap: rem(12) }}>
               {selected?.length > 0 ? (
@@ -53,14 +81,14 @@ export default function LabelsDropdown({
                   const label = items.find(i => i.id === id);
                   if (!label) return null;
                   return (
-                    <Label
+                      <Label
                       key={label.id}
-                      name={label.name}
-                      color={label.color}
-                      icon={label.icon}
-                      size={11}
-                      onRemove={() => handleValueRemove(label)}
-                    />
+                        name={label.name}
+                        color={label.color}
+                        icon={label.icon}
+                        size={11}
+                        onRemove={readOnly ? undefined : () => handleValueRemove(label.id)}
+                      />
                   );
                 })
               ) : (
@@ -70,8 +98,11 @@ export default function LabelsDropdown({
               <Combobox.EventsTarget>
                 <PillsInput.Field
                   type='hidden'
+                  style={{ opacity: readOnly ? 0.6 : 1 }}
                   onBlur={() => combobox.closeDropdown()}
-                  onKeyDown={event => {
+                  onKeyDown={(event) => {
+                    if (readOnly) return;
+
                     if (event.key === 'Backspace' && selected?.length > 0) {
                       event.preventDefault();
                       handleValueRemove(selected[selected.length - 1]);

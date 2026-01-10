@@ -1,29 +1,35 @@
-import ActionButton from '@/components/ActionButton';
 import useForm from '@/hooks/useForm';
 import Layout from '@/layouts/MainLayout';
 import { usePage } from '@inertiajs/react';
 import {
-  Box,
+  Avatar,
+  Breadcrumbs,
+  Button,
   Card,
   Fieldset,
-  FileInput,
   Grid,
   Group,
   Image,
   Select,
+  SimpleGrid,
+  Stack,
   Text,
   TextInput,
   Title,
+  Tooltip,
 } from '@mantine/core';
+import { IconTrash, IconUpload } from '@tabler/icons-react';
+import { useState, useRef } from 'react';
+import { notifications } from '@mantine/notifications';
 
 const CompanyEdit = () => {
   const {
     item,
     dropdowns: { countries, currencies },
   } = usePage().props;
-
+  const [showUploadIcon, setShowUploadIcon] = useState(false);
+  const fileInputRef = useRef(null);
   const [form, submit, updateValue] = useForm('post', route('settings.company.update'), {
-    _method: 'put',
     logo: null,
     name: item.name || '',
     address: item.address || '',
@@ -36,8 +42,46 @@ const CompanyEdit = () => {
     web: item.web || '',
   });
 
+  const handleFileChange = file => {
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        notifications.show({
+          title: 'File too large',
+          message: 'Please upload an image smaller than 2MB',
+          color: 'red',
+        });
+        return;
+      }
+      updateValue('logo', file);
+    } else {
+      updateValue('logo', null);
+    }
+  };
+
+  const handleRemoveAvatar = e => {
+    e.stopPropagation();
+    updateValue('logo', null);
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
     <>
+      <Breadcrumbs
+        fz='sm'
+        mb='xl'
+        separator={<Text c='dimmed'>/</Text>}
+      >
+        <Text c='dimmed'>Settings</Text>
+        <Text
+          c='white'
+          fw={500}
+        >
+          My Companies
+        </Text>
+      </Breadcrumbs>
       <Card
         shadow='sm'
         padding='xl'
@@ -61,245 +105,254 @@ const CompanyEdit = () => {
           <Grid.Col span='content'></Grid.Col>
         </Grid>
 
-        <form onSubmit={e => submit(e, { forceFormData: true })}>
-          <Grid
-            justify='flex-start'
-            align='center'
-            gutter='lg'
+        <form
+          onSubmit={e => {
+            e.preventDefault();
+            submit({
+              forceFormData: true,
+            });
+          }}
+        >
+          {/* Logo & Name Section */}
+          <Group
+            align='flex-start'
+            spacing='lg'
           >
-            <Grid.Col span='content'>
-              {item.logo || form.data.logo ? (
-                <Image
-                  src={form.data.logo === null ? item.logo : URL.createObjectURL(form.data.logo)}
-                  w={240}
-                  h={64}
-                />
-              ) : (
-                <Box
-                  w={240}
-                  h={64}
-                  bg='#25262b'
-                  align='center'
-                  pt='lg'
-                  opacity={0.6}
+            {/* Logo Upload Box */}
+            <div
+              style={{
+                position: 'relative',
+                width: 150,
+                height: 150,
+              }}
+            >
+              <Tooltip
+                label='Upload new logo'
+                withArrow
+              >
+                <Avatar
+                  style={{
+                    width: 150,
+                    height: 100,
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '24px',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    opacity: item.logo || form.data.logo ? 1 : 0.6,
+                  }}
+                  onClick={handleAvatarClick}
+                  onMouseEnter={() => setShowUploadIcon(true)}
+                  onMouseLeave={() => setShowUploadIcon(false)}
                 >
-                  Company logo
-                </Box>
-              )}
-            </Grid.Col>
-            <Grid.Col span='auto'>
-              <FileInput
-                label='Logo'
-                placeholder='Choose image'
+                  {/* Logo image */}
+                  {item.logo || form.data.logo ? (
+                    <Image
+                      src={
+                        form.data.logo === null ? item.logo : URL.createObjectURL(form.data.logo)
+                      }
+                      width={150}
+                      height={150}
+                      fit='cover'
+                    />
+                  ) : (
+                    <Text
+                      c='dimmed'
+                      size='sm'
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        height: '100%',
+                        width: '100%',
+                        textAlign: 'center',
+                      }}
+                    >
+                      Company Logo (240×64)
+                    </Text>
+                  )}
+
+                  {/* Hover overlay */}
+                  {showUploadIcon && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        backgroundColor: 'rgba(0,0,0,0.5)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'background-color 0.2s ease',
+                      }}
+                    >
+                      {item.logo || form.data.logo ? (
+                        <IconTrash
+                          size={28}
+                          stroke={1.5}
+                          color='white'
+                          onClick={handleRemoveAvatar}
+                        />
+                      ) : (
+                        <IconUpload
+                          size={28}
+                          stroke={1.5}
+                          color='white'
+                        />
+                      )}
+                    </div>
+                  )}
+                </Avatar>
+              </Tooltip>
+
+              {/* Hidden File Input */}
+              <input
+                ref={fileInputRef}
+                type='file'
                 accept='image/png,image/jpeg'
-                onChange={image => updateValue('logo', image)}
-                clearable
-                error={form.errors.logo}
-                disabled={!can('edit owner company')}
+                style={{ display: 'none' }}
+                onChange={e => handleFileChange(e.target.files?.[0] || null)}
               />
+
               <Text
                 size='xs'
                 c='dimmed'
-                mt='sm'
+                mt={5}
               >
-                240px &times; 64px (aspect 15:4)
+                240px × 64px (aspect 15:4)
               </Text>
-            </Grid.Col>
-          </Grid>
+            </div>
 
-          <TextInput
-            label='Name'
-            placeholder='Company name'
-            required
-            mt='md'
-            value={form.data.name}
-            onChange={e => updateValue('name', e.target.value)}
-            error={form.errors.name}
-            disabled={!can('edit owner company')}
-          />
-
-          <Fieldset
-            legend='Location'
-            mt='xl'
-          >
-            <TextInput
-              label='Address'
-              placeholder='Address'
-              value={form.data.address}
-              onChange={e => updateValue('address', e.target.value)}
-              error={form.errors.address}
-              disabled={!can('edit owner company')}
-            />
-
-            <Group grow>
+            <Stack style={{ flex: 1 }}>
               <TextInput
-                label='Postal code'
-                placeholder='Postal code'
-                mt='md'
-                value={form.data.postal_code}
-                onChange={e => updateValue('postal_code', e.target.value)}
-                error={form.errors.postal_code}
+                label='Name'
+                placeholder='Company name'
+                required
+                value={form.data.name}
+                onChange={e => updateValue('name', e.target.value)}
+                error={form.errors.name}
                 disabled={!can('edit owner company')}
               />
 
-              <TextInput
-                label='City'
-                placeholder='City'
-                mt='md'
-                value={form.data.city}
-                onChange={e => updateValue('city', e.target.value)}
-                error={form.errors.city}
-                disabled={!can('edit owner company')}
-              />
-            </Group>
-
-            <Select
-              label='Country'
-              placeholder='Select country'
-              mt='md'
-              searchable={true}
-              value={form.data.country_id?.toString()}
-              onChange={value => updateValue('country_id', value)}
-              data={countries}
-              error={form.errors.country_id}
-              disabled={!can('edit owner company')}
-            />
-          </Fieldset>
-
-          {/* <Fieldset
-            legend='Details'
-            mt='xl'
-          > */}
-          {/* <TextInput
-              label='Business ID'
-              placeholder='Business ID'
-              value={form.data.business_id}
-              onChange={e => updateValue('business_id', e.target.value)}
-              error={form.errors.business_id}
-              disabled={!can('edit owner company')}
-            />
-
-            <TextInput
-            label='Tax ID'
-            placeholder='Tax ID'
-            mt='md'
-              value={form.data.tax_id}
-              onChange={e => updateValue('tax_id', e.target.value)}
-              error={form.errors.tax_id}
-              disabled={!can('edit owner company')}
-            />
-
-            <TextInput
-            label='VAT'
-            placeholder='VAT'
-              mt='md'
-              value={form.data.vat}
-              onChange={e => updateValue('vat', e.target.value)}
-              error={form.errors.vat}
-              disabled={!can('edit owner company')}
-            /> */}
-          {/* </Fieldset> */}
-
-          <Fieldset
-            legend='Finance'
-            mt='xl'
-          >
-            {/* <TextInput
-              label='IBAN'
-              placeholder='IBAN'
-              value={form.data.iban}
-              onChange={e => updateValue('iban', e.target.value)}
-              error={form.errors.iban}
-              disabled={!can('edit owner company')}
-            />
-
-            <TextInput
-            label='SWIFT'
-            placeholder='SWIFT'
-            mt='md'
-            value={form.data.swift}
-            onChange={e => updateValue('swift', e.target.value)}
-            error={form.errors.swift}
-            disabled={!can('edit owner company')}
-            /> */}
-
-            <Group grow>
               <Select
                 label='Default currency'
                 placeholder='Select currency'
                 required
-                mt='md'
-                searchable={true}
+                searchable
                 value={form.data.currency_id?.toString()}
-                onChange={value => updateValue('currency_id', value)}
+                onChange={e => updateValue('currency_id', e.target.value)}
                 data={currencies}
                 error={form.errors.currency_id}
                 disabled={!can('edit owner company')}
               />
+            </Stack>
+          </Group>
 
-              {/* <NumberInput
-                label='Tax'
-                required
-                allowNegative={false}
-                clampBehavior='strict'
-                decimalScale={2}
-                fixedDecimalScale={true}
-                suffix='%'
-                mt='md'
-                value={form.data.tax}
-                onChange={value => updateValue('tax', value)}
-                error={form.errors.tax}
-                disabled={!can('edit owner company')}
-              /> */}
-            </Group>
-          </Fieldset>
-
-          <Fieldset
-            legend='Contact'
+          <SimpleGrid
+            cols={{ base: 1, md: 2 }}
+            spacing='xl'
             mt='xl'
           >
-            <Group grow>
+            <Fieldset
+              legend='Location'
+              mt='xl'
+            >
               <TextInput
-                label='Email'
-                placeholder='Email'
-                value={form.data.email}
-                onChange={e => updateValue('email', e.target.value)}
-                error={form.errors.email}
+                label='Address'
+                placeholder='Address'
+                value={form.data.address}
+                onChange={e => updateValue('address', e.target.value)}
+                error={form.errors.address}
                 disabled={!can('edit owner company')}
               />
 
-              <TextInput
-                label='Phone'
-                placeholder='Phone'
-                value={form.data.phone}
-                onChange={e => updateValue('phone', e.target.value)}
-                error={form.errors.phone}
+              <Group grow>
+                <TextInput
+                  label='Postal code'
+                  placeholder='Postal code'
+                  mt='md'
+                  value={form.data.postal_code}
+                  onChange={e => updateValue('postal_code', e.target.value)}
+                  error={form.errors.postal_code}
+                  disabled={!can('edit owner company')}
+                />
+
+                <TextInput
+                  label='City'
+                  placeholder='City'
+                  mt='md'
+                  value={form.data.city}
+                  onChange={e => updateValue('city', e.target.value)}
+                  error={form.errors.city}
+                  disabled={!can('edit owner company')}
+                />
+              </Group>
+
+              <Select
+                label='Country'
+                placeholder='Select country'
+                mt='md'
+                searchable={true}
+                value={form.data.country_id?.toString()}
+                onChange={e => updateValue('country_id', e.target.value)}
+                data={countries}
+                error={form.errors.country_id}
                 disabled={!can('edit owner company')}
               />
-            </Group>
+            </Fieldset>
 
-            <TextInput
-              label='Web'
-              placeholder='Web'
-              mt='md'
-              value={form.data.web}
-              onChange={e => updateValue('web', e.target.value)}
-              error={form.errors.web}
-              disabled={!can('edit owner company')}
-            />
-          </Fieldset>
+            <Fieldset
+              legend='Contact'
+              mt='xl'
+            >
+              <Group grow>
+                <TextInput
+                  label='Email'
+                  placeholder='Email'
+                  value={form.data.email}
+                  onChange={e => updateValue('email', e.target.value)}
+                  error={form.errors.email}
+                  disabled={!can('edit owner company')}
+                />
+
+                <TextInput
+                  label='Phone'
+                  placeholder='Phone'
+                  value={form.data.phone}
+                  onChange={e => updateValue('phone', e.target.value)}
+                  error={form.errors.phone}
+                  disabled={!can('edit owner company')}
+                />
+              </Group>
+
+              <TextInput
+                label='Web'
+                placeholder='Web'
+                mt='md'
+                value={form.data.web}
+                onChange={e => updateValue('web', e.target.value)}
+                error={form.errors.web}
+                disabled={!can('edit owner company')}
+              />
+            </Fieldset>
+          </SimpleGrid>
 
           <Group
             justify='flex-end'
             mt='xl'
           >
             {can('edit owner company') && (
-              <ActionButton
+              <Button
+                color='blue'
                 type='submit'
                 loading={form.processing}
               >
                 Save
-              </ActionButton>
+              </Button>
             )}
           </Group>
         </form>
@@ -308,6 +361,6 @@ const CompanyEdit = () => {
   );
 };
 
-CompanyEdit.layout = page => <Layout title='Edit user'>{page}</Layout>;
+CompanyEdit.layout = page => <Layout title='My Company'>{page}</Layout>;
 
 export default CompanyEdit;

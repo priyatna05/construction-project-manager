@@ -1,4 +1,3 @@
-developed with Laravel and React, serves as a project management tool. The primary idea behind this initiative is to provide developers or development companies with a free platform to efficiently manage clients, projects, log time, and generate invoices. clsYou may wonder, 'Why another tool when there are already feature-rich options available for free?' Yes, that's a valid point. However, my aim is to offer a project management tool specifically tailored for Laravel developers, giving them option to integrate and customize features according to their unique workflows.
 
 ## Features
 
@@ -13,7 +12,6 @@ developed with Laravel and React, serves as a project management tool. The prima
 - Mention functionality in task descriptions and comments.
 - Personalized "My Tasks" page for each user.
 - Activity page for projects or selected ones.
-- Invoice generation from billable tasks with logged time.
 - Print or download invoices directly from the platform.
 - Dashboard offering project progress, overdue tasks, recently assigned tasks, and recent comments.
 - Additional reports for daily logged time per user and total logged time.
@@ -91,7 +89,6 @@ To use Pusher, sign up, then create a project and copy paste app keys to `.env` 
 - [x] Kanban view.
 - [x] Report that will calculate expense and profit per user.
 - [ ] Add project notes section.
-- [ ] Multiple users should be able to log time on a task
 - [ ] Add history of changes to the task.
 - [ ] Change specific permission per user.
 - [ ] Make it responsive.

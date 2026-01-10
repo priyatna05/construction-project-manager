@@ -19,9 +19,6 @@ return new class extends Migration
             $table->string('color')->nullable();
             $table->string('icon')->nullable();
             $table->boolean('is_default')->default(false);
-            // Consider a specific format like hex #RRGGBB
-            // Assuming 'archivedAt' is a custom macro
-            // If not: $table->timestamp('archived_at')->nullable();
             $table->timestamp('archived_at')->nullable();
             $table->index(['type', 'slug']);
             $table->timestamps();

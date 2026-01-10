@@ -4,18 +4,22 @@ import useAuthorization from '@/hooks/useAuthorization';
 import useWebSockets from '@/hooks/useWebSockets';
 import NavBarNested from '@/layouts/NavBarNested';
 import { Head, usePage } from '@inertiajs/react';
-import { ActionIcon, Affix, AppShell, Button, Group, rem } from '@mantine/core';
-import { IconChevronLeft, IconChevronRight, IconSearch } from '@tabler/icons-react';
+import { ActionIcon, AppShell, Group, rem, } from '@mantine/core';
+import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import Logo from '@/components/Logo';
-import { SearchInput } from '@/components/SearchInput';
+import { TopBar } from '@/layouts/TopBar';
 
 export default function MainLayout({ children, title }) {
+  const page = usePage();
+  const { auth, item } = page.props;
+  const currentPath = (page.url || '').split('?')[0];
   window.can = useAuthorization().can;
+  window.auth = auth;
   const [collapsed, setCollapsed] = useState(false);
 
   const { initUserWebSocket } = useWebSockets();
-  const { notifications } = usePage().props.auth;
+  const { notifications } = auth;
   const { setNotifications } = useNotificationsStore();
 
   useEffect(() => {
@@ -31,35 +35,8 @@ export default function MainLayout({ children, title }) {
       <Head title={title} />
 
       <FlashNotification />
-      <SearchInput
-        renderTriger={({ onClick }) => (
-          <Affix
-            position={{ bottom: 10, left: 27 }}
-            zIndex={1000}
-          >
-            <Button
-              radius='xl'
-              size='md'
-              variant='filled'
-              color='blue'
-              px={0}
-              onClick={onClick}
-              style={{
-                width: 35,
-                height: 35,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <IconSearch
-                size={20}
-                color='white'
-              />
-            </Button>
-          </Affix>
-        )}
-      />
+
+      <TopBar />
       <AppShell.Navbar
         className='navbar'
         pl='md'
@@ -71,7 +48,7 @@ export default function MainLayout({ children, title }) {
           p='xs'
           gap='xs'
         >
-          {!collapsed && <Logo style={{ width: rem(120) }} />}
+          {!collapsed && <Logo item={item} style={{ width: rem(120) }} />}
           <ActionIcon
             variant='subtle'
             onClick={() => setCollapsed(prev => !prev)}
@@ -79,12 +56,17 @@ export default function MainLayout({ children, title }) {
             {collapsed ? <IconChevronRight size={18} /> : <IconChevronLeft size={18} />}
           </ActionIcon>
         </Group>
-        <NavBarNested collapsed={collapsed} />
+        <NavBarNested
+          collapsed={collapsed}
+          currentPath={currentPath}
+        />
       </AppShell.Navbar>
 
       <AppShell.Main
-        pt={`calc(${rem(60)} + var(--mantine-spacing-md))`}
-        style={{ backgroundColor: 'var(--mantine-color-blue-9)' }}
+        pt={rem(60)}
+        style={{
+    backgroundColor: "light-dark(var(--mantine-color-blue-9), var(--mantine-color-dark-8))",
+  }}
       >
         {children}
       </AppShell.Main>

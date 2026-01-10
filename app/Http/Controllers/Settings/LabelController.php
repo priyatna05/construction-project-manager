@@ -89,4 +89,17 @@ class LabelController extends Controller
         return redirect()->back()->success('Deleted', 'Label has been permanently deleted.');
     }
 
+    public function apiIndex(Request $request)
+    {
+        $query = Label::query();
+
+        if ($request->has('type') && !empty($request->type)) {
+            $query->where('type', $request->type);
+        }
+
+        $labels = $query->get(['id', 'name', 'slug', 'type', 'color', 'icon']);
+
+        return response()->json($labels);
+    }
+
 }

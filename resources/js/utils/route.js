@@ -8,7 +8,11 @@ export const redirectTo = (routeName, params = {}) => {
 };
 
 export const redirectToUrl = url => {
-  router.get(url);
+  if (url) {
+    router.get(url);
+  } else {
+    console.warn('redirectToUrl called with undefined or null url');
+  }
 };
 
 export const currentUrl = () => {

@@ -56,7 +56,11 @@ class Label extends Model
     public const TYPE_TASK_RELATION     = 'task_relation';
     public const TYPE_INVENTORY_STATUS  = 'inventory_status_label';
     public const TYPE_INVENTORY_TYPE    = 'inventory_type_label';
-    public const TYPE_INVENTORY_UNIT    = 'inventory_unit_label';
+    public const TYPE_TASK_INVENTORY_UNIT    = 'task_inventory_unit_label';
+    public const TYPE_TASK    = 'task_type_label';
+    public const TYPE_KONTRAK    = 'kontrak_label';
+    public const TYPE_WORK_REPORT_STATUS    = 'work_report_status';
+    public const TYPE_PRIORITY    = 'task_priority_label';
 
     protected $fillable = [
         'name',
@@ -87,7 +91,12 @@ class Label extends Model
 
     public function inventories(): MorphToMany
     {
-        return $this->morphedByMany(Task::class, 'labelable');
+        return $this->morphedByMany(Inventory::class, 'labelable');
+    }
+
+    public function workReports(): MorphToMany
+    {
+        return $this->morphedByMany(WorkReport::class, 'labelable');
     }
 
     // scope

@@ -36,12 +36,12 @@ return [
             'throw' => false,
         ],
 
-        'invoices' => [
-            'driver' => 'local',
-            'root' => storage_path('app/invoices'),
-            'url' => env('APP_URL').'/storage',
-            'visibility' => 'private',
-        ],
+        // 'invoices' => [
+        //     'driver' => 'local',
+        //     'root' => storage_path('app/invoices'),
+        //     'url' => env('APP_URL').'/storage',
+        //     'visibility' => 'private',
+        // ],
 
         'public' => [
             'driver' => 'local',

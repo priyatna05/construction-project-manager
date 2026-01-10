@@ -84,12 +84,14 @@ class CommentCreatedMentionedUserNotification extends Notification implements Sh
     public function toArray(object $notifiable): array
     {
         return [
+            'id'            => $this->comment->id,
             'task_id'       => $this->comment->task->id,
             'title'         => "{$this->comment->user->name} has mentioned you in a comment on \"{$this->comment->task->name}\" task",
             'description'   => "On \"{$this->comment->task->project->name}\" project",
             'link'          => route('projects.tasks.open', [$this->comment->task->project_id, $this->comment->task->id]),
-            'created_at'    => $notifiable->created_at,
-            'read_at'       => $notifiable->read_at,
+            'created_at'    => optional($this->comment->created_at)->toIso8601String(),
+            'read_at'       => null,
+            'type'          => 'comment',
         ];
     }
 }

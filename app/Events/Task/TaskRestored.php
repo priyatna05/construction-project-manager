@@ -22,7 +22,8 @@ class TaskRestored implements ShouldBroadcast
      */
     public function __construct(Task $task)
     {
-        $this->task = $task->loadDefault();
+        $this->task = $task->fresh();
+        // loadDefault();
         $this->groupId = $task->group_id;
 
         $this->dontBroadcastToCurrentUser();

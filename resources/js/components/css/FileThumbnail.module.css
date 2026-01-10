@@ -5,9 +5,9 @@
   background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-7));
   color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-0));
 
-  @mixin hover {
-    color: light-dark(var(--mantine-color-gray-9), var(--mantine-color-white));
-    border: rem(1px) solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+  &:hover {
+    background-color: light-dark(var(--mantine-color-blue-0), var(--mantine-color-dark-6));
+    border-color: light-dark(var(--mantine-color-blue-3), var(--mantine-color-dark-4));
   }
 }
 
@@ -17,31 +17,46 @@
 
 .iconContainer {
   position: relative;
-  width: rem(45);
-  height: rem(45);
+  width: 5.5rem; /* ~88px */
+  height: 5.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  transition: all 0.2s ease-in-out;
+}
 
-  @mixin hover {
-    .remove {
-      display: block;
-    }
+.iconContainer:hover .remove {
+  display: block;
+}
 
-    .icon {
-      opacity: 0.15;
-    }
-  }
+.iconContainer:hover .icon {
+  opacity: 0.15;
+  transform: scale(1.05);
 }
 
 .icon {
   opacity: 1;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .remove {
-  display: none;
   position: absolute;
-  top: 2px;
-  left: 2px;
-  width: rem(42);
-  height: rem(42);
-  color: var(--mantine-color-red-7);
+  top: -6px;
+  right: -6px;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  border-radius: 50%;
+  padding: 4px;
   cursor: pointer;
+  z-index: 10;
+  display: none;
+  transition: 0.2s ease all;
 }
+
+.remove:hover {
+  background-color: red;
+  transform: scale(1.2);
+}
+
+

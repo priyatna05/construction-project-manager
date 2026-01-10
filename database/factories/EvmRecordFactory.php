@@ -44,9 +44,13 @@ class EvmRecordFactory extends Factory
 
             // --- Di sinilah semua logika perhitungan Anda ditempatkan ---
 
-            $projectStart = Carbon::parse($project->start_date);
-            $projectEnd = Carbon::parse($project->end_date);
-            $budgetAtCompletion = $project->budget_project;
+            // Clean date strings to remove extra timezone info that causes parsing errors
+            $cleanStartDate = preg_replace('/\s*\([^)]*\)$/', '', $project->start_date);
+            $cleanEndDate = preg_replace('/\s*\([^)]*\)$/', '', $project->end_date);
+
+            $projectStart = Carbon::parse($cleanStartDate);
+            $projectEnd = Carbon::parse($cleanEndDate);
+            $budgetAtCompletion = $project->budget_project_estimate ?? 0;
 
             // Planned Value (PV)
             $totalDuration = $projectEnd->diffInDays($projectStart);
@@ -75,15 +79,15 @@ class EvmRecordFactory extends Factory
             return [
                 'project_id' => $project->id,
                 'report_date' => $reportDate->toDateString(),
-                'budget_at_completion' => $budgetAtCompletion / 100,
-                'planned_value' => round($plannedValue / 100, 2),
-                'earned_value' => round($earnedValue / 100, 2),
-                'actual_cost' => round($actualCost / 100, 2),
-                'schedule_variance' => round($scheduleVariance / 100, 2),
-                'cost_variance' => round($costVariance / 100, 2),
-                'estimate_at_completion' => $estimateAtCompletion ? round($estimateAtCompletion / 100, 2) : null,
-                'estimate_to_complete' => $estimateToComplete ? round($estimateToComplete / 100, 2) : null,
-                'variance_at_completion' => $varianceAtCompletion ? round($varianceAtCompletion / 100, 2) : null,
+                'budget_at_completion' => $budgetAtCompletion,
+                'planned_value' => round($plannedValue, 2),
+                'earned_value' => round($earnedValue, 2),
+                'actual_cost' => round($actualCost, 2),
+                'schedule_variance' => round($scheduleVariance, 2),
+                'cost_variance' => round($costVariance, 2),
+                'estimate_at_completion' => $estimateAtCompletion ? round($estimateAtCompletion, 2) : null,
+                'estimate_to_complete' => $estimateToComplete ? round($estimateToComplete, 2) : null,
+                'variance_at_completion' => $varianceAtCompletion ? round($varianceAtCompletion, 2) : null,
                 'schedule_performance_index' => $schedulePerformanceIndex ? round($schedulePerformanceIndex, 4) : null,
                 'cost_performance_index' => $costPerformanceIndex ? round($costPerformanceIndex, 4) : null,
                 'tcpi_bac' => $tcpi_bac ? round($tcpi_bac, 4) : null,

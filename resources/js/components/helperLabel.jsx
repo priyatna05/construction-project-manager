@@ -11,20 +11,16 @@ export const getIcon = (iconName, props = { size: 16 }) => {
     }
     return React.createElement(TablerIcons[iconName], props);
   }
-  console.warn(`🛑 Icon "${iconName}" not found in @tabler/icons-react. Using fallback icon.`);
   return React.createElement(FallbackIcon, props);
 };
 
 export const LabelDisplay = ({ label }) => {
   if (!label || !label.name) {
-    return <Text c='dimmed'>-</Text>;
+    return <Text component="span" c="dimmed">-</Text>;
   }
 
   return (
-    <Group
-      gap='xs'
-      wrap='nowrap'
-    >
+    <Group gap="xs" wrap="nowrap">
       {label.icon &&
         getIcon(label.icon, {
           size: 16,
@@ -33,10 +29,11 @@ export const LabelDisplay = ({ label }) => {
               ? label.color
               : 'currentColor',
         })}
-      <Text size='sm'>{label.name}</Text>
+      <Text component="span" size="sm">{label.name}</Text>
     </Group>
   );
 };
+
 
 export const StatusBadge = ({ label }) => {
   if (!label || !label.name) {
@@ -81,9 +78,44 @@ const formatLabelsForDropdown = (labels = []) => {
 
 export { formatLabelsForDropdown };
 
-export const renderSelectOptionWithIcon = ({ option }) => (
-  <Group>
-    {option.icon && getIcon(option.icon, { size: 16, color: option.color || 'currentColor' })}
-    <Text>{option.label}</Text>
+export const renderSelectOptionWithIcon = ({ option, checked }) => (
+    <Group>
+    {checked && <Text fw={900}>✓</Text>}
+      {option.icon && getIcon(option.icon, { size: 16, color: option.color || 'currentColor' })}
+      <Text>{option.label}</Text>
   </Group>
 );
+
+export const BadgeWithIcon = ({ label }) => {
+  if (!label || !label.name) {
+    return (
+      <Badge color="gray" variant="light">
+        Unknown
+      </Badge>
+    );
+  }
+
+  const iconEl =
+    label.icon &&
+    getIcon(label.icon, {
+      size: 14,
+      color:
+        label.color && /^#([0-9A-Fa-f]{3}){1,2}$/.test(label.color)
+          ? label.color
+          : 'currentColor',
+    });
+
+  return (
+    <Badge
+      color={label.color || 'gray'}
+      variant="light"
+      leftSection={iconEl}
+      styles={{
+        root: { display: 'flex', alignItems: 'center', gap: 6 },
+        label: { display: 'flex', alignItems: 'center', gap: 4 },
+      }}
+    >
+      {label.name}
+    </Badge>
+  );
+};

@@ -3,10 +3,17 @@ import { Flex, Table, Text } from '@mantine/core';
 import { LabelDisplay } from '@/components/helperLabel';
 import { money } from '@/utils/currency';
 
+const formatNumber = value => Number(value ?? 0).toLocaleString('id-ID');
+const shorten = (text, max = 20) => {
+  if (!text) return '-';
+  return text.length > max ? `${text.slice(0, max)}...` : text;
+};
+
 export default function TableRow({ item, onEdit }) {
   if (!item) {
     return null;
   }
+
   return (
     <Table.Tr key={item.id}>
       <Table.Td>
@@ -18,15 +25,7 @@ export default function TableRow({ item, onEdit }) {
           {item.code}
         </Text>
       </Table.Td>
-      <Table.Td>
-        <Text
-          gap='sm'
-          align='start'
-          wrap='wrap'
-        >
-          {item.location_site_on_project?.name || '-'}
-        </Text>
-      </Table.Td>
+
       <Table.Td>
         <Text
           gap='sm'
@@ -36,33 +35,29 @@ export default function TableRow({ item, onEdit }) {
           {item.name}
         </Text>
       </Table.Td>
-      <Table.Td>{item.description}</Table.Td>
-      <Table.Td style={{ whiteSpace: 'normal', overflow: 'visible' }}>
-        <Flex
-          gap='sm'
-          align='start'
-          wrap='wrap'
-        >
-          {Math.round(item.quantity_on_hand)}
-        </Flex>
-      </Table.Td>
-      <Table.Td style={{ whiteSpace: 'normal', overflow: 'visible' }}>
-        <Flex
-          gap='sm'
-          align='start'
-          wrap='wrap'
-        >
-          <LabelDisplay label={item.type} />
-        </Flex>
-      </Table.Td>
       <Table.Td>
         <Text
+          size='sm'
+          title={item.description || ''}
+          style={{ cursor: item.description ? 'pointer' : 'default' }}
+        >
+          {shorten(item.description)}
+        </Text>
+      </Table.Td>
+      <Table.Td style={{ whiteSpace: 'normal', overflow: 'visible' }}>
+        <Flex
           gap='sm'
           align='start'
           wrap='wrap'
         >
-          <LabelDisplay label={item.unit} />
-        </Text>
+          {formatNumber(Math.abs(item.quantity_on_hand))}
+        </Flex>
+      </Table.Td>
+      <Table.Td style={{ whiteSpace: 'normal', overflow: 'visible' }}>
+        <LabelDisplay label={item.type} />
+      </Table.Td>
+      <Table.Td>
+        <LabelDisplay label={item.unit} />
       </Table.Td>
       <Table.Td>
         <Text
@@ -73,15 +68,9 @@ export default function TableRow({ item, onEdit }) {
           {money(Math.round(item.unit_cost))}
         </Text>
       </Table.Td>
-      {/* <Table.Td style={{ whiteSpace: 'normal', overflow: 'visible' }}>
-        <Flex
-          gap='sm'
-          align='start'
-          wrap='wrap'
-        >
-         <StatusBadge label={item.status} />
-        </Flex>
-      </Table.Td> */}
+      <Table.Td style={{ whiteSpace: 'normal', overflow: 'visible' }}>
+        <LabelDisplay label={item.status} />
+      </Table.Td>
       {(can('edit inventory') || can('archive inventory') || can('restore inventory') || can('delete inventory')) && (
         <Table.Td>
           <TableRowActions
@@ -108,7 +97,7 @@ export default function TableRow({ item, onEdit }) {
             destroy={{
               route: 'inventories.forceDelete',
               title: 'Delete inventories',
-              content: `Are you sure you want to delete this inventory "${item.name}"? This action will remove form database`,
+              content: `Are you sure you want to delete this inventory "${item.name}"? This action will remove from database`,
               confirmLabel: 'Delete',
             }}
           />

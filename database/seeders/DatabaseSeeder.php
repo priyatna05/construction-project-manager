@@ -28,8 +28,6 @@ class DatabaseSeeder extends Seeder
                 InventorySeeder::class,     // Can run in parallel with tasks if allocations are separate
                 TasksSeeder::class,         // Depends on TaskGroups, Users, Labels
                                             // TasksSeeder now optionally seeds InventoryTaskAllocations
-                InvoiceSeeder::class, // New, depends on ClientCo, Projects, Users. Also seeds InvoiceItems.
-                TimesheetSeeder::class, // New, if implemented. Depends on Users, Tasks, Projects
                 EvmRecordSeeder::class,     // Depends on Projects
             ]);
 

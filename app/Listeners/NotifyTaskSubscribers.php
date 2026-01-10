@@ -10,6 +10,7 @@ use App\Notifications\CommentCreatedNotification;
 use App\Notifications\TaskCreatedMentionedUserNotification;
 use App\Notifications\TaskCreatedNotification;
 use App\Services\UserMentionService;
+use Illuminate\Support\Facades\Auth;
 
 class NotifyTaskSubscribers
 {
@@ -42,7 +43,7 @@ class NotifyTaskSubscribers
         // Now handle subscribed users
         $task
             ->subscribedUsers
-            ->reject(fn (User $user) => $user->id === auth()->id())
+            ->reject(fn (User $user) => $user->id === Auth::id())
             ->reject(fn (User $user) => $mentionedUsers->contains('id', $user->id))
             ->each(function (User $user) use ($event) {
                 $user->notify(new TaskCreatedNotification($event->task));
@@ -66,7 +67,7 @@ class NotifyTaskSubscribers
         // Now handle subscribed users
         $comment->task
             ->subscribedUsers
-            ->reject(fn (User $user) => $user->id === auth()->id())
+            ->reject(fn (User $user) => $user->id === Auth::id())
             ->reject(fn (User $user) => $mentionedUsers->contains('id', $user->id))
             ->each(function (User $user) use ($event) {
                 $user->notify(new CommentCreatedNotification($event->comment));

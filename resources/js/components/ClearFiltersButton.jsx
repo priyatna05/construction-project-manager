@@ -9,6 +9,7 @@ export default function ClearFiltersButton() {
   return (
     <Tooltip
       label='Clear filters'
+      color='green'
       openDelay={500}
       withArrow
     >

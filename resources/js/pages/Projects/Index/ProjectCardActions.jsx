@@ -1,22 +1,27 @@
 import { openConfirmModal } from '@/components/ConfirmModal';
-import useForm from '@/hooks/useForm';
-import { ActionIcon, Menu, rem } from '@mantine/core';
+import { useForm } from 'laravel-precognition-react-inertia';
+import { ActionIcon, Menu, rem, Tooltip } from '@mantine/core';
 import {
   IconArchive,
   IconTrash,
   IconArchiveOff,
-  IconDots,
   IconPencil,
   IconUsers,
+  IconAdjustmentsDown,
+  IconAdjustmentsUp,
 } from '@tabler/icons-react';
 import UserAccessModal from './Modals/UserAccessModal';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
 
 export default function ProjectCardActions({ item, onEdit }) {
-  const [archiveForm] = useForm('delete', route('projects.destroy', item.id));
-  const [restoreForm] = useForm('post', route('projects.restore', item.id));
-  const [forceDeleteForm] = useForm('delete', route('projects.forceDelete', item.id));
+  const [menuOpened, setMenuOpened] = useState(false);
+  const archiveForm = useForm('delete', route('projects.destroy', [item, item.id]));
+  const restoreForm = useForm('post', route('projects.restore', [item, item.id]));
+  const forceDeleteForm = useForm('delete', route('projects.forceDelete', [item, item.id]));
 
   const isArchived = route().params.archived;
+  const isLocked = Boolean(item?.is_completed);
 
   const canEditUserAccess = can('edit project user access');
   const canEdit = can('edit project');
@@ -46,7 +51,7 @@ export default function ProjectCardActions({ item, onEdit }) {
       content: `Are you sure you want to archive the project "${item.name}"? This action will prevent users from accessing it.`,
       confirmLabel: 'Archive',
       confirmProps: { color: 'orange' },
-      onConfirm: () => archiveForm.submit({ preserveScroll: true }),
+      deleteForm: archiveForm,
     });
   };
 
@@ -58,7 +63,7 @@ export default function ProjectCardActions({ item, onEdit }) {
       content: `Are you sure you want to restore the project "${item.name}"?`,
       confirmLabel: 'Restore',
       confirmProps: { color: 'blue' },
-      onConfirm: () => restoreForm.submit({ preserveScroll: true }),
+      deleteForm: restoreForm,
     });
   };
 
@@ -71,12 +76,7 @@ export default function ProjectCardActions({ item, onEdit }) {
       confirmLabel: 'Delete',
       requirePassword: true,
       confirmProps: { color: 'red' },
-      onConfirm: password => {
-        forceDeleteForm.submit({
-          data: { password },
-          preserveScroll: true,
-        });
-      },
+      deleteForm: forceDeleteForm,
     });
   };
 
@@ -89,22 +89,59 @@ export default function ProjectCardActions({ item, onEdit }) {
       shadow='md'
       transitionProps={{ duration: 100, transition: 'pop-top-right' }}
       offset={{ mainAxis: 3, alignmentAxis: 5 }}
+      opened={menuOpened}
+      onChange={setMenuOpened}
     >
       <Menu.Target>
-        <ActionIcon
-          variant='subtle'
-          color='gray'
-          title='Project actions'
-          aria-label='Project actions'
+        <Tooltip
+          label='actions'
+          color='blue'
+          withArrow
         >
-          <IconDots
-            style={{ width: rem(20), height: rem(20) }}
-            stroke={1.5}
-          />
-        </ActionIcon>
+          <ActionIcon
+            variant='subtle'
+            component={motion.button}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+          >
+            <AnimatePresence
+              mode='wait'
+              initial={false}
+            >
+              {menuOpened ? (
+                <motion.div
+                  key='up'
+                  initial={{ rotate: 90, opacity: 0 }}
+                  animate={{ rotate: 0, opacity: 1 }}
+                  exit={{ rotate: -90, opacity: 0 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <IconAdjustmentsUp
+                    style={{ width: rem(22), height: rem(22) }}
+                    stroke={1.5}
+                  />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key='down'
+                  initial={{ rotate: -90, opacity: 0 }}
+                  animate={{ rotate: 0, opacity: 1 }}
+                  exit={{ rotate: 90, opacity: 0 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <IconAdjustmentsDown
+                    style={{ width: rem(22), height: rem(22) }}
+                    stroke={1.5}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </ActionIcon>
+        </Tooltip>
       </Menu.Target>
       <Menu.Dropdown>
-        {canEditUserAccess && (
+        {canEditUserAccess && !isLocked && (
           <Menu.Item
             leftSection={
               <IconUsers
@@ -125,6 +162,7 @@ export default function ProjectCardActions({ item, onEdit }) {
                 stroke={1.5}
               />
             }
+            color='blue'
             onClick={handleEditClick}
           >
             Edit

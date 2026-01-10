@@ -7,5 +7,5 @@ export function isParent(taskId, allTasks = []) {
 }
 
 export function isChild(task = {}) {
-  return Array.isArray(task.dependencies) && task.dependencies.length > 0;
+  return Array.isArray(task.dependentTasks) && task.dependentTasks.length > 0;
 }

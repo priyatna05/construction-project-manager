@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Task;
+use App\Models\User;
 use Inertia\Inertia;
 use Inertia\Response;
 use App\Models\Comment;
@@ -20,7 +21,7 @@ class DashboardController extends Controller
 
         // Fetch projects with client company and task counts
         $projects = Project::whereIn('id', $projectIds)
-            ->with(['clientCompany:id,name'])
+            ->with(['clientCompany:id,name', 'attachments'])
             ->withCount([
                 'tasks AS all_tasks_count',
                 'tasks AS completed_tasks_count',
@@ -29,7 +30,21 @@ class DashboardController extends Controller
             ->withExists('favoritedByAuthUser AS favorite')
             ->orderBy('favorite', 'desc')
             ->orderBy('name', 'asc')
-            ->get(['id', 'name', 'budget_project', 'pv', 'ev', 'ac', 'original_duration_days', 'start_date']);
+            ->get([
+                'id',
+                'name',
+                'budget_project_final',
+                'budget_project_estimate',
+                'pv',
+                'ev',
+                'ac',
+                'original_duration_days',
+                'start_date',
+                'end_date',
+                'created_at',
+                'completed_at',
+                'is_completed',
+            ]);
 
         // Calculate metrics for each project using EvmCalculationService instance
         $evmService = new EvmCalculationService();
@@ -42,7 +57,7 @@ class DashboardController extends Controller
         $criticalPathService = new CriticalPathService();
         $criticalPathTasks = collect();
         foreach ($projectIds as $projectId) {
-            $criticalPathTasks = $criticalPathTasks->merge($criticalPathService->calculateCriticalPath($projectId));
+            $criticalPathTasks = $criticalPathTasks->merge($criticalPathService->calculateCriticalPath((int) $projectId));
         }
 
         // Fetch team members as users assigned to tasks in the projects
@@ -71,18 +86,23 @@ class DashboardController extends Controller
             'projects' => $projects,
             'criticalPathTasks' => $criticalPathTasks,
             'teamMembers' => $teamMembers,
+            'users' => User::userDropdownValues(),
+            'clients' => User::clientDropdownValues(),
             'calendarEvents' => $calendarEvents,
             'overdueTasks' => Task::whereIn('project_id', $projectIds)
                 ->where('assigned_to_user_id', Auth::id())
+                ->whereNotNull('end_date')
+                ->whereDate('end_date', '<', now())
+                ->whereNull('completed_at')
                 ->with('project:id,name')
                 ->with('taskGroup:id,name')
-                ->get(['id', 'name', 'group_id', 'project_id']),
+                ->get(['id', 'name', 'group_id', 'project_id', 'end_date']),
             'recentlyAssignedTasks' => Task::whereIn('project_id', $projectIds)
                 ->whereNotNull('assigned_at')
                 ->where('assigned_to_user_id', Auth::id())
                 ->with('project:id,name')
                 ->with('taskGroup:id,name')
-                ->orderBy('assigned_at')
+                ->orderByDesc('assigned_at')
                 ->limit(10)
                 ->get(['id', 'name', 'assigned_at', 'group_id', 'project_id']),
             'recentComments' => Comment::query()
@@ -93,7 +113,7 @@ class DashboardController extends Controller
                 ->with([
                     'task:id,name,project_id',
                     'task.project:id,name',
-                    'user:id,name',
+                    'user:id,name,avatar',
                 ])
                 ->latest()
                 ->get(),

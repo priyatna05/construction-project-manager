@@ -1,10 +1,61 @@
 import TableRowActions from '@/components/TableRowActions';
-import { Link } from '@inertiajs/react';
-import { Badge, Group, Table, Text } from '@mantine/core';
+import { Avatar, AvatarGroup, Group, Table, Text, Tooltip } from '@mantine/core';
+import { getInitials } from '@/utils/user';
 
 export default function TableRow({ item, onEdit }) {
+  const companyAvatar = item.logo || item.avatar_url || item.logo_url || null;
+
   return (
     <Table.Tr key={item.id}>
+      <Table.Td>
+        <Group>
+          <Tooltip
+            label={item.name}
+            withArrow
+            withinPortal
+            zIndex={2200}
+            openDelay={250}
+          >
+          <Avatar
+            src={companyAvatar}
+            alt={item.name}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: '50%',
+              objectFit: 'cover',
+            }}
+            >
+            {!companyAvatar && getInitials(item.name || '')}
+          </Avatar>
+            </Tooltip>
+        </Group>
+      </Table.Td>
+      <Table.Td>
+        <AvatarGroup>
+          {item.clients.map(client => {
+            const clientAvatar = client.avatar || client.avatar_url || null;
+              return (
+                <Tooltip
+                  key={client.id}
+                  label={client.name}
+                  withArrow
+                  withinPortal
+                  zIndex={2200}
+                  openDelay={250}
+                >
+                <Avatar
+                  radius='xl'
+                  src={clientAvatar}
+                  alt={client.name}
+                >
+                  {!clientAvatar && getInitials(client.name || '')}
+                </Avatar>
+              </Tooltip>
+            );
+          })}
+        </AvatarGroup>
+      </Table.Td>
       <Table.Td>
         <Text
           fz='sm'
@@ -14,25 +65,23 @@ export default function TableRow({ item, onEdit }) {
         </Text>
       </Table.Td>
       <Table.Td>
-        <Text fz='sm'>{item.email}</Text>
+        <Text fz='sm'>{item.currency ? `${item.currency.symbol} ${item.currency.code}` : ''}</Text>
       </Table.Td>
       <Table.Td>
-        <Group gap='sm'>
-          {item.clients.map(item => (
-            <Link
-              href={route('clients.users.edit', item.id)}
-              key={item.id}
-            >
-              <Badge
-                variant='light'
-                color='orange'
-                tt='unset'
-              >
-                {item.name}
-              </Badge>
-            </Link>
-          ))}
-        </Group>
+        <Text fz='sm'>{item.email || '-'}</Text>
+      </Table.Td>
+      <Table.Td>
+        <Text fz='sm'>{item.phone || '-'}</Text>
+      </Table.Td>
+      <Table.Td>
+        <Text fz='sm'>{item.web || '-'}</Text>
+      </Table.Td>
+      <Table.Td>
+        <Text fz='sm'>
+          {[item.address, item.city, item.postal_code, item.country?.name]
+            .filter(Boolean)
+            .join(', ') || '-'}
+        </Text>
       </Table.Td>
       {(can('edit client company') ||
         can('archive client company') ||

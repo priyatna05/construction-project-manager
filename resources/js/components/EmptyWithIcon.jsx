@@ -18,7 +18,6 @@ export default function EmptyWithIcon({
         style={{
           width: rem(iconSize),
           height: rem(iconSize),
-          color: "white",
         }}
       />
       <div>
@@ -26,14 +25,12 @@ export default function EmptyWithIcon({
           fz={titleFontSize}
           fw={600}
           lh={1.2}
-          c="white"
         >
           {title}
         </Text>
         <Text
           fz={descriptionFontSize}
           opacity={0.6}
-          c="white"
         >
           {description}
         </Text>

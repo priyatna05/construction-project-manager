@@ -50,6 +50,7 @@ class Attachment extends Model
         'thumb',
         'disk',
         'mime_type',
+        'file_type',
         'size',
         'is_main',
     ];
@@ -67,5 +68,10 @@ class Attachment extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function workReport(): BelongsTo
+    {
+        return $this->belongsTo(WorkReport::class);
     }
 }

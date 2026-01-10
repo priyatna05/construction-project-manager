@@ -104,9 +104,9 @@ export const getUnitLabel = (unit, count) => {
  * formater export
  */
 export const DATE_FORMATS = {
-  SHORT_DATE: 'D. MMM YYYY',
+  SHORT_DATE: 'D MMM YYYY',
   TIME: 'H:mm',
-  FULL_DATE: 'D. MMM YYYY H:mm',
+  FULL_DATE: 'D MMM YYYY H:mm',
   ISO: 'YYYY-MM-DD',
   DAY_NAME: 'dddd',
   SLASH_DATE: 'DD/MM/YYYY',

@@ -1,8 +1,7 @@
-import { ActionIcon, Group, Menu, rem } from '@mantine/core';
+import { ActionIcon, Group, rem, Tooltip } from '@mantine/core';
 import {
   IconArchive,
   IconArchiveOff,
-  IconDots,
   IconPencil,
   IconTrash,
 } from '@tabler/icons-react';
@@ -19,13 +18,16 @@ export default function TableRowActions({
   restore = {},
   destroy = {},
   onEdit,
-  children,
 }) {
   const isArchived = !!route().params.archived;
 
-  const archiveForm = useForm('delete', route(archive?.route, item.id));
-  const restoreForm = useForm('post', route(restore?.route, item.id));
-  const deleteForm = useForm('delete', route(destroy?.route, item.id));
+  const archiveSubmit = useForm('delete', route(archive?.route, item.id));
+  const restoreSubmit = useForm('post', route(restore?.route, item.id));
+  const deleteSubmit = useForm('delete', route(destroy?.route, item.id));
+  const archivedFlag =
+    route().params.archived ?? new URLSearchParams(window.location.search || '').get('archived');
+  const archivedParam = archivedFlag ? { archived: archivedFlag } : {};
+  const formOptions = { preserveScroll: true, data: archivedParam };
 
   const canEdit = can(editPermission);
   const canArchive = can(archivePermission);
@@ -45,7 +47,8 @@ export default function TableRowActions({
       content: archive.content,
       confirmLabel: archive.confirmLabel,
       confirmProps: { color: 'orange' },
-      onConfirm: () => archiveForm.submit({ preserveScroll: true }),
+      deleteForm: archiveSubmit,
+      formOptions,
     });
   };
 
@@ -57,7 +60,8 @@ export default function TableRowActions({
       content: restore.content,
       confirmLabel: restore.confirmLabel,
       confirmProps: { color: 'blue' },
-      onConfirm: () => restoreForm.submit({ preserveScroll: true }),
+      deleteForm: restoreSubmit,
+      formOptions,
     });
   };
 
@@ -70,76 +74,44 @@ export default function TableRowActions({
       confirmLabel: destroy.confirmLabel,
       requirePassword: true,
       confirmProps: { color: 'red' },
-      onConfirm: (password) =>
-        deleteForm.submit({ data: { password }, preserveScroll: true }),
+      deleteForm: deleteSubmit,
+      formOptions,
     });
   };
 
-  const shouldShowMenu = (canArchive || canRestore) && item.name !== 'client';
-
   return (
-    <Group gap={0} justify="flex-end" wrap="nowrap">
-      {children}
+    <Group gap="xs" justify="flex-start" wrap="nowrap">
+  {canEdit && !isArchived && (
+    <Tooltip label="Edit" color='blue' withArrow>
+      <ActionIcon variant="subtle" color="blue" onClick={handleEdit}>
+        <IconPencil style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
+      </ActionIcon>
+    </Tooltip>
+  )}
 
-      {canEdit && !isArchived && (
-        <ActionIcon variant="subtle" color="blue" onClick={handleEdit}>
-          <IconPencil style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
-        </ActionIcon>
-      )}
+  {canArchive && !isArchived && (
+    <Tooltip label="Archive" color='orange' withArrow>
+      <ActionIcon variant="subtle" color="orange" onClick={handleArchive}>
+        <IconArchive style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
+      </ActionIcon>
+    </Tooltip>
+  )}
 
-      {shouldShowMenu && (
-        <Menu
-          withArrow
-          position="bottom-end"
-          shadow="md"
-          transitionProps={{ duration: 100, transition: 'pop-top-right' }}
-          offset={{ mainAxis: 3, alignmentAxis: 5 }}
-        >
-          <Menu.Target>
-            <ActionIcon variant="subtle" color="gray">
-              <IconDots style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
-            </ActionIcon>
-          </Menu.Target>
+  {canRestore && isArchived && (
+    <Tooltip label="Restore" color='green' withArrow>
+      <ActionIcon variant="subtle" color="green" onClick={handleRestore}>
+        <IconArchiveOff style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
+      </ActionIcon>
+    </Tooltip>
+  )}
 
-          <Menu.Dropdown>
-            {canRestore && isArchived && (
-              <Menu.Item
-                leftSection={
-                  <IconArchiveOff style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
-                }
-                color="blue"
-                onClick={handleRestore}
-              >
-                Restore
-              </Menu.Item>
-            )}
-
-            {canArchive && !isArchived && (
-              <Menu.Item
-                leftSection={
-                  <IconArchive style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
-                }
-                color="orange"
-                onClick={handleArchive}
-              >
-                Archive
-              </Menu.Item>
-            )}
-
-            {canDelete && !isArchived && (
-              <Menu.Item
-                leftSection={
-                  <IconTrash style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
-                }
-                color="red"
-                onClick={handleDelete}
-              >
-                Delete
-              </Menu.Item>
-            )}
-          </Menu.Dropdown>
-        </Menu>
-      )}
-    </Group>
+  {canDelete && isArchived && (
+    <Tooltip label="Delete" color='red' withArrow>
+      <ActionIcon variant="subtle" color="red" onClick={handleDelete}>
+        <IconTrash style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
+      </ActionIcon>
+    </Tooltip>
+  )}
+</Group>
   );
 }

@@ -2,12 +2,13 @@ import { Label } from '@/components/Label';
 import { isOverdue } from '@/utils/task';
 import { shortName } from '@/utils/user';
 import { Link } from '@inertiajs/react';
-import { Checkbox, Flex, Group, Pill, Text, Tooltip } from '@mantine/core';
+import { Checkbox, Flex, Group, Pill, Text, Tooltip, Paper} from '@mantine/core';
 import classes from '../Task/css/TaskRow.module.css';
 import TaskActions from '../TaskActions';
 
 export default function ArchivedTask({ task }) {
   return (
+    <Paper>
     <Flex className={`${classes.task} ${task.completed_at !== null && classes.completed}`}>
       <Group gap='sm'>
         <Checkbox
@@ -50,15 +51,16 @@ export default function ArchivedTask({ task }) {
         >
           {task.labels.map(label => (
             <Label
-              key={label.id}
-              name={label.name}
+            key={label.id}
+            name={label.name}
               color={label.color}
-            />
-          ))}
+              />
+            ))}
         </Group>
 
         <TaskActions task={task} />
       </Group>
     </Flex>
+   </Paper>
   );
 }

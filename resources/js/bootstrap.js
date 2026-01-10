@@ -42,6 +42,15 @@ import axios from 'axios';
 window.axios = axios;
 
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+window.axios.defaults.headers.common['X-CSRF-TOKEN'] = document
+    .querySelector('meta[name="csrf-token"]')
+    ?.getAttribute('content');
+
+// Ensure cookies are sent with requests (required when backend sets XSRF cookie)
+window.axios.defaults.withCredentials = true;
+// Explicit xsrf cookie/header names (Laravel default)
+window.axios.defaults.xsrfCookieName = 'XSRF-TOKEN';
+window.axios.defaults.xsrfHeaderName = 'X-XSRF-TOKEN';
 
 window.axios.pendingRequests = 0;
 
@@ -69,17 +78,43 @@ window.axios.interceptors.response.use(
     NProgress.done();
     window.axios.pendingRequests--;
     console.error(error);
+
+    // Avoid redirect loops: skip if we are already trying to show the error page
+    // or if the failing request targets the error route itself.
+    const isErrorRequest = (error.config?.url ?? '').includes('/error/');
+    if (window.axios.__redirectingToError || isErrorRequest) {
+      return Promise.reject(error);
+    }
+
+    // If the server responded with a status (e.g. 500) or there is a network error,
+    // redirect user to the Error page so our `Error` Inertia page can show a friendly UI.
+    try {
+      const status = error.response ? error.response.status : null;
+      // Network error (no response) -> show 503 Service Unavailable
+      if (!status) {
+        window.axios.__redirectingToError = true;
+        // If router and route() are available, navigate to /error/503
+        if (typeof router !== 'undefined' && typeof route === 'function') {
+          router.visit(route('error', 503));
+        } else {
+          window.location.href = '/error/503';
+        }
+      } else if (status >= 500) {
+        window.axios.__redirectingToError = true;
+        if (typeof router !== 'undefined' && typeof route === 'function') {
+          router.visit(route('error', status));
+        } else {
+          window.location.href = `/error/${status}`;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to redirect to error page', e);
+    }
+
     return Promise.reject(error);
   }
 );
 
-window.addEventListener('beforeunload', event => {
-  if (window.axios.pendingRequests > 0) {
-    event.preventDefault();
-    return (event.returnValue =
-      'There are pending requests, press "Cancel" to prevent any loss of changes.');
-  }
-});
 
 /**
  * Echo exposes an expressive API for subscribing to channels and listening
@@ -92,6 +127,7 @@ import Echo from 'laravel-echo';
 import dayjs from 'dayjs';
 import Pusher from 'pusher-js';
 window.Pusher = Pusher;
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
 window.Echo = new Echo({
   broadcaster: 'pusher',
@@ -104,6 +140,13 @@ window.Echo = new Echo({
   wssPort: import.meta.env.VITE_PUSHER_PORT ?? 443,
   forceTLS: (import.meta.env.VITE_PUSHER_SCHEME ?? 'https') === 'https',
   enabledTransports: ['ws', 'wss'],
+  withCredentials: true,
+  auth: {
+    headers: {
+      'X-CSRF-TOKEN': csrfToken,
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+  },
 });
 
 // Add error handling for connection issues

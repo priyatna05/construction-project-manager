@@ -18,11 +18,6 @@ use Spatie\EloquentSortable\SortableTrait;
  * @property int $project_id
  * @property string $name
  * @property string|null $description
- * @property string|null $start_date
- * @property string|null $end_date
- * @property string|null $budget_group
- * @property string|null $weight_group
- * @property string $progress_group
  * @property int $order_column
  * @property \Illuminate\Support\Carbon|null $archived_at
  * @property string|null $deleted_at
@@ -66,16 +61,14 @@ class TaskGroup extends Model implements AuditableContract, Sortable
     protected $fillable = [
         'name',
         'description',
-        'start_date',
-        'end_date',
-        'budget_group',
-        'weight_group',
-        'progress_group',
         'project_id',
         'order_column',
     ];
 
+
     protected $searchable = ['project_id', 'order_column'];
+
+    protected $observables = ['archived', 'unArchived', 'deleted'];
 
     protected static function booted(): void
     {

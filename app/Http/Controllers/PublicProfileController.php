@@ -9,7 +9,7 @@ class PublicProfileController extends Controller
 {
     public function index()
     {
-        return Inertia::render('companies/index', [
+        return Inertia::render('Landing/index', [
         ]);
     }
 }

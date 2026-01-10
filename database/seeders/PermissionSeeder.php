@@ -7,51 +7,51 @@ use App\Services\PermissionService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\PermissionRegistrar;
 
 class PermissionSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        $insertPermissions = fn ($role) => collect(PermissionService::$permissionsByRole[$role])
+        $insertPermissions = fn (string $role) => collect(PermissionService::$permissionsByRole[$role] ?? [])
             ->flatten()
+            ->unique()
             ->map(function ($name) {
                 $permission = DB::table('permissions')->where('name', $name)->first();
 
                 return $permission
                     ? $permission->id
-                    : DB::table('permissions')
-                        ->insertGetId([
-                            'name' => $name,
-                            'guard_name' => 'web',
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
+                    : DB::table('permissions')->insertGetId([
+                        'name' => $name,
+                        'guard_name' => 'web',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
             })
+            ->values()
             ->toArray();
 
         $permissionIdsByRole = [
-            'admin' => $insertPermissions('admin'),
-            'manager' => $insertPermissions('manager'),
+            'admin'       => $insertPermissions('admin'),
+            'manager'     => $insertPermissions('manager'),
             'team member' => $insertPermissions('team member'),
-            'client' => $insertPermissions('client'),
+            'client'      => $insertPermissions('client'),
         ];
 
-        foreach ($permissionIdsByRole as $role => $permissionIds) {
-            $role = Role::whereName($role)->first();
+        foreach ($permissionIdsByRole as $roleName => $permissionIds) {
+            $role = Role::whereName($roleName)->first();
 
-            DB::table('role_has_permissions')
-                ->insert(
-                    collect($permissionIds)->map(fn ($id) => [
-                        'role_id' => $role->id,
-                        'permission_id' => $id,
-                    ])->toArray()
-                );
-        } 
+            if (!$role) {
+                // Kalau role belum ada, skip atau create sesuai kebutuhan
+                continue;
+            }
+
+            // ✅ Ini yang bikin seeder aman dijalankan berulang kali
+            $role->permissions()->sync($permissionIds);
+            // atau: $role->syncPermissions($permissionIds); (kalau Role kamu extends Spatie)
+        }
 
         Artisan::call('cache:clear');
     }

@@ -8,6 +8,7 @@ use App\Http\Requests\User\StoreUserRequest;
 use App\Http\Requests\User\UpdateUserRequest;
 use App\Http\Resources\User\UserResource;
 use App\Models\User;
+use App\Models\Country;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -28,15 +29,14 @@ class UserController extends Controller
                     ->sortByQueryString()
                     ->withoutRole('client')
                     ->with('roles:id,name')
-                    ->when($request->has('archived'), fn ($query) => $query->onlyArchived())
+                    ->when($request->has('archived'), fn($query) => $query->onlyArchived())
                     ->paginate(12)
             ),
+            'dropdowns' => [
+                'users' => User::userDropdownValues(),
+                'countries' => Country::dropdownValues(),
+            ],
         ]);
-    }
-
-    public function create()
-    {
-        return Inertia::render('Users/Create');
     }
 
     public function store(StoreUserRequest $request)
@@ -44,11 +44,6 @@ class UserController extends Controller
         (new CreateUser)->create($request->validated());
 
         return redirect()->route('users.index')->success('User created', 'A new user was successfully created.');
-    }
-
-    public function edit(User $user)
-    {
-        return Inertia::render('Users/Edit', ['item' => new UserResource($user)]);
     }
 
     public function update(User $user, UpdateUserRequest $request)
@@ -79,17 +74,18 @@ class UserController extends Controller
         return redirect()->back()->success('User restored', 'The restoring of the user was completed successfully.');
     }
 
-    public function forceDelete(User $user)
+    public function forceDelete(int $userId)
     {
-        $this->authorize('delete', $user);
-
+        $user = User::withArchived()->findOrFail($userId);
+        $this->authorize('delete user', $user);
         if (Auth::id() === $user->id) {
             return redirect()->route('users.index')->warning('Action stopped', 'You cannot delete the user with whom you are currently logged in.');
         }
 
-        $user->delete();
+        $user->forceDelete();
+        $redirectParams = request()->boolean('archived') ? ['archived' => 1] : [];
 
-        return redirect()->route('users.index')->success('User deleted', 'The user was permanently deleted.');
+        return redirect()->route('users.index', $redirectParams)
+                ->success('User deleted', 'The user was permanently deleted.');
     }
-
 }

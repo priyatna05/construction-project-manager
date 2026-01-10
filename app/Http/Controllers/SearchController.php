@@ -5,104 +5,183 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\TaskGroup;
 use App\Models\User;
+use App\Models\Inventory;
+use App\Models\WorkReport;
 
 class SearchController extends Controller
 {
     /**
-     * Handle search queries across multiple models and static pages/features.
+     * Helper untuk generate URL yang aman.
      */
+    protected function safeRoute(string $name, array $params = [])
+    {
+        try {
+            return route($name, $params);
+        } catch (\Throwable $e) {
+            logger()->error('Search route generation failed', [
+                'route'  => $name,
+                'params' => $params,
+                'error'  => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
+
     public function search(Request $request)
     {
-        $query = $request->input('query');
-
-        if (!$query) {
-            return response()->json(['results' => []]);
-        }
-
+        $query = trim($request->input('query', ''));
         $results = [];
 
-        // Static pages to include in search
-        $pages = [
-            ['title' => 'Dashboard', 'url' => route('dashboard')],
-            ['title' => 'Projects', 'url' => route('projects.index')],
-            ['title' => 'Tasks', 'url' => route('projects.tasks', ['project' => 1])], // example project id 1
-            ['title' => 'Users', 'url' => route('users.index')],
-            ['title' => 'Settings', 'url' => route('settings.company.edit')],
-            // Add more pages as needed
-        ];
-
-        foreach ($pages as $page) {
-            if (stripos($page['title'], $query) !== false) {
-                $results[] = [
-                    'type' => 'Page',
-                    'title' => $page['title'],
-                    'url' => $page['url'],
-                ];
-            }
-        }
-
-        // Static features to include in search
-        $features = [
-            ['title' => 'Task Management', 'url' => route('projects.index')],
-            ['title' => 'User Management', 'url' => route('users.index')],
-            ['title' => 'Inventory Control', 'url' => route('inventories.index')],
-            ['title' => 'Reporting', 'url' => route('reports.logged-time.sum')],
-            // Add more features as needed
-        ];
-
-        foreach ($features as $feature) {
-            if (stripos($feature['title'], $query) !== false) {
-                $results[] = [
-                    'type' => 'Feature',
-                    'title' => $feature['title'],
-                    'url' => $feature['url'],
-                ];
-            }
-        }
-
-        // Search Projects by name
+        // ==========================
+        // 3. Projects
+        // ==========================
         $projects = Project::where('name', 'like', "%{$query}%")
             ->limit(5)
             ->get(['id', 'name']);
 
         foreach ($projects as $project) {
-            $results[] = [
-                'type' => 'Project',
-                'id' => $project->id,
-                'title' => $project->name,
-                'url' => route('projects.edit', $project->id),
-            ];
+            $url = $this->safeRoute('projects.index', [
+                'search'    => $project->name,
+                'view'      => 'table', // or 'card' default UI
+                'highlight' => $project->id,
+            ]);
+
+            if ($url) {
+                $results[] = [
+                    'type'  => 'Project',
+                    'id'    => $project->id,
+                    'title' => $project->name,
+                    'url'   => $url,
+                ];
+            }
         }
 
-        // Search Tasks by title
-        $tasks = Task::where('title', 'like', "%{$query}%")
+        // ==========================
+        // 4. Task Groups  (🔧 ini yang tadinya error)
+        // ==========================
+        $taskGroups = TaskGroup::where('name', 'like', "%{$query}%")
             ->limit(5)
-            ->get(['id', 'title', 'project_id']);
+            ->get(['id', 'name', 'project_id']);
+
+        foreach ($taskGroups as $taskGroup) {
+            $url = $this->safeRoute('projects.tasks', [
+                'project'         => $taskGroup->project_id,
+                'groups'          => [$taskGroup->id],
+            ]);
+
+            if ($url) {
+                $results[] = [
+                    'type'  => 'Task Group',
+                    'id'    => $taskGroup->id,
+                    'title' => $taskGroup->name,
+                    'url'   => $url,
+                ];
+            }
+        }
+
+
+        // ==========================
+        // 5. Tasks
+        // ==========================
+        $tasks = Task::where('name', 'like', "%{$query}%")
+            ->limit(5)
+            ->get(['id', 'name', 'project_id']);
 
         foreach ($tasks as $task) {
-            $results[] = [
-                'type' => 'Task',
-                'id' => $task->id,
-                'title' => $task->title,
-                'url' => route('tasks.open', ['project' => $task->project_id, 'task' => $task->id]),
-            ];
+            $url = $this->safeRoute('projects.tasks.open', [
+                'project' => $task->project_id,
+                'task'    => $task->id,
+            ]);
+
+            if ($url) {
+                $results[] = [
+                    'type'  => 'Task',
+                    'id'    => $task->id,
+                    'title' => $task->name,
+                    'url'   => $url,
+                ];
+            }
         }
 
-        // Search Users by name or email
+        // ==========================
+        // 6. Inventories
+        // ==========================
+        $inventories = Inventory::where('name', 'like', "%{$query}%")
+            ->orWhere('code', 'like', "%{$query}%")
+            ->limit(5)
+            ->get(['id', 'name', 'code']);
+
+        foreach ($inventories as $inventory) {
+            $url = $this->safeRoute('inventories.index', [
+                'search' => $query,
+                'highlight' => $inventory->id,
+            ]);
+
+            if ($url) {
+                $results[] = [
+                    'type'  => 'Inventory',
+                    'id'    => $inventory->id,
+                    'title' => $inventory->name . ($inventory->code ? " ({$inventory->code})" : ''),
+                    'url'   => $url,
+                ];
+            }
+        }
+
+        // ==========================
+        // 7. Work Reports
+        // ==========================
+        $workReports = WorkReport::with('task:id,project_id')
+            ->where('name', 'like', "%{$query}%")
+            ->orWhere('work_done', 'like', "%{$query}%")
+            ->limit(5)
+            ->get(['id', 'name', 'task_id']);
+
+        foreach ($workReports as $wr) {
+            if (!$wr->task || !$wr->task->project_id) {
+                continue;
+            }
+
+            $url = $this->safeRoute('projects.tasks.open', [
+                'project'        => $wr->task->project_id,
+                'task'           => $wr->task_id,
+                'tab'            => 'work_reports',
+                'work_report_id' => $wr->id,
+            ]);
+
+            if ($url) {
+                $results[] = [
+                    'type'  => 'WorkReport',
+                    'id'    => $wr->id,
+                    'title' => $wr->name ?: "Work Report #{$wr->id}",
+                    'url'   => $url,
+                ];
+            }
+        }
+
+        // ==========================
+        // 8. Users
+        // ==========================
         $users = User::where('name', 'like', "%{$query}%")
             ->orWhere('email', 'like', "%{$query}%")
+            ->orWhereHas('roles', fn($q) => $q->where('name', 'like', "%{$query}%"))
             ->limit(5)
             ->get(['id', 'name']);
 
         foreach ($users as $user) {
-            $results[] = [
-                'type' => 'User',
-                'id' => $user->id,
-                'title' => $user->name,
-                'url' => route('users.edit', $user->id),
-            ];
+            $url = $this->safeRoute('users.index', ['search' => $query]) . "#user-{$user->id}";
+
+            if ($url) {
+                $results[] = [
+                    'type'  => 'User',
+                    'id'    => $user->id,
+                    'title' => $user->name,
+                    'url'   => $url,
+                ];
+            }
         }
+
 
         return response()->json(['results' => $results]);
     }

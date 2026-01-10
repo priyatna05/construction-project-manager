@@ -1,6 +1,8 @@
+import ClientMultiSelect from '@/components/ClientMultiSelect';
+import UserMultiSelect from '@/components/UserMultiSelect';
 import useForm from '@/hooks/useForm';
 import { hasRoles } from '@/utils/user';
-import { Button, Flex, MultiSelect, Skeleton, Text } from '@mantine/core';
+import { Button, Flex, Skeleton, Text } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
@@ -67,24 +69,24 @@ function ModalForm({ item }) {
         </>
       ) : (
         <>
-          <MultiSelect
+          <UserMultiSelect
             label='Users'
             placeholder='Select users'
             searchable
             value={requestPending ? [] : form.data.users}
             onChange={values => updateValue('users', values)}
-            data={users}
+            users={users}
             error={form.errors.users}
           />
 
-          <MultiSelect
+          <ClientMultiSelect
             label='Clients'
             placeholder='Select clients'
             searchable
             mt='md'
             value={requestPending ? [] : form.data.clients}
             onChange={values => updateValue('clients', values)}
-            data={clients}
+            clients={clients}
             error={form.errors.clients}
           />
         </>
@@ -120,6 +122,7 @@ const UserAccessModal = item => {
     ),
     centered: true,
     padding: 'xl',
+    draggable: true,
     overlayProps: { backgroundOpacity: 0.55, blur: 3 },
     children: <ModalForm item={item} />,
   });

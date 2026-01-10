@@ -5,20 +5,32 @@
 }
 
 .notification {
-  margin: rem(10px) 0;
-  transition: 0.3s ease opacity;
+  margin: 10px 0;
+  width: 100%; /* atau nilai tertentu, misal 400px */
+  max-width: 500px; /* batasi lebar maksimal */
+  transition: opacity 0.3s ease;
 
-  hover {
+  &:hover {
     opacity: 1 !important;
   }
 }
+
 
 .link {
   color: light-dark(var(--mantine-color-black), var(--mantine-color-white));
   opacity: 0.6;
 
-  hover {
+  &:hover {
     opacity: 0.9;
     text-decoration: underline;
   }
+}
+
+.link, .iconButton {
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.link:hover, .iconButton:hover {
+  transform: scale(1.1);
 }

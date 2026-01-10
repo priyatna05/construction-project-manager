@@ -1,0 +1,18 @@
+.btnHoverEffect {
+  transform: translateY(-3px) scale(1.08) !important;
+  box-shadow: 0 16px 40px rgba(102, 126, 234, 0.7) !important;
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%) !important;
+  transition: all 200ms ease !important;
+}
+
+.link {
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none !important;
+  cursor: pointer;
+}
+
+.link:hover {
+  text-decoration: none !important;
+}

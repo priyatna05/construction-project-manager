@@ -25,7 +25,7 @@ class CommentController extends Controller
         $this->authorize('create', [Comment::class, $project]);
 
         $comment = $task->comments()->create(
-            $request->validated() + ['user_id' => auth()->id()]
+            $request->validated() + ['user_id' => $request->user()->id]
         );
 
         CommentCreated::dispatch($comment);

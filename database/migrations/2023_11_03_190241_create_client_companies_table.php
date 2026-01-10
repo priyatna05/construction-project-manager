@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('country_id')->nullable()->constrained('countries')->onDelete('set null');
             $table->foreignId('currency_id')->nullable()->constrained('currencies')->onDelete('set null');
+            $table->string('logo')->nullable();
             $table->string('name');
             $table->string('address')->nullable();
             $table->string('postal_code')->nullable();

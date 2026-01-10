@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Settings\LabelController;
 
 // Existing route
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {

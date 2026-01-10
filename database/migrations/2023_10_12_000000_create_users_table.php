@@ -20,12 +20,10 @@ return new class extends Migration
             $table->string('avatar')->nullable();
             $table->string('phone')->nullable();
             $table->string('job_title')->nullable();
-            $table->decimal('default_hourly_rate', 10, 2)->nullable();
             $table->string('address')->nullable();
             $table->string('google_id')->nullable();
             $table->rememberToken();
             $table->timestamps();
-           // Assuming 'archivedAt' is a custom macro you've defined, e.g., in AppServiceProvider
             $table->timestamp('archived_at')->nullable();
             $table->softDeletes();
         });

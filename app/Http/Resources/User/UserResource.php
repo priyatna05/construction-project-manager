@@ -18,10 +18,10 @@ class UserResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
+            'email_verified_at' => $this->email_verified_at,
             'job_title' => $this->job_title,
             'avatar' => $this->avatar,
             'phone' => $this->phone,
-            'default_hourly_rate' => $this->default_hourly_rate,
             'address' => $this->address,
             'roles' => $this->roles->map->only('name')->flatten()->toArray(),
         ];

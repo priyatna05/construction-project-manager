@@ -2,8 +2,10 @@
 
 namespace App\Observers;
 
+use App\Events\Project\ProjectUpdated;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\ProjectService;
 use Illuminate\Support\Facades\Auth;
 
 class ProjectObserver
@@ -27,8 +29,8 @@ class ProjectObserver
             if (!isset(self::$counters[$prefix])) {
                 // Ambil proyek terakhir dengan prefix yang sama untuk mendapatkan nomor terakhirnya.
                 $lastProject = Project::where('code', 'like', "{$prefix}-%")
-                                      ->orderBy('code', 'desc') // Urutkan berdasarkan kode untuk mendapatkan yang terbesar
-                                      ->first();
+                    ->orderBy('code', 'desc') // Urutkan berdasarkan kode untuk mendapatkan yang terbesar
+                    ->first();
 
                 // Jika sudah ada, ambil nomornya. Jika tidak, mulai dari 0.
                 self::$counters[$prefix] = $lastProject
@@ -51,7 +53,7 @@ class ProjectObserver
     public function created(Project $project): void
     {
         // (Logika 'created' Anda sudah bagus dan tidak perlu diubah)
-        $user = Auth::user() ?? User::role('admin')->first(); // Sedikit penyederhanaan
+        $user = Auth::user() ?? User::role('admin')->first();
         $userId   = $user?->id   ?? 1;
         $userName = $user?->name ?? 'System';
 
@@ -61,5 +63,23 @@ class ProjectObserver
             'title'      => 'New project',
             'description'   => "\"{$project->name}\" was created by {$userName}",
         ]);
+    }
+
+    public function updated(Project $project): void
+    {
+        if ($project->isDirty('start_date') || $project->isDirty('end_date')) {
+            ProjectUpdated::dispatch($project);
+        }
+    }
+
+    public function saved(Project $project)
+    {
+        // Auto-calculate costs when rates or direct costs change
+        if ($project->isDirty(['direct_cost_plan', 'direct_cost_actual', 'overhead_site_rate', 'administrative_rate', 'contingency_rate', 'profit_rate', 'tax_rate'])) {
+            $calculations = ProjectService::calculateCosts($project);
+            $project->fill($calculations);
+            $project->saveQuietly();
+        }
+        broadcast(new ProjectUpdated($project));
     }
 }

@@ -15,6 +15,7 @@ return new class extends Migration
             $table->foreignId('label_id')->constrained()->onDelete('cascade');
             $table->unsignedBigInteger('labelable_id');
             $table->string('labelable_type');
+            $table->string('type')->nullable();
             $table->primary(['label_id', 'labelable_id', 'labelable_type']);
             $table->index(['labelable_id', 'labelable_type']);
         });

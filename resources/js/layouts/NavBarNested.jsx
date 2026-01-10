@@ -1,11 +1,10 @@
 import useNavigationStore from '@/hooks/store/useNavigationStore';
-// import { usePage } from "@inertiajs/react";
 import { getMenuItems } from '@/utils/ListMenu';
 import { useEffect } from 'react';
 import NavbarLinksGroup from './NavbarLinksGroup';
 import classes from './css/NavBarNested.module.css';
 
-export default function NavBarNested({ collapsed }) {
+export default function NavBarNested({ collapsed, currentPath }) {
   const { items, setItems } = useNavigationStore();
 
   useEffect(() => {
@@ -13,7 +12,10 @@ export default function NavBarNested({ collapsed }) {
   }, []);
 
   return (
-    <nav className={classes.navbar}>
+    <nav
+      className={classes.navbar}
+      data-tour='sidebar'
+    >
       <div className={classes.linksInner}>
         {items
           .filter(i => i.visible)
@@ -22,6 +24,7 @@ export default function NavBarNested({ collapsed }) {
               key={item.label}
               item={item}
               collapsed={collapsed}
+              currentPath={currentPath}
             />
           ))}
       </div>

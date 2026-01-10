@@ -33,8 +33,6 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
  * @property-read int|null $clients_count
  * @property-read \App\Models\Country|null $country
  * @property-read \App\Models\Currency|null $currency
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Invoice> $invoices
- * @property-read int|null $invoices_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Project> $projects
  * @property-read int|null $projects_count
  * @method static \Database\Factories\ClientCompanyFactory factory($count = null, $state = [])
@@ -66,6 +64,7 @@ class ClientCompany extends Model implements AuditableContract
     use Archivable, Auditable, HasFactory, IsSearchable, IsSortable;
 
     protected $fillable = [
+        'logo',
         'name',
         'address',
         'postal_code',
@@ -92,6 +91,14 @@ class ClientCompany extends Model implements AuditableContract
         return $this->belongsToMany(User::class, 'client_company_user', 'client_company_id', 'user_id');
     }
 
+    /**
+     * Alias untuk relasi 'clients' agar lebih intuitif.
+     */
+    public function users(): BelongsToMany
+    {
+        return $this->clients();
+    }
+
     public function country(): BelongsTo
     {
         return $this->belongsTo(Country::class);
@@ -105,11 +112,6 @@ class ClientCompany extends Model implements AuditableContract
     public function projects(): HasMany
     {
         return $this->hasMany(Project::class);
-    }
-
-    public function invoices(): HasMany
-    {
-        return $this->hasMany(Invoice::class);
     }
 
     public static function dropdownValues($options = []): array

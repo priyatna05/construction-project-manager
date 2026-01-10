@@ -1,153 +1,28 @@
 import { openConfirmModal } from '@/components/ConfirmModal';
+import { ActionIcon, Group, Menu, rem, Text, Tooltip, Badge } from '@mantine/core';
 import {
-  ActionIcon,
-  Group,
-  Menu,
-  rem,
-  Text,
-  SimpleGrid,
-  Paper,
-  RingProgress,
-  Badge,
-} from '@mantine/core';
-import {
+  IconAdjustmentsDown,
+  IconAdjustmentsUp,
   IconArchive,
   IconArchiveOff,
-  IconDots,
   IconEye,
   IconPencil,
+  IconPlus,
   IconTrash,
 } from '@tabler/icons-react';
 import { useForm } from 'laravel-precognition-react-inertia';
 import EditTasksGroupModal from './Modals/EditTasksGroupModal';
-import Modal from '@/components/Modal';
-import { money } from '@/utils/currency';
-import { dateSlash } from '@/utils/datetime';
 import { useState } from 'react';
+import useTaskDrawerStore from '@/hooks/store/useTaskDrawerStore';
+import { motion, AnimatePresence } from 'framer-motion';
+import TaskGroupDetails from './TaskGroupDetails';
+import Modal from '@/components/Modal';
 
-function TaskGroupDetailsContent({ group }) {
-  return (
-    <Paper
-      p='md'
-      shadow='xs'
-    >
-      <SimpleGrid
-        cols={2}
-        spacing='md'
-      >
-        <div>
-          <Text
-            size='xs'
-            c='dimmed'
-          >
-            Name
-          </Text>
-          <Text fw={500}>{group.name || 'N/A'}</Text>
-        </div>
-        <div>
-          <Text
-            size='xs'
-            c='dimmed'
-          >
-            Project ID
-          </Text>
-          <Text fw={500}>{group.project_id}</Text>
-        </div>
-        <div>
-          <Text
-            size='xs'
-            c='dimmed'
-          >
-            Project code
-          </Text>
-          <Text fw={500}>{group.code_project}</Text>
-        </div>
-        <div style={{ gridColumn: '1 / -1' }}>
-          <Text
-            size='xs'
-            c='dimmed'
-          >
-            Description
-          </Text>
-          <Text>{group.description || 'No description'}</Text>
-        </div>
-        <div>
-          <Text
-            size='xs'
-            c='dimmed'
-          >
-            Start Date
-          </Text>
-          <Text>{group.start_date ? dateSlash(group.start_date) : 'N/A'}</Text>
-        </div>
-        <div>
-          <Text
-            size='xs'
-            c='dimmed'
-          >
-            End Date
-          </Text>
-          <Text>{group.end_date ? dateSlash(group.end_date) : 'N/A'}</Text>
-        </div>
-        <div>
-          <Text
-            size='xs'
-            c='dimmed'
-          >
-            Budget
-          </Text>
-          <Text>{group.budget_group ? money(group.budget_group) : 'N/A'}</Text>
-        </div>
-        <div>
-          <Text
-            size='xs'
-            c='dimmed'
-          >
-            Weight
-          </Text>
-          <Text>{group.weight_group !== null ? `${group.weight_group}%` : 'N/A'}</Text>
-        </div>
-      </SimpleGrid>
-      <Group
-        mt='md'
-        justify='center'
-      >
-        <RingProgress
-          label={
-            <Text
-              c='blue'
-              fw={700}
-              ta='center'
-              size='xl'
-            >{`${Math.round(group.progress_group || 0)}%`}</Text>
-          }
-          sections={[{ value: group.progress_group || 0, color: 'blue' }]}
-          size={120}
-          thickness={12}
-          roundCaps
-        />
-        <Text
-          size='sm'
-          c='dimmed'
-          mt='xs'
-        >
-          Progress
-        </Text>
-      </Group>
-      {group.archived_at && (
-        <Badge
-          color='gray'
-          mt='md'
-        >
-          Archived on {dateSlash(group.archived_at)}
-        </Badge>
-      )}
-    </Paper>
-  );
-}
-
-export default function TaskGroupActions({ group, ...props }) {
+export default function TaskGroupActions({ group, tasks, ...props }) {
   const [detailModalOpened, setDetailModalOpened] = useState(false);
+  const [menuOpened, setMenuOpened] = useState(false);
+  const { openCreateTask } = useTaskDrawerStore();
+  const isLocked = Boolean(group?.project?.is_completed);
 
   const archiveForm = useForm(
     'delete',
@@ -162,44 +37,161 @@ export default function TaskGroupActions({ group, ...props }) {
     route('projects.task-groups.forceDelete', [group.project_id, group.id])
   );
 
-  const openArchiveModal = () =>
+  const openArchiveModal = () => {
+    const hasTasks = group.tasks && group.tasks.length > 0;
+
     openConfirmModal({
-      type: 'danger',
-      title: 'Archive task group',
-      content: `Are you sure you want to archive this "${group.name}"?`,
+      type: 'warning',
+      title: 'Archive Task Group',
       confirmLabel: 'Archive',
       confirmProps: { color: 'orange' },
-      onConfirm: () => archiveForm.submit({ preserveScroll: true }),
+      deleteForm: archiveForm,
+      formOptions: () => ({
+        preserveScroll: true,
+        data: hasTasks ? { archive_all: true } : {},
+      }),
+      content: (
+        <div style={{ lineHeight: 1.6 }}>
+          {hasTasks ? (
+            <>
+              <Text>
+                The task group <b>{group.name}</b> contains the following task
+                {group.tasks.length > 1 ? 's' : ''}:
+              </Text>
+
+              <ul style={{ margin: '8px 0 12px 20px', padding: 0 }}>
+                {group.tasks.slice(0, 5).map(task => (
+                  <li key={task.id}>
+                    <Text size='sm'>{task.name}</Text>
+                  </li>
+                ))}
+                {group.tasks.length > 5 && (
+                  <Text
+                    size='xs'
+                    c='dimmed'
+                  >
+                    ...and {group.tasks.length - 5} more
+                  </Text>
+                )}
+              </ul>
+
+              <Text
+                c='orange'
+                fw={500}
+                size='xs'
+              >
+                Archiving this task group will also archive all tasks listed above.
+              </Text>
+              <Text mt='xs'>Are you sure you want to continue?</Text>
+            </>
+          ) : (
+            <Text>
+              Are you sure you want to archive the task group <b>{group.name}</b>?
+            </Text>
+          )}
+        </div>
+      ),
     });
+  };
 
   const openRestoreModal = () =>
     openConfirmModal({
       type: 'info',
-      title: 'Restore task group',
-      content: `Are you sure you want to restore this "${group.name}"?`,
+      title: 'Restore Task Group',
       confirmLabel: 'Restore',
       confirmProps: { color: 'blue' },
-      onConfirm: () => restoreForm.submit({ preserveScroll: true }),
+      deleteForm: restoreForm,
+      content: (
+        <div style={{ lineHeight: 1.6 }}>
+          <Text>
+            You are about to restore the task group <b>{group.name}</b>.
+          </Text>
+
+          {group.tasks && group.tasks.length > 0 && (
+            <>
+              <Text mt='sm'>
+                The following task{group.tasks.length > 1 ? 's' : ''} will also be restored:
+              </Text>
+              <ul style={{ margin: '8px 0 12px 20px', padding: 0 }}>
+                {group.tasks.slice(0, 5).map(task => (
+                  <li key={task.id}>
+                    <Text size='sm'>{task.name}</Text>
+                  </li>
+                ))}
+                {group.tasks.length > 5 && (
+                  <Text
+                    size='xs'
+                    c='dimmed'
+                  >
+                    ...and {group.tasks.length - 5} more
+                  </Text>
+                )}
+              </ul>
+            </>
+          )}
+
+          <Text mt='xs'>Do you want to proceed?</Text>
+        </div>
+      ),
     });
 
-  const openDeleteModal = () =>
+  const openDeleteModal = () => {
+    const hasTasks = group.tasks && group.tasks.length > 0;
+
     openConfirmModal({
       type: 'danger',
-      title: 'Delete task group',
-      content: `Are you sure you want to delete this "${group.name}"? This action cannot be undone.`,
+      title: 'Delete Task Group',
       confirmLabel: 'Delete',
       requirePassword: true,
       confirmProps: { color: 'red' },
-      onConfirm: password => {
-        deleteForm.submit({
-          data: { password },
-          preserveScroll: true,
-        });
-      },
+      deleteForm: deleteForm,
+      content: (
+        <div style={{ lineHeight: 1.6 }}>
+          {hasTasks ? (
+            <>
+              <Text>
+                The task group <b>{group.name}</b> contains the following task
+                {group.tasks.length > 1 ? 's' : ''}:
+              </Text>
+
+              <ul style={{ margin: '8px 0 12px 20px', padding: 0 }}>
+                {group.tasks.slice(0, 5).map(task => (
+                  <li key={task.id}>
+                    <Text size='sm'>{task.name}</Text>
+                  </li>
+                ))}
+                {group.tasks.length > 5 && (
+                  <Text
+                    size='xs'
+                    c='dimmed'
+                  >
+                    ...and {group.tasks.length - 5} more
+                  </Text>
+                )}
+              </ul>
+
+              <Text
+                c='red'
+                fw={10}
+                size='xs'
+              >
+                Deleting this task group will also permanently delete all tasks listed above. This
+                action cannot be undone.
+              </Text>
+              <Text mt='xs'>Are you sure you want to continue?</Text>
+            </>
+          ) : (
+            <Text>
+              Are you sure you want to permanently delete the task group <b>{group.name}</b>? This
+              action cannot be undone.
+            </Text>
+          )}
+        </div>
+      ),
     });
+  };
 
   const openEditModal = () => EditTasksGroupModal(group);
-
   const openDetailModal = () => setDetailModalOpened(true);
   const closeDetailModal = () => setDetailModalOpened(false);
 
@@ -217,24 +209,76 @@ export default function TaskGroupActions({ group, ...props }) {
           <Menu
             withArrow
             position='bottom-end'
-            withinPortal
             shadow='md'
-            transitionProps={{ duration: 100, transition: 'pop-top-right' }}
-            offset={{ mainAxis: 3, alignmentAxis: 5 }}
+            transitionProps={{ duration: 150, transition: 'pop-top-right' }}
+            opened={menuOpened}
+            onChange={setMenuOpened}
           >
             <Menu.Target>
-              <ActionIcon
-                variant='subtle'
-                color='gray'
+              <Tooltip
+                label='actions'
+                color='blue'
+                withArrow
               >
-                <IconDots
-                  style={{ width: rem(20), height: rem(20) }}
-                  stroke={1.5}
-                />
-              </ActionIcon>
+                <ActionIcon
+                  variant='subtle'
+                  component={motion.button}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  <AnimatePresence
+                    mode='wait'
+                    initial={false}
+                  >
+                    {menuOpened ? (
+                      <motion.div
+                        key='up'
+                        initial={{ rotate: 90, opacity: 0 }}
+                        animate={{ rotate: 0, opacity: 1 }}
+                        exit={{ rotate: -90, opacity: 0 }}
+                        transition={{ duration: 0.25 }}
+                      >
+                        <IconAdjustmentsUp
+                          style={{ width: rem(22), height: rem(22) }}
+                          stroke={1.5}
+                        />
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key='down'
+                        initial={{ rotate: -90, opacity: 0 }}
+                        animate={{ rotate: 0, opacity: 1 }}
+                        exit={{ rotate: 90, opacity: 0 }}
+                        transition={{ duration: 0.25 }}
+                      >
+                        <IconAdjustmentsDown
+                          style={{ width: rem(22), height: rem(22) }}
+                          stroke={1.5}
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </ActionIcon>
+              </Tooltip>
             </Menu.Target>
+
             <Menu.Dropdown>
-              {can('archive task group') && !route().params.archived && (
+              {!route().params.archived && can('create task') && !isLocked && (
+                <Menu.Item
+                  leftSection={
+                    <IconPlus
+                      style={{ width: rem(18), height: rem(18) }}
+                      stroke={2}
+                    />
+                  }
+                  color='blue'
+                  onClick={() => openCreateTask(group.id)}
+                >
+                  Add task
+                </Menu.Item>
+              )}
+              {can('archive task group') && !route().params.archived && !isLocked && (
                 <Menu.Item
                   leftSection={
                     <IconArchive
@@ -242,14 +286,14 @@ export default function TaskGroupActions({ group, ...props }) {
                       stroke={1.5}
                     />
                   }
-                  color='red'
+                  color='orange'
                   onClick={openArchiveModal}
                 >
                   Archive
                 </Menu.Item>
               )}
 
-              {can('delete task group') && (
+              {can('delete task group') && !isLocked &&(
                 <Menu.Item
                   leftSection={
                     <IconTrash
@@ -263,7 +307,7 @@ export default function TaskGroupActions({ group, ...props }) {
                   Delete
                 </Menu.Item>
               )}
-              {can('edit task group') && !route().params.archived && (
+              {can('edit task group') && !route().params.archived && !isLocked && (
                 <Menu.Item
                   leftSection={
                     <IconPencil
@@ -271,6 +315,7 @@ export default function TaskGroupActions({ group, ...props }) {
                       stroke={1.5}
                     />
                   }
+                  color='green'
                   onClick={openEditModal}
                 >
                   Edit
@@ -288,7 +333,7 @@ export default function TaskGroupActions({ group, ...props }) {
                 Details
               </Menu.Item>
               {/* ... */}
-              {can('restore task group') && route().params.archived && (
+              {can('restore task group') && route().params.archived && !isLocked && (
                 <Menu.Item
                   leftSection={
                     <IconArchiveOff
@@ -307,12 +352,42 @@ export default function TaskGroupActions({ group, ...props }) {
         )}
       </Group>
       <Modal
+        size='auto'
+        draggable
+        zIndex={2200}
         opened={detailModalOpened}
         onClose={closeDetailModal}
-        title={`Details for: ${group.name}`}
-        // size="lg" // atau prop lain yang didukung komponen Modal Anda
+        overlayProps={{ backgroundOpacity: 0.0, blur: 0 }}
+        closeButtonProps={{ style: { position: 'absolute', top: 12, right: 12 } }}
+        title={
+          <Group
+            justify='space-between'
+            mb='sm'
+            ml='md'
+          >
+            <div>
+              <Text fw={700}>Task Group {group?.name || '-'} Details</Text>
+              <Text
+                size='sm'
+                c='dimmed'
+              >
+                Project: {group?.project?.code} - {group?.project?.name || '-'}
+              </Text>
+              <Group
+                gap='xs'
+                mt='sm'
+              >
+                <Badge color='blue'>Tasks: {(tasks || group?.tasks || []).length}</Badge>
+                <Badge color='green'>Progress: {Math.round(group?.progress_group || 0)}%</Badge>
+              </Group>
+            </div>
+          </Group>
+        }
       >
-        <TaskGroupDetailsContent group={group} />
+        <TaskGroupDetails
+          group={group}
+          tasks={tasks}
+        />
       </Modal>
     </>
   );

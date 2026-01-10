@@ -31,8 +31,39 @@ class UpdateTaskRequest extends FormRequest
             'description' => ['nullable', 'sometimes', 'string'],
             'start_date' => ['nullable', 'sometimes', 'date'],
             'end_date' => ['nullable', 'sometimes', 'date', 'after_or_equal:start_date'],
-            'budget_task' => ['nullable', 'sometimes', 'numeric'],
-            'attachments.*' => ['file', 'max:10240'],
+            'budget_task_plan' => ['nullable', 'sometimes', 'numeric'],
+            'budget_task_actual' => ['nullable', 'sometimes', 'numeric'],
+            'volume' => ['nullable', 'sometimes', 'numeric'],
+            'unit_cost_task' => ['nullable', 'sometimes', 'numeric', 'min:0'],
+            'unit' => [
+                'nullable',
+                'sometimes',
+                'string',
+                Rule::exists('labels', 'slug')->where('type', Label::TYPE_TASK_INVENTORY_UNIT),
+            ],
+            'type' => [
+                'nullable',
+                'sometimes',
+                'string',
+                Rule::exists('labels', 'slug')->where('type', Label::TYPE_TASK),
+            ],
+            'priority' => [
+                'nullable',
+                'sometimes',
+                'string',
+                Rule::exists('labels', 'slug')->where('type', Label::TYPE_PRIORITY),
+            ],
+            'attachment_files'       => 'nullable|array', // Mengubah 'attachments' menjadi 'attachment_files'
+            'attachment_files.*'     => 'file|max:10240', // Validasi untuk setiap file, max 10MB
+
+            // 'existing_attachments' tidak perlu divalidasi di request karena
+            // Anda hanya mengirimnya untuk membantu frontend dalam logika.
+            // Backend hanya perlu ID attachment yang dihapus dan file baru.
+            // Jika Anda mengirim array ID 'existing_attachments' untuk validasi di backend,
+            // itu akan jadi field yang tidak terpakai di controller.
+
+            'deleted_attachments_ids'   => 'nullable|array', // Mengubah 'deleted_attachments' menjadi 'deleted_attachments_ids'
+            'deleted_attachments_ids.*' => 'integer|exists:attachments,id',
             'subscribed_users' => 'sometimes|array',
             'subscribed_users.*' => 'integer|exists:users,id',
             'labels' => ['nullable', 'array'],
@@ -49,6 +80,15 @@ class UpdateTaskRequest extends FormRequest
                 'integer',
                 Rule::exists('labels', 'id')->where('type', Label::TYPE_TASK_RELATION),
             ],
+            'relation' => [
+                'nullable',
+                'integer',
+                Rule::exists('labels', 'id')->where('type', Label::TYPE_TASK_RELATION),
+            ],
+            'inventories' => ['nullable', 'array'],
+            'inventories.*.inventory_id' => ['required_with:inventories', 'integer', 'exists:inventories,id'],
+            'inventories.*.quantity' => ['required_with:inventories', 'numeric', 'min:0'],
+            'inventories.*.note' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

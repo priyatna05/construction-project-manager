@@ -24,13 +24,13 @@ class UpdateClientRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string',
+            'name' => 'nullable|string',
             'phone' => 'string|nullable',
-            'email' => ['required', 'email:rfc,dns', Rule::unique('users')->ignore($this->route('user')->id)],
+            'email' => ['nullable', 'email:rfc,dns', Rule::unique('users')->ignore($this->route('user')->id)],
             'address' => ['nullable', 'string'],
             'password' => 'nullable|min:8|confirmed',
             'avatar' => [File::image(), 'nullable'],
-            'companies' => 'required|array|min:1',
+            'companies' => 'nullable|array',
         ];
     }
 }

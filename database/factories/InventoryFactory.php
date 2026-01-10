@@ -32,7 +32,6 @@ class InventoryFactory extends Factory
             'description' => $this->faker->optional()->sentence(),
             'unit_cost' => $this->faker->numberBetween(10000, 5000000), // Dalam satuan terkecil
             'quantity_on_hand' => $this->faker->randomFloat(2, 10, 500),
-            'project_site_location_id' => Project::inRandomOrder()->first()?->id,
             'archived_at' => null,
         ];
     }
@@ -50,7 +49,7 @@ class InventoryFactory extends Factory
             if (empty($labelCache)) {
                 $labelCache['statuses'] = Label::ofType(Label::TYPE_INVENTORY_STATUS)->pluck('id');
                 $labelCache['types'] = Label::ofType(Label::TYPE_INVENTORY_TYPE)->pluck('id');
-                $labelCache['units'] = Label::ofType(Label::TYPE_INVENTORY_UNIT)->pluck('id');
+                $labelCache['units'] = Label::ofType(Label::TYPE_TASK_INVENTORY_UNIT)->pluck('id');
             }
 
             $labelsToAttach = [];

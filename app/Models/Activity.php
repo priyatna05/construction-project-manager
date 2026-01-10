@@ -37,6 +37,10 @@ use Lacodix\LaravelModelFilter\Traits\HasFilters;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Activity whereUserId($value)
  * @mixin \Eloquent
  * @mixin IdeHelperActivity
+ * /**
+ * @property-read \App\Models\User|null $user
+ * @property-read \App\Models\Project|null $project
+ * @property-read \Illuminate\Database\Eloquent\Model|\Eloquent|null $subject
  */
 class Activity extends Model
 {
@@ -54,8 +58,8 @@ class Activity extends Model
     ];
 
     protected $casts = [
-    'properties' => 'array',
-];
+        'properties' => 'array',
+    ];
 
     public function filters(): array
     {
@@ -69,6 +73,18 @@ class Activity extends Model
         return $this->belongsTo(Project::class);
     }
 
+    public function task(): BelongsTo
+    {
+        return $this->belongsTo(Task::class, 'subject_id')
+            ->where('subject_type', Task::class);
+    }
+
+    public function workReport(): BelongsTo
+    {
+        return $this->belongsTo(WorkReport::class, 'subject_id')
+            ->where('subject_type', WorkReport::class);
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -77,5 +93,21 @@ class Activity extends Model
     public function subject(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    /**
+     * Scope to get only work report activities
+     */
+    public function scopeWorkReports($query)
+    {
+        return $query->where('subject_type', WorkReport::class);
+    }
+
+    /**
+     * Scope to get only task activities
+     */
+    public function scopeTasks($query)
+    {
+        return $query->where('subject_type', Task::class);
     }
 }

@@ -19,7 +19,8 @@ class ActivityGroupedByDateCollection extends ResourceCollection
             ->map(function ($activity) {
                 return [
                     'id'                => $activity->id,
-                    'subject'           => $activity->activityCapable,
+                    'user'              => $activity->user,
+                    'subject'           => $activity->subject,
                     'project'           => $activity->project,
                     'title'             => $activity->title,
                     'description'       => $activity->description,

@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\Timesheet;
 use Illuminate\Support\Str;
 use OwenIt\Auditing\Auditable;
 use Laravel\Sanctum\HasApiTokens;
@@ -31,7 +30,6 @@ use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
  * @property string|null $avatar
  * @property string|null $phone
  * @property string|null $job_title
- * @property numeric|null $default_hourly_rate
  * @property string|null $address
  * @property string|null $google_id
  * @property string|null $remember_token
@@ -57,7 +55,6 @@ use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
  * @property-read int|null $roles_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Task> $subscribedToTasks
  * @property-read int|null $subscribed_to_tasks_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Timesheet> $timesheets
  * @property-read int|null $timesheets_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read int|null $tokens_count
@@ -101,7 +98,6 @@ class User extends Authenticatable implements AuditableContract, CanResetPasswor
         'email',
         'password',
         'job_title',
-        'default_hourly_rate',
         'avatar',
         'phone',
         'address',
@@ -128,7 +124,6 @@ class User extends Authenticatable implements AuditableContract, CanResetPasswor
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
-        'default_hourly_rate' => 'decimal:2',
         'archived_at' => 'datetime',
     ];
 
@@ -152,11 +147,6 @@ class User extends Authenticatable implements AuditableContract, CanResetPasswor
         return $this->belongsToMany(ClientCompany::class, 'client_company_user', 'user_id', 'client_company_id');
     }
 
-    public function timesheets(): HasMany
-    {
-        return $this->hasMany(Timesheet::class);
-    }
-
     /**
      * Projects that user can access
      */
@@ -177,21 +167,46 @@ class User extends Authenticatable implements AuditableContract, CanResetPasswor
         return $users->pluck('id')->contains($this->id);
     }
 
-    public static function userDropdownValues($exclude = ['client']): array
-    {
-        return self::orderBy('name')
-            ->withoutRole($exclude)
-            ->get(['id', 'name'])
-            ->map(fn ($i) => ['value' => (string) $i->id, 'label' => $i->name])
+    public static function userDropdownValues(
+        array $excludeRoles = ['client'],
+        ?int $excludeUserId = null,
+    ): array {
+        return self::query()
+            ->orderBy('name')
+            ->when(
+                !empty($excludeRoles),
+                fn($q) =>
+                $q->withoutRole($excludeRoles)
+            )
+            ->when(
+                $excludeUserId,
+                fn($q) =>
+                $q->where('id', '!=', $excludeUserId)
+            )
+            ->get(['id', 'name', 'avatar'])
+            ->map(fn($i) => [
+                'id' => (int) $i->id,
+                'value' => (string) $i->id,
+                'label' => $i->name,
+                'name' => $i->name,
+                'avatar' => $i->avatar,
+            ])
             ->toArray();
     }
+
 
     public static function clientDropdownValues(): array
     {
         return self::orderBy('name')
             ->role('client')
-            ->get(['id', 'name'])
-            ->map(fn ($i) => ['value' => (string) $i->id, 'label' => $i->name])
+            ->get(['id', 'name', 'avatar'])
+            ->map(fn($i) => [
+                'id' => (int) $i->id,
+                'value' => (string) $i->id,
+                'label' => $i->name,
+                'name' => $i->name,
+                'avatar' => $i->avatar,
+            ])
             ->toArray();
     }
 

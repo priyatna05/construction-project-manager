@@ -14,6 +14,7 @@ export default function ArchivedFilterButton() {
   return (
     <Tooltip
       label='Archived'
+      color='green'
       openDelay={500}
       withArrow
     >

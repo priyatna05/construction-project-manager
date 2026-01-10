@@ -1,0 +1,33 @@
+@startuml
+!theme plain
+
+actor "Project Manager" as PM
+
+boundary "Antarmuka Proyek" as ProjectUI
+control "Kontrol Proyek" as ProjectControl
+entity "Entitas Proyek" as ProjectEntity
+database "Basis Data Proyek" as ProjectDB
+
+PM -[#blue]> ProjectUI: 1. Login & Pilih Proyek
+
+ProjectUI -[#green]> ProjectControl: 2. Meminta Data Proyek
+ProjectControl -[#purple]> ProjectEntity: 3. Memuat Data Proyek
+ProjectEntity -[#purple]> ProjectDB: 4. Mengambil Data Proyek dari DB
+ProjectDB -[#purple]-> ProjectEntity: 5. Mengembalikan Data Proyek
+ProjectEntity -[#purple]-> ProjectControl: 6. Mengirim Data Proyek
+ProjectControl -[#green]-> ProjectUI: 7. Mengirim Detail Proyek
+
+ProjectUI -[#darkgreen]-> PM: 8. Menampilkan Detail Proyek
+
+PM -[#orange]> ProjectUI: 9. Tambah/Edit/Hapus Proyek (Aksi)
+ProjectUI -[#red]> ProjectControl: 10. Mengirim Data Perubahan (Proyek)
+
+ProjectControl -[#brown]> ProjectEntity: 11. Memproses Perubahan (Tambah/Edit/Hapus)
+ProjectEntity -[#brown]> ProjectDB: 12. Simpan/Update/Hapus Data Proyek di DB
+ProjectDB -[#brown]-> ProjectEntity: 13. Konfirmasi Operasi
+ProjectEntity -[#brown]-> ProjectControl: 14. Mengirim Konfirmasi Berhasil
+
+ProjectControl -[#blue]-> ProjectUI: 15. Mengirim Status Sukses
+ProjectUI -[#blue]-> PM: 16. Menampilkan Status Sukses (Operasi Berhasil)
+
+@enduml

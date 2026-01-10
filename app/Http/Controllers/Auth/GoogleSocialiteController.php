@@ -40,7 +40,7 @@ class GoogleSocialiteController extends Controller
 
             return redirect()->route('auth.login.form')->with(['notify' => 'social-login-user-not-found']);
         } catch (Exception $e) {
-            Log::error('Social login with google has failed', ['message' => $e->getMessage()]);
+            // Log::error('Social login with google has failed', ['message' => $e->getMessage()]);
 
             return redirect()->route('auth.login.form')->with(['notify' => 'social-login-failed']);
         }

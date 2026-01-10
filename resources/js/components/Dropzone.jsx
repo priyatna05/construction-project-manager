@@ -2,59 +2,51 @@ import { isImage, isViewable } from '@/utils/file';
 import { Group, SimpleGrid, Text, rem } from '@mantine/core';
 import { Dropzone as MantineDropzone } from '@mantine/dropzone';
 import { useDisclosure } from '@mantine/hooks';
-import { IconFiles, IconUpload, IconX } from '@tabler/icons-react';
+import { IconFiles, IconUpload, IconX, IconLock } from '@tabler/icons-react';
 import JsFileDownloader from 'js-file-downloader';
 import { useState } from 'react';
 import { openConfirmModal } from './ConfirmModal';
 import FileThumbnail from './FileThumbnail';
 import ImageModal from './ImageModal';
-import axios from 'axios';
 
-export default function Dropzone({ project, task, selected, onChange, remove, ...props }) {
+export default function Dropzone({
+  selected, // Ini adalah 'allAttachmentsForDisplay' dari parent
+  onAddFiles, // Mengubah nama dari 'onChange' menjadi 'onAddFiles' untuk kejelasan
+  onRemoveAttachment, // Mengubah nama dari 'remove' menjadi 'onRemoveAttachment'
+  onToggleMain, // Fungsi untuk toggle is_main
+  disabled = false, // Tambahkan prop disabled
+  isLocked = false, // Lock jika project completed
+  ...props
+}) {
   const [opened, { close, open }] = useDisclosure(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const isDisabled = Boolean(disabled || isLocked);
 
-  const confirmDeleteAttachment = (index, fileName, attachmentId) => {
+  const confirmDeleteAttachment = fileToRemove => {
+    if (isDisabled) return;
     openConfirmModal({
       type: 'danger',
       title: 'Delete attachment',
-      content: `Are you sure you want to delete the attachment "${fileName}"? This action cannot be undone.`,
+      content: `Are you sure you want to delete the attachment "${fileToRemove.name}"? This action cannot be undone.`,
       confirmLabel: 'Delete',
-      requirePassword: true,
       confirmProps: { color: 'red' },
-      onConfirm: password => {
-        axios
-          .post(
-            route('attachments.destroy', [project.id, task.id, attachmentId]),
-            {
-              password,
-              _method: 'DELETE',
-            },
-            {
-              withCredentials: true,
-              headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/json',
-              },
-            }
-          )
-          .then(() => {
-            remove(index);
-          })
-          .catch(() => {});
+      onConfirm: () => {
+        onRemoveAttachment(fileToRemove);
       },
     });
   };
 
   const openFile = file => {
+    const fileUrl = file instanceof File ? URL.createObjectURL(file) : file.url;
+
     if (isImage(file)) {
-      setSelectedImage(file);
+      setSelectedImage({ ...file, url: fileUrl });
       open();
     } else if (isViewable(file)) {
-      window.open(file.url, '_blank');
+      window.open(fileUrl, '_blank');
     } else {
       new JsFileDownloader({
-        url: file.url,
+        url: fileUrl,
         filename: file.name,
         contentType: file.type,
         nativeFallbackOnError: true,
@@ -71,8 +63,9 @@ export default function Dropzone({ project, task, selected, onChange, remove, ..
       />
 
       <MantineDropzone
-        onDrop={files => onChange([...selected, ...files])}
+        onDrop={files => !isDisabled && onAddFiles(files)}
         onReject={files => console.log('rejected files', files)}
+        disabled={isDisabled}
         {...props}
       >
         <Group
@@ -81,88 +74,121 @@ export default function Dropzone({ project, task, selected, onChange, remove, ..
           mih={50}
           style={{ pointerEvents: 'none' }}
         >
-          <MantineDropzone.Accept>
-            <IconUpload
-              style={{
-                width: rem(42),
-                height: rem(42),
-                color: 'var(--mantine-color-blue-6)',
-              }}
-              stroke={1.5}
-            />
-          </MantineDropzone.Accept>
-          <MantineDropzone.Reject>
-            <IconX
-              style={{
-                width: rem(42),
-                height: rem(42),
-                color: 'var(--mantine-color-red-6)',
-              }}
-              stroke={1.5}
-            />
-          </MantineDropzone.Reject>
-          <MantineDropzone.Idle>
-            <IconFiles
-              style={{
-                width: rem(42),
-                height: rem(42),
-                color: 'var(--mantine-color-dimmed)',
-              }}
-              stroke={1.5}
-            />
-          </MantineDropzone.Idle>
+          {isDisabled ? (
+            <>
+              <IconLock
+                style={{
+                  width: rem(42),
+                  height: rem(42),
+                  color: 'var(--mantine-color-gray-5)',
+                }}
+                stroke={1.5}
+              />
+              <div>
+                <Text
+                  size='md'
+                  inline
+                  c='dimmed'
+                >
+                  Attachments (View Only)
+                </Text>
+                <Text
+                  size='xs'
+                  c='dimmed'
+                  inline
+                  mt={7}
+                >
+                  {isLocked
+                    ? 'Project is completed - attachments are locked'
+                    : 'You don`t have permission to upload files'}
+                </Text>
+              </div>
+            </>
+          ) : (
+            <>
+              <MantineDropzone.Accept>
+                <IconUpload
+                  style={{
+                    width: rem(42),
+                    height: rem(42),
+                    color: 'var(--mantine-color-blue-6)',
+                  }}
+                  stroke={1.5}
+                />
+              </MantineDropzone.Accept>
+              <MantineDropzone.Reject>
+                <IconX
+                  style={{
+                    width: rem(60),
+                    height: rem(60),
+                    color: 'var(--mantine-color-red-6)',
+                  }}
+                  stroke={1.5}
+                />
+              </MantineDropzone.Reject>
+              <MantineDropzone.Idle>
+                <IconFiles
+                  style={{
+                    width: rem(42),
+                    height: rem(42),
+                    color: 'var(--mantine-color-dimmed)',
+                  }}
+                  stroke={1.5}
+                />
+              </MantineDropzone.Idle>
 
-          <div>
-            <Text
-              size='md'
-              inline
-            >
-              Drag files here or click to select
-            </Text>
-            <Text
-              size='xs'
-              c='dimmed'
-              inline
-              mt={7}
-            >
-              Files of any type will be accepted
-            </Text>
-          </div>
+              <div>
+                <Text
+                  size='md'
+                  inline
+                >
+                  Drag files here or click to select
+                </Text>
+                <Text
+                  size='xs'
+                  c='dimmed'
+                  inline
+                  mt={7}
+                >
+                  Files of any type will be accepted
+                </Text>
+              </div>
+            </>
+          )}
         </Group>
       </MantineDropzone>
 
-      <SimpleGrid cols={2} mt="lg">
-  {selected.map((file, index) => (
-    <div key={index} style={{ position: 'relative' }}>
-      <FileThumbnail
-        index={index}
-        file={file}
-        remove={() => confirmDeleteAttachment(index, file.name, file.id)}
-        open={() => openFile(file)}
-      />
-
-      {/* Checkbox untuk Gambar Utama */}
-      {isImage(file) && (
-        <div style={{ marginTop: 6 }}>
-          <label style={{ fontSize: 12 }}>
-            <input
-              type="checkbox"
-              checked={file.is_main || false}
-              onChange={() => {
-                const updated = selected.map((f, i) => ({
-                  ...f,
-                  is_main: i === index, // hanya satu yang bisa aktif
-                }));
-                onChange(updated);
-              }}
-            />{' '}
-            Jadikan gambar utama
-          </label>
-        </div>
-      )}
-    </div>
-  ))}
-</SimpleGrid>
+      <SimpleGrid
+        cols={{ base: 2, sm: 3 }}
+        mt='lg'
+      >
+        {(selected || []).map((file, index) => (
+          <div
+            key={file.id || file.name || `new-file-${index}`}
+            style={{ position: 'relative' }}
+          >
+            <FileThumbnail
+              file={file}
+              remove={() => confirmDeleteAttachment(file)}
+              open={() => openFile(file)}
+              disabled={isDisabled}
+            />
+            {isImage(file) && onToggleMain && !(file instanceof File) && (
+              <div style={{ marginTop: 6 }}>
+                <label style={{ fontSize: 12 }}>
+                  <input
+                    type='checkbox'
+                    checked={file.is_main || false}
+                    onChange={() => onToggleMain(file.id)}
+                    disabled={isDisabled}
+                  />{' '}
+                  Main
+                </label>
+              </div>
+            )}
+          </div>
+        ))}
+      </SimpleGrid>
     </>
   );
 }

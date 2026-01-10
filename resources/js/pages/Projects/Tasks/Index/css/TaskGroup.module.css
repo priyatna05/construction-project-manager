@@ -1,23 +1,27 @@
+/* Global row container */
 .row {
-  margin-bottom: var(--mantine-spacing-sm);
+  display: flex;
+  flex-direction: column; /* setiap group dalam row ditumpuk */
+  gap: var(--mantine-spacing-sm); /* jarak antar group */
+  margin-bottom: var(--mantine-spacing-md); /* jarak antar row */
 }
 
+/* Default styling untuk group */
 .group {
-  align-items: center;
-  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
-  border-radius: var(--mantine-radius-md);
-  border: rem(1px) solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-6));
   display: flex;
   justify-content: space-between;
-  margin-bottom: var(--mantine-spacing-sm);
+  align-items: center;
+  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
+  border: rem(1px) solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-6));
+  border-radius: var(--mantine-radius-md);
   padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
-  transition:
-    0.3s ease border,
-    0.3s ease color;
+  transition: 0.3s ease border, 0.3s ease color;
+  margin-bottom: var(--mantine-spacing-sm) !important;
 
-  @mixin hover {
+  /* Hover effect */
+  &:hover {
     color: light-dark(var(--mantine-color-gray-9), var(--mantine-color-white));
-    border: rem(1px) solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+    border-color: light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
 
     .actions {
       opacity: 0.5;
@@ -29,12 +33,10 @@
   }
 }
 
+/* Styling actions dan drag handle */
 .actions {
   opacity: 0;
   transition: 0.3s ease opacity;
-}
-
-.itemDragging {
 }
 
 .dragHandle {
@@ -47,22 +49,56 @@
   transition: 0.3s ease opacity;
 }
 
+/* Placeholder saat drag & drop */
+.placeholder {
+  min-height: 10px;
+}
+
+/* Kanban view khusus */
 :global(.kanban-view) {
-  .row {
-    max-width: rem(260px);
-    min-width: rem(260px);
+  .row { /* column container */
+    display: flex;
+    flex-direction: column;
+    gap: var(--mantine-spacing-sm); /* jarak antar group */
+    padding: var(--mantine-spacing-xs);
   }
 
   .group {
-    margin-bottom: var(--mantine-spacing-xs);
-    padding: var(--mantine-spacing-sm) var(--mantine-spacing-xl);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
+    border: rem(1px) solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-6));
+    border-radius: var(--mantine-radius-md);
+    padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+    transition: 0.3s ease border, 0.3s ease color;
+    margin-bottom: 0; /* gap diatur oleh parent */
+
+    &:hover {
+      color: light-dark(var(--mantine-color-gray-9), var(--mantine-color-white));
+      border-color: light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+
+      .actions {
+        opacity: 0.5;
+      }
+
+      .dragHandle {
+        opacity: 0.6;
+      }
+    }
   }
 
   .placeholder {
-    min-height: 10px;
+    min-height: 40px;
+    border: 2px dashed light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+    border-radius: var(--mantine-radius-md);
+    margin-bottom: var(--mantine-spacing-sm);
   }
 }
 
+
+
+/* Header wrapper dan content */
 .headerWrapper {
   position: sticky;
   top: var(--mantine-spacing-md);

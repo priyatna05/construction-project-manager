@@ -4,19 +4,25 @@ import isArray from 'lodash/isArray';
 import omit from 'lodash/omit';
 import { create } from 'zustand';
 
+const normalizeArray = value => {
+  if (Array.isArray(value)) return value.map(Number);
+  if (value === undefined || value === null || value === '') return [];
+  return [Number(value)];
+};
+
 const params = currentUrlParams();
 
 const useTaskFiltersStore = create((set, get) => ({
   openedDrawer: false,
   filters: {
-    groups: params.groups || [],
-    assignees: params.assignees || [],
+    groups: normalizeArray(params.groups),
+    assignees: normalizeArray(params.assignees),
     due_date: {
       not_set: params.not_set || 0,
       overdue: params.overdue || 0,
     },
     status: params.status || 0,
-    labels: params.labels || [],
+    labels: normalizeArray(params.labels),
   },
   hasUrlParams: (exclude = []) => {
     const params = omit(currentUrlParams(), exclude);
@@ -55,12 +61,13 @@ const useTaskFiltersStore = create((set, get) => ({
   toggleArrayFilter: (field, id) => {
     return set(
       produce(state => {
-        const index = state.filters[field].findIndex(i => i === id);
+        const numericId = Number(id);
+        const index = state.filters[field].findIndex(i => i === numericId);
 
         if (index !== -1) {
           state.filters[field].splice(index, 1);
         } else {
-          state.filters[field].push(id);
+          state.filters[field].push(numericId);
         }
         reloadWithQuery({ [field]: state.filters[field] }, true);
       })
@@ -103,6 +110,21 @@ const useTaskFiltersStore = create((set, get) => ({
     return set(
       produce(state => {
         state.openedDrawer = false;
+      })
+    );
+  },
+  syncFromUrl: () => {
+    const params = currentUrlParams();
+    return set(
+      produce(state => {
+        state.filters.groups = normalizeArray(params.groups);
+        state.filters.assignees = normalizeArray(params.assignees);
+        state.filters.due_date = {
+          not_set: params.not_set || 0,
+          overdue: params.overdue || 0,
+        };
+        state.filters.status = params.status || 0;
+        state.filters.labels = normalizeArray(params.labels || []);
       })
     );
   },

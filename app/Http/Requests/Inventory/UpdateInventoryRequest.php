@@ -44,7 +44,7 @@ class UpdateInventoryRequest extends FormRequest
             'unit' => [
                 'sometimes',
                 'required',
-                'in:' . Label::slugsForTypeString(Label::TYPE_INVENTORY_UNIT)
+                'in:' . Label::slugsForTypeString(Label::TYPE_TASK_INVENTORY_UNIT)
             ],
             'status' => [
                 'sometimes',
@@ -53,7 +53,7 @@ class UpdateInventoryRequest extends FormRequest
             ],
             'description' => 'nullable|string',
             'quantity_on_hand' => 'nullable|numeric|min:0',
-            'unit_cost' => 'required|numeric|min:0',
+            'unit_cost' => 'sometimes|required|numeric|min:0',
             'sum_cost' => 'nullable|numeric|min:0',
         ];
     }

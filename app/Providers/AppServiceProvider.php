@@ -5,6 +5,14 @@ namespace App\Providers;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\ServiceProvider;
+use App\Observers\AttachmentObserver;
+use App\Observers\ProjectObserver;
+use App\Observers\TaskObserver;
+use App\Observers\WorkReportObserver;
+use App\Models\Project;
+use App\Models\Task;
+use App\Models\Attachment;
+use App\Models\WorkReport;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Faker\Factory as FakerFactory;
@@ -27,6 +35,10 @@ class AppServiceProvider extends ServiceProvider
     {
         // Configure default string length for MySQL to prevent key length errors
         Schema::defaultStringLength(125);
+        Attachment::observe(AttachmentObserver::class);
+        Project::observe(ProjectObserver::class);
+        Task::observe(TaskObserver::class);
+        WorkReport::observe(WorkReportObserver::class);
 
         JsonResource::withoutWrapping();
 

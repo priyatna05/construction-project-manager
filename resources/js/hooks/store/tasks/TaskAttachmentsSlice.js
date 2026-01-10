@@ -1,4 +1,5 @@
 import { onUploadProgress } from '@/utils/axios';
+import { useFlashStore } from '@/hooks/store/useFlashStore';
 import axios from 'axios';
 import { produce } from 'immer';
 
@@ -7,45 +8,73 @@ const createTaskAttachmentsSlice = (set, get) => ({
     const index = get().tasks[task.group_id].findIndex(i => i.id === task.id);
 
     try {
-      const { data } = await axios.postForm(
+      const formData = new FormData();
+      files.forEach(file => {
+        if (file instanceof File) {
+          formData.append('attachments[]', file);
+        }
+      });
+
+      const { data } = await axios.post(
         route('projects.tasks.attachments.upload', [task.project_id, task.id]),
-        { attachments: files.filter(i => i.id === undefined) },
-        { onUploadProgress }
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          onUploadProgress
+        }
       );
 
-      return set(
+      set(
         produce(state => {
-          state.tasks[task.group_id][index].attachments = [
-            ...state.tasks[task.group_id][index].attachments,
+          state.tasks[task.group_id][index].attachment_files = [
+            ...state.tasks[task.group_id][index].attachment_files,
             ...data.files,
           ];
+          state.tasks[task.group_id][index]._attachmentUpdated = Date.now();
         })
       );
+
+      // Show success flash message
+      const { setFlash } = useFlashStore.getState();
+      setFlash({
+        type: 'success',
+        title: 'Upload successful',
+        message: `${data.files.length} attachment(s) uploaded successfully.`,
+      });
     } catch (e) {
-      console.error(e);
-      alert('Failed to upload attachments');
+      console.error('Upload error:', e);
+      const message = e.response?.data?.message || e.response?.data?.error || e.message || 'Failed to upload attachments';
+      alert(message);
     }
   },
   deleteAttachment: async (task, index) => {
     const taskIndex = get().tasks[task.group_id].findIndex(i => i.id === task.id);
 
     try {
-      const deleteId = get().tasks[task.group_id][taskIndex].attachments[index].id;
+      const deleteId = get().tasks[task.group_id][taskIndex].attachment_files[index].id;
       await axios.delete(
-        route('projects.tasks.attachments.destroy', [task.project_id, task.id, deleteId]),
-        { progress: true }
+        route('projects.tasks.attachments.destroy', [task.project_id, task.id, deleteId])
       );
 
-      return set(
+      set(
         produce(state => {
-          state.tasks[task.group_id][taskIndex].attachments = [
-            ...state.tasks[task.group_id][taskIndex].attachments.filter(i => i.id !== deleteId),
+          state.tasks[task.group_id][taskIndex].attachment_files = [
+            ...state.tasks[task.group_id][taskIndex].attachment_files.filter(i => i.id !== deleteId),
           ];
         })
       );
+
+      // Show success flash message
+      const { setFlash } = useFlashStore.getState();
+      setFlash({
+        type: 'success',
+        title: 'Delete successful',
+        message: 'Attachment deleted successfully.',
+      });
     } catch (e) {
-      console.error(e);
-      alert('Failed to delete attachment');
+      console.error('Delete error:', e);
+      const message = e.response?.data?.message || 'Failed to delete attachment';
+      alert(message);
     }
   },
 });

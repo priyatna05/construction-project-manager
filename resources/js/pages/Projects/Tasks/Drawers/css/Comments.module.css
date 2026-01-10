@@ -1,8 +1,35 @@
-.comment {
+/* .comment {
   font-size: rem(14);
   line-height: rem(14);
 
   p {
     margin: 0;
   }
+} */
+.comment {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.comment p {
+  margin: 0;
+  padding: 0;
+}
+
+.comment p + p {
+  margin-top: 0.5em;
+}
+
+.comment ul, .comment ol {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+
+.comment a {
+  color: var(--mantine-color-blue-6);
+  text-decoration: none;
+}
+
+.comment a:hover {
+  text-decoration: underline;
 }

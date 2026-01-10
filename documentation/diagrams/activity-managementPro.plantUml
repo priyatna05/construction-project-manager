@@ -1,0 +1,35 @@
+@startuml
+
+start
+
+:Project Manager login ke sistem;
+:Memilih proyek;
+
+:Menambah / Mengedit / Menghapus proyek dan tugas;
+
+if (data valid?) then (valid)
+    :Sistem menyimpan perubahan;
+    :Sistem memperbarui status tugas;
+else (tidak)
+    :Tampilkan pesan error;
+    stop
+endif
+
+:Team Member melihat daftar tugas;
+:Team Member mengupdate progres pekerjaan;
+
+if (Project Manager menyetujui progres?) then (setuju)
+    :Sistem menyimpan progres aktual;
+else (tolak)
+    :Sistem mengembalikan progres untuk revisi;
+endif
+
+:Sistem menghitung EV, PV, AC;
+:Sistem memperbarui indikator SPI, CPI, CV, SV;
+
+:Sistem mengirim notifikasi realtime;
+:Sistem menyimpan riwayat aktivitas;
+
+stop
+
+@enduml

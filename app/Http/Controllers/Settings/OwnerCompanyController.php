@@ -31,6 +31,12 @@ class OwnerCompanyController extends Controller
 
         (new UpdateOwnerCompany)->update($request);
 
-        return redirect()->back()->success('Company updated', 'The company was successfully updated.');
+        return redirect()->route('settings.company.edit')->with([
+            'flash' => [
+                'type' => 'success',
+                'title' => 'Company updated',
+                'message' => 'The company was successfully updated.',
+            ]
+        ]);
     }
 }

@@ -33,11 +33,16 @@ class Handler extends ExceptionHandler
             ], $status);
         }
 
-        // Show custom Inertia error page (only in production or staging)
-        if (! app()->environment(['local', 'testing']) && in_array($status, [500, 503, 404])) {
-            return Inertia::render('Error', ['status' => $status])
-                ->toResponse($request)
-                ->setStatusCode($status);
+        // If the request is an Inertia/XHR request, return the Inertia Error page
+        // so the SPA can render a friendly UI. In local environment developers may
+        // still want full stack traces for non-Inertia requests, so we limit this
+        // behavior to requests that carry the X-Inertia header or are AJAX.
+        if ((bool) $request->header('X-Inertia') || $request->ajax()) {
+            if (in_array($status, [500, 503, 404, 403, 401])) {
+                return Inertia::render('Error', ['status' => $status])
+                    ->toResponse($request)
+                    ->setStatusCode($status);
+            }
         }
 
         // CSRF token mismatch or page expired

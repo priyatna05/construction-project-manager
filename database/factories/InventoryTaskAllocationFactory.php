@@ -30,15 +30,9 @@ class InventoryTaskAllocationFactory extends Factory
         // LANGKAH 2: Cari Inventory yang Relevan dengan Proyek yang Sama
         // =====================================================================
         // Cari inventory yang terhubung ke proyek yang sama dengan task.
-        $inventory = Inventory::where('project_site_location_id', $project->id)
-                              ->where('quantity_on_hand', '>', 0) // Hanya alokasikan yang stoknya ada
+        $inventory = Inventory::                              where('quantity_on_hand', '>', 0) // Hanya alokasikan yang stoknya ada
                               ->inRandomOrder()
                               ->first();
-
-        if (!$inventory) {
-            // Jika tidak ada inventory yang cocok di proyek itu, buat satu yang baru untuk proyek tersebut.
-            $inventory = Inventory::factory()->create(['project_site_location_id' => $project->id]);
-        }
 
         // =====================================================================
         // LANGKAH 3: Hitung Kuantitas dan Biaya yang Logis
@@ -73,7 +67,6 @@ class InventoryTaskAllocationFactory extends Factory
             'allocated_by_user_id' => $allocatingUser->id,
             'quantity_allocated' => $quantityAllocated,
             'cost_at_allocation' => $costAtAllocation,
-            'allocation_date' => $allocationDate,
             'notes' => $this->faker->optional(0.3)->sentence, // 30% kemungkinan ada catatan
         ];
     }

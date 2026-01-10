@@ -65,7 +65,7 @@ class ProjectSeeder extends Seeder
             ->state([
                 'name' => 'Flagship Construction EVM Demo',
                 'description' => 'Proyek demonstrasi untuk menunjukkan fitur-fitur utama platform, termasuk EVM, manajemen tugas, dan kolaborasi tim.',
-                'budget_project' => 50000000, // Budget dalam satuan terkecil (misal: 500,000.00 x 100)
+                'budget_project_estimate' => 50000000, // Budget dalam rupiah
                 'client_company_id' => ClientCompany::first()?->id, // Pilih perusahaan pertama, atau NULL jika tidak ada
                 'progress_project' => 65,
                 'start_date' => now()->subMonths(2),

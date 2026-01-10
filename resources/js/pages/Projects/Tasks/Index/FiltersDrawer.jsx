@@ -8,6 +8,7 @@ export default function FiltersDrawer() {
   return (
     <Drawer
       opened={openedDrawer}
+      zIndex={2200}
       onClose={() => closeDrawer()}
       title={
         <Text

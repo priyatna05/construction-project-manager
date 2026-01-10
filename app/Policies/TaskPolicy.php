@@ -17,6 +17,14 @@ class TaskPolicy
     }
 
     /**
+     * Determine whether the user can view the model.
+     */
+    public function view(User $user, Task $task, Project $project): bool
+    {
+        return $user->hasPermissionTo('view tasks') && $user->hasProjectAccess($project);
+    }
+
+    /**
      * Determine whether the user can create models.
      */
     public function create(User $user, Project $project): bool
@@ -33,11 +41,19 @@ class TaskPolicy
     }
 
     /**
-     * Determine whether the user can delete the model.
+     * Determine whether the user can delete to archive the model.
      */
     public function delete(User $user, Task $task, Project $project): bool
     {
         return $user->hasPermissionTo('archive task') && $user->hasProjectAccess($project);
+    }
+
+    /**
+     * Determine whether the user can delete permanent the model.
+     */
+    public function forceDelete(User $user, Task $task, Project $project): bool
+    {
+        return $user->hasPermissionTo('delete task') && $user->hasProjectAccess($project);
     }
 
     /**

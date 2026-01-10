@@ -1,12 +1,15 @@
 import { Alert, Anchor, Button, Group, Text, TextInput, Title, Paper } from '@mantine/core';
-import { IconArrowLeft, IconInfoCircle } from '@tabler/icons-react';
+import { IconArrowLeft, IconInfoCircle, IconMail } from '@tabler/icons-react';
 import { useForm } from 'laravel-precognition-react-inertia';
 import classes from './css/Login.module.css';
+import { useComputedColorScheme } from '@mantine/core';
 
 export default function ForgotPasswordForm({ status, onBack }) {
   const form = useForm('post', route('auth.forgotPassword.sendLink'), {
     email: '',
   });
+  const scheme = useComputedColorScheme('light');
+  const cardClass = `${classes.form} ${classes.blurBackground} ${scheme === 'dark' ? classes.darkCard : ''}`;
 
   const submit = e => {
     e.preventDefault();
@@ -18,7 +21,7 @@ export default function ForgotPasswordForm({ status, onBack }) {
   return (
     <>
       <Paper
-        className={`${classes.form} ${classes.blurBackground}`}
+        className={cardClass}
         radius='md'
         p='lg'
         withBorder
@@ -60,6 +63,12 @@ export default function ForgotPasswordForm({ status, onBack }) {
           <TextInput
             label='Email'
             placeholder='Your email'
+            leftSection={
+                          <IconMail
+                            size={18}
+                            stroke={1.5}
+                          />
+                        }
             required
             onChange={e => form.setData('email', e.target.value)}
             onBlur={() => form.validate('email')}
@@ -83,6 +92,7 @@ export default function ForgotPasswordForm({ status, onBack }) {
             <Button
               type='submit'
               disabled={form.processing}
+              loading={form.processing}
             >
               Reset Password
             </Button>

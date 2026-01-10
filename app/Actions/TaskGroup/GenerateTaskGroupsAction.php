@@ -8,8 +8,8 @@ class GenerateTaskGroupsAction
 {
     private const TEMPLATES = [
         'wbs' => [
-            ['name' => 'Pekerjaan Persiapan'], ['name' => 'Pekerjaan Tanah'],
-            ['name' => 'Pekerjaan Dinding dan Lantai'], ['name' => 'Pekerjaan Atap'],
+            ['name' => 'Pekerjaan Persiapan'], ['name' => 'Pekerjaan Tanah'], ['name' => 'Pekerjaan Struktur'],
+            ['name' => 'Pekerjaan Atap'], ['name' => 'Pekerjaan Dinding dan Lantai'],
             ['name' => 'Pekerjaan Plafon'], ['name' => 'Pekerjaan Pengecatan'],
             ['name' => 'Pekerjaan Sanitari'], ['name' => 'Pekerjaan Listrik'],
             ['name' => 'Pekerjaan Taman'],

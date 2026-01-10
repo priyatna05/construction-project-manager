@@ -1,6 +1,6 @@
 import { usePage } from '@inertiajs/react';
-import { showNotification } from '@mantine/notifications';
 import useNotificationsStore from './store/useNotificationsStore';
+import { useFlashStore } from './store/useFlashStore';
 import useTaskGroupsStore from './store/useTaskGroupsStore';
 import useTasksStore from './store/useTasksStore';
 
@@ -9,6 +9,7 @@ export default function useWebSockets() {
     auth: { user },
   } = usePage().props;
   const { addNotification } = useNotificationsStore();
+  const { setFlash } = useFlashStore();
   const {
     addTaskLocally,
     updateTaskLocally,
@@ -31,17 +32,43 @@ export default function useWebSockets() {
 
   const initUserWebSocket = () => {
     window.Echo.private(`App.Models.User.${user.id}`).notification(notification => {
-      addNotification(notification);
+      // Normalisasi payload broadcast Laravel ke shape yang dipakai UI
+      const normalized = {
+        id: notification.id,
+        title:
+          notification.data?.title ||
+          notification.title ||
+          'Notification',
+        description:
+          notification.data?.message ||
+          notification.data?.body ||
+          notification.description ||
+          '',
+        created_at: notification.created_at || new Date().toISOString(),
+        read_at: notification.read_at || null,
+        type: notification.data?.type || notification.type || 'info',
+        link: notification.data?.link || notification.link || null,
+        ...notification,
+      };
 
-      showNotification({
-        title: notification.title,
-        message: notification.description,
-        autoClose: 8000,
+      addNotification(normalized); // update custom dropdown only
+      const flashType = ['success', 'warning', 'error', 'info'].includes(
+        (normalized.type || '').toLowerCase()
+      )
+        ? normalized.type.toLowerCase()
+        : 'info';
+      setFlash({
+        type: flashType,
+        title: normalized.title,
+        message: normalized.description,
       });
     });
   };
 
   const initProjectWebSocket = project => {
+    if (!project || !project.id) {
+      return () => {};
+    }
     window.Echo.private(`App.Models.Project.${project.id}`)
       .listen('Task\\TaskCreated', e => addTaskLocally(e.task))
       .listen('Task\\TaskUpdated', e => updateTaskLocally(e.taskId, e.property, e.value))
@@ -81,20 +108,22 @@ export default function useWebSockets() {
   };
 
   const initInventoryWebSocket = (onInventoryUpdated) => {
-  window.Echo.channel('inventories').listen('InventoryUpdated', e => {
-    console.log('Inventory updated event received:', e.inventory);
+  window.Echo.channel('inventories')
+    .listen('Inventory\\InventoryCreated', e => {
+      console.log('Inventory created event received:', e.inventory);
 
-    if (typeof onInventoryUpdated === 'function') {
-      onInventoryUpdated(e.inventory);
-    }
+      if (typeof onInventoryUpdated === 'function') {
+        onInventoryUpdated(e.inventory);
+      }
 
-    showNotification({
-      title: 'Inventory Updated',
-      message: `Inventory "${e.inventory.name}" updated successfully.`,
-      color: 'blue',
-      autoClose: 5000,
+    })
+    .listen('Inventory\\InventoryUpdated', e => {
+      console.log('Inventory updated event received:', e.inventory);
+
+      if (typeof onInventoryUpdated === 'function') {
+        onInventoryUpdated(e.inventory);
+      }
     });
-  });
 
   return () => window.Echo.leaveChannel('inventories');
 };

@@ -1,0 +1,42 @@
+@startuml
+
+start
+
+:Ambil data task dan progres aktual;
+:Ambil rencana biaya (BCWS), rencana durasi, dan bobot task;
+:Ambil biaya aktual harian dari laporan lapangan;
+
+:Validasi kelengkapan data (progress, biaya, durasi);
+
+if (data valid?) then (valid)
+    :Hitung PV (Planned Value);
+    :Hitung EV (Earned Value);
+    :Hitung AC (Actual Cost);
+
+    :Hitung varians:
+    - SV = EV - PV
+    - CV = EV - AC;
+
+    :Hitung indeks performa:
+    - SPI = EV / PV
+    - CPI = EV / AC;
+
+    :Hitung proyeksi:
+    - EAC
+    - ETC
+    - VAC;
+
+    :Perbarui status performa proyek (baik, normal, terlambat, overbudget);
+
+    :Simpan hasil perhitungan ke database;
+else (tidak valid)
+    :Tampilkan error perhitungan EVM;
+    stop
+endif
+
+:Tampilkan analisis EVM ke dashboard proyek
+(header analytics);
+
+stop
+
+@enduml

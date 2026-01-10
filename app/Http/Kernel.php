@@ -49,6 +49,7 @@ class Kernel extends HttpKernel
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
+            \App\Http\Middleware\LogRequests::class,
         ],
 
         'api' => [

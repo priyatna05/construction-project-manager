@@ -79,7 +79,7 @@ class TaskFactory extends Factory
             'description' => $this->faker->optional()->realText(200),
             'start_date' => $startDate->toDateString(), // Format ke Y-m-d sesuai skema
             'end_date' => $endDate->toDateString(), // Format ke Y-m-d sesuai skema
-            'budget_task' => $budgetTask / 100, // Simpan sebagai desimal
+            'budget_task_plan' => $budgetTask / 100, // Simpan sebagai desimal
             'weight_task' => $this->faker->optional()->randomFloat(2, 1, 10),
             'progress_task' => $progress,
             'actual_cost' => $actualCost / 100, // Simpan sebagai desimal

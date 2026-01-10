@@ -20,9 +20,6 @@ return new class extends Migration
             $table->string('title'); // Short description, e.g., "Task Created", "Comment Added"
             $table->string('description')->nullable(); // Longer description or content of change
 
-            // Polymorphic relation to the model that caused the activity
-            // $table->foreignId('activity_capable_id'); // Replaced by morphs
-            // $table->string('activity_capable_type')g; // Replaced by morphs
             $table->nullableMorphs('subject'); // E.g., Task, Comment, Project. Creates subject_id, subject_type
 
             // Optionally, store properties/changes as JSON

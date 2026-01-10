@@ -3,22 +3,9 @@ import ClearFiltersButton from '@/components/ClearFiltersButton';
 import useTaskDrawerStore from '@/hooks/store/useTaskDrawerStore';
 import useTaskFiltersStore from '@/hooks/store/useTaskFiltersStore';
 import usePreferences from '@/hooks/usePreferences';
-import { usePage, Link } from '@inertiajs/react';
+import { usePage } from '@inertiajs/react';
 import CreateTasksGroupModal from './Modals/CreateTasksGroupModal';
-import {
-  ActionIcon,
-  Button,
-  UnstyledButton,
-  Grid,
-  Group,
-  Text,
-  Title,
-  Select,
-  Stack,
-  Tooltip,
-  Popover,
-  Menu,
-} from '@mantine/core';
+import { ActionIcon, Button, Grid, Group, Text, Tooltip, Menu } from '@mantine/core';
 import {
   IconFilter,
   IconFilterCog,
@@ -28,121 +15,43 @@ import {
   IconLayoutGridAdd,
   IconListDetails,
 } from '@tabler/icons-react';
-import { dateSlash, convertDurationFromDays, getUnitLabel } from '@/utils/datetime';
-import { money } from '@/utils/currency';
-import { useState } from 'react';
-// import { stripHtml } from "@/utils/convertHtml";
+import ProjectHeaderBudget from './ProjectHeaderBudget';
+import { useEffect, useState } from 'react';
 
-export default function Header() {
+export default function Header({ onEditProject }) {
   const { project } = usePage().props;
   const { tasksView, setTasksView } = usePreferences();
-  const { openDrawer } = useTaskFiltersStore();
+  const { openDrawer, hasUrlParams } = useTaskFiltersStore();
   const { openCreateTask } = useTaskDrawerStore();
-  const { hasUrlParams } = useTaskFiltersStore();
   const usingFilters = hasUrlParams(['archived']);
-  const [durationUnit, setDurationUnit] = useState('day');
-  const [popoverOpened, setPopoverOpened] = useState(false);
-  const durationInUnit = convertDurationFromDays(project.duration, durationUnit);
+  const isLocked = Boolean(project?.is_completed);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
+
+  useEffect(() => {
+    // Auto collapse header when entering kanban, expand on list view
+    setHeaderCollapsed(tasksView === 'kanban');
+  }, [tasksView]);
+
+  const hideBudgetHeader = tasksView === 'kanban' && headerCollapsed;
 
   return (
-    <Grid
-      justify='space-between'
-      align='end'
-    >
-      <Grid.Col span='content'>
-        <Group
-          mb='lg'
-          c='white'
-        >
-          <Stack
-            spacing='xs'
-            mb='md'
-            w='100%'
-          >
-            <Tooltip
-              label='Click to detail proyek'
-              withArrow
-            >
-              <Link
-                href={route('projects.detail', project.id)}
-                style={{ textDecoration: 'none', display: 'block', maxWidth: '100%' }}
-              >
-                <Title
-                  order={1}
-                  style={{
-                    color: 'white',
-                    cursor: 'pointer',
-                    transition: 'color 0.2s',
-                    whiteSpace: 'normal',
-                    wordBreak: 'break-word',
-                    overflowWrap: 'break-word',
-                    maxWidth: '100%',
-                    lineHeight: 1.3,
-                  }}
-                >
-                  {project.name}
-                </Title>
-              </Link>
-            </Tooltip>
-            {/* {project.description && (
-        <Text size="md">
-          {stripHtml(project.description)}
-        </Text>
-      )} */}
-            <Group spacing='md'>
-              {project.clientCompany?.name && <Text>Client: {project.clientCompany.name}</Text>}
-            </Group>
-            <Group spacing='md'>
-              {project.start_date && <Text>Start: {dateSlash(project.start_date)}</Text>}
-              {project.end_date && <Text>End: {dateSlash(project.end_date)}</Text>}
-              {/* Durasi dengan filter dan icon */}
-              <Popover
-                opened={popoverOpened}
-                onClose={() => setPopoverOpened(false)}
-                position='bottom'
-                withArrow
-                trapFocus={false}
-                closeOnClickOutside
-              >
-                <Popover.Target>
-                  <UnstyledButton onClick={() => setPopoverOpened(o => !o)}>
-                    <Group>
-                      {/* <IconFilter size={16} /> */}
-                      <Text
-                        size='sm'
-                        fw={500}
-                      >
-                        Duration: {durationInUnit} {getUnitLabel(durationUnit, durationInUnit)}
-                      </Text>
-                    </Group>
-                  </UnstyledButton>
-                </Popover.Target>
+    <Grid justify='space-between'>
+      {!hideBudgetHeader && (
+        <Grid.Col>
+          <ProjectHeaderBudget
+            project={project}
+            onEdit={onEditProject}
+          />
+        </Grid.Col>
+      )}
 
-                <Popover.Dropdown>
-                  <Select
-                    label='Filter Duration'
-                    size='xs'
-                    data={[
-                      { value: 'day', label: 'Day' },
-                      { value: 'week', label: 'Week' },
-                      { value: 'month', label: 'Month' },
-                    ]}
-                    value={durationUnit}
-                    onChange={val => {
-                      setDurationUnit(val);
-                      setPopoverOpened(false);
-                    }}
-                  />
-                </Popover.Dropdown>
-              </Popover>
-
-              {project.budget_project && (
-                <Text>Budget: {money(Math.round(project.budget_project))}</Text>
-              )}
-            </Group>
-          </Stack>
-        </Group>
-        <Group>
+      {/* === Tengah: Menu dan Filter === */}
+      <Grid.Col
+        span='content'
+        mt='xl'
+      >
+        <Group spacing='sm'>
+          {/* Status Archived */}
           {project.archived_at && (
             <Text
               size='sm'
@@ -152,46 +61,69 @@ export default function Header() {
               (Archived)
             </Text>
           )}
-          <Menu
-            shadow='md'
-            width={200}
-            position='bottom-start'
-          >
-            <Menu.Target>
-              <Button
-                leftSection={<IconPlus size={14} />}
-                variant='default'
-                radius='xl'
-              >
-                Add New...
-              </Button>
-            </Menu.Target>
-            <Menu.Dropdown>
-              {!route().params.archived && can('create task group') && (
-                <Menu.Item
-                  leftSection={<IconLayoutGridAdd size={14} />}
-                  onClick={CreateTasksGroupModal}
-                >
-                  Task Group
-                </Menu.Item>
-              )}
 
-              {can('create task') && (
-                <Menu.Item
-                  leftSection={<IconListDetails size={14} />}
-                  onClick={() => openCreateTask()}
-                >
-                  Task
-                </Menu.Item>
-              )}
-            </Menu.Dropdown>
-          </Menu>
+          {/* Tombol Add New */}
+          {can('create task group') &&
+            can('create task') &&
+            !isLocked && (
+              <Menu
+                shadow='md'
+                width={220}
+                position='bottom-start'
+              >
+                <Menu.Target>
+                  <Button
+                    leftSection={<IconPlus size={14} />}
+                    variant='default'
+                    radius='xl'
+                  >
+                    Add New...
+                  </Button>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Item
+                    leftSection={<IconLayoutGridAdd size={14} />}
+                    onClick={CreateTasksGroupModal}
+                  >
+                    Task Group
+                  </Menu.Item>
+                  <Menu.Item
+                    leftSection={<IconListDetails size={14} />}
+                    onClick={() => openCreateTask()}
+                  >
+                    Task
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            )}
+
+          {/* Filter Button */}
           <ActionIcon.Group>
+            {tasksView === 'kanban' && (
+              <Tooltip
+                label={headerCollapsed ? 'Show detail project' : 'Hide detail project'}
+                openDelay={500}
+                withArrow
+                color='green'
+              >
+                <ActionIcon
+                  variant={headerCollapsed ? 'default' : 'filled'}
+                  size='lg'
+                  onClick={() => setHeaderCollapsed(prev => !prev)}
+                >
+                  <IconListDetails
+                    style={{ width: '60%', height: '60%' }}
+                    stroke={1.5}
+                  />
+                </ActionIcon>
+              </Tooltip>
+            )}
             {tasksView === 'kanban' && (
               <Tooltip
                 label='Filters'
                 openDelay={500}
                 withArrow
+                color='green'
               >
                 <ActionIcon
                   variant='filled'
@@ -213,45 +145,50 @@ export default function Header() {
               </Tooltip>
             )}
             {usingFilters && <ClearFiltersButton />}
-          </ActionIcon.Group>
-          <ArchivedFilterButton />
+            { can('view archived tasks') && can('view archived task groups') && (
+              <ArchivedFilterButton />
+            )}
+            </ActionIcon.Group>
         </Group>
       </Grid.Col>
-      <Grid.Col span='content'>
+
+      {/* === Kanan: Switch View (List/Kanban) === */}
+      <Grid.Col
+        span='content'
+        mt='xl'
+      >
         <Group>
-          <Group
-            mr='sm'
-            gap={10}
-          >
-            <ActionIcon.Group>
+          <ActionIcon.Group>
+            <Tooltip
+              label='List view'
+              openDelay={250}
+              withArrow
+              color='green'
+            >
               <ActionIcon
                 size='lg'
                 variant={tasksView === 'list' ? 'filled' : 'default'}
                 onClick={() => setTasksView('list')}
               >
-                <Tooltip
-                  label='List view'
-                  openDelay={250}
-                  withArrow
-                >
-                  <IconLayoutList style={{ width: '40%', height: '40%' }} />
-                </Tooltip>
+                <IconLayoutList style={{ width: '40%', height: '40%' }} />
               </ActionIcon>
+            </Tooltip>
+
+            <Tooltip
+              label='Kanban view'
+              openDelay={250}
+              withArrow
+              color='green'
+            >
               <ActionIcon
                 size='lg'
                 variant={tasksView === 'kanban' ? 'filled' : 'default'}
                 onClick={() => setTasksView('kanban')}
               >
-                <Tooltip
-                  label='Kanban view'
-                  openDelay={250}
-                  withArrow
-                >
-                  <IconLayoutKanban style={{ width: '45%', height: '45%' }} />
-                </Tooltip>
+                <IconLayoutKanban style={{ width: '45%', height: '45%' }} />
               </ActionIcon>
-            </ActionIcon.Group>
-          </Group>
+            </Tooltip>
+          </ActionIcon.Group>
         </Group>
       </Grid.Col>
     </Grid>

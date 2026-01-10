@@ -1,0 +1,32 @@
+@startuml
+!theme plain
+
+actor "Pengguna" as User
+
+boundary "Web Browser" as UI
+control "Kontrol Login" as LoginControl
+entity "Data Pengguna" as UserEntity
+database "Database Pengguna" as UserDB
+
+User -[#blue]> UI: 1. Mengakses Aplikasi (URL)
+UI -[#blue]-> User: 2. Menampilkan Form Login
+
+User -[#green]> UI: 3. Memasukkan Email & Kata Sandi
+UI -[#green]-> LoginControl: 4. Mengirim Permintaan Login
+
+LoginControl -[#purple]> UserEntity: 5. Memvalidasi Kredensial (Email, Pass)
+UserEntity -[#purple]-> UserDB: 6. Mencari & Memverifikasi Pengguna
+UserDB -[#purple]-> UserEntity: 7. Mengembalikan Data Verifikasi
+UserEntity -[#purple]-> LoginControl: 8. Mengirim Hasil Validasi
+
+alt Kredensial Valid
+    LoginControl -[#darkgreen]-> UI: 9. Mengarahkan ke Dashboard
+    UI -[#darkgreen]-> User: 10. Menampilkan Halaman Dashboard
+    User -[#darkgreen]-> UI: 11. Mengakses Fitur Dashboard (Navigasi)
+else Kredensial Tidak Valid
+    LoginControl -[#red]-> UI: 9. Mengirim Pesan Error
+    UI -[#red]-> User: 10. Menampilkan Pesan Error
+    User -[#orange]> UI: 11. Memasukkan Ulang Email & Kata Sandi
+end
+
+@enduml

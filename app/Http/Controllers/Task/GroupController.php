@@ -12,6 +12,7 @@ use App\Http\Requests\TaskGroup\StoreTaskGroupRequest;
 use App\Http\Requests\TaskGroup\UpdateTaskGroupRequest;
 use App\Models\Project;
 use App\Models\TaskGroup;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 
 class GroupController extends Controller
@@ -23,16 +24,16 @@ class GroupController extends Controller
 
     public function index(Request $request)
     {
-        $taskGroup = Taskgroup::Query()
+        $taskGroup = TaskGroup::Query()
             ->with([
                 'project:id,code,name',
                 'tasks:id,name,task_group_id',
             ])
             ->when($request->user()->isNotAdmin(), function ($query) {
-                $query->whereHas('project.clientCompany.clients', fn ($query) => $query->where('users.id', auth()->id()))
-                    ->orWhereHas('users', fn ($query) => $query->where('user_id', $request->user()->id));
+                $query->whereHas('project.clientCompany.clients', fn($query) => $query->where('users.id',  Auth::id()))
+                    ->orWhereHas('users', fn($query) => $query->where('user_id',  Auth::id()));
             })
-            ->when($request->has('archived'), fn ($query) => $query->onlyArchived())
+            ->when($request->has('archived'), fn($query) => $query->onlyArchived())
             ->orderBy('name')
             ->get();
 
@@ -63,19 +64,30 @@ class GroupController extends Controller
         return redirect()->route('projects.tasks', $project)->success('Tasks group updated', 'The tasks group was successfully updated.');
     }
 
-    public function destroy(Project $project, TaskGroup $taskGroup)
+    public function destroy(Request $request, Project $project, TaskGroup $taskGroup)
     {
         $this->authorize('delete', [$taskGroup, $project]);
 
+        $taskGroup->load('tasks');
+
         if ($taskGroup->tasks->isNotEmpty()) {
-            return redirect()->route('projects.tasks', $project)->warning('Action stopped', 'You cannot archive a task group that still contains tasks.');
+            foreach ($taskGroup->tasks as $task) {
+                app(\App\Services\TaskService::class)->archiveTask(['task' => $task]);
+            }
         }
 
         $taskGroup->archive();
 
         TaskGroupDeleted::dispatch($taskGroup->id, $project->id);
 
-        return redirect()->route('projects.tasks', $project)->success('Tasks group archived', 'The tasks group was successfully archived.');
+        return redirect()
+            ->route('projects.tasks', $project)
+            ->success(
+                'Task group archived',
+                $taskGroup->tasks->isNotEmpty()
+                    ? 'The task group and all its tasks were successfully archived.'
+                    : 'The task group was successfully archived.'
+            );
     }
 
     public function restore(Project $project, int $taskGroupId)
@@ -91,18 +103,7 @@ class GroupController extends Controller
         return redirect()->back()->success('Tasks group restored', 'The restoring of the tasks group was completed successfully.');
     }
 
-    public function forceDelete(Project $project, int $taskGroupId)
-    {
-        $taskGroup = TaskGroup::withArchived()->findOrFail($taskGroupId);
-
-        $this->authorize('forceDelete', [$taskGroup, $project]);
-
-        $taskGroup->forceDelete();
-
-        return redirect()->back()->success('Tasks group deleted', 'The tasks group was successfully deleted.');
-    }
-
-    public function reorder(Request $request, Project $project)
+       public function reorder(Request $request, Project $project)
     {
         $this->authorize('reorder', [TaskGroup::class, $project]);
 
@@ -111,5 +112,28 @@ class GroupController extends Controller
         TaskGroupOrderChanged::dispatch($project->id, $request->ids);
 
         return response()->json();
+    }
+
+    public function forceDelete(Project $project, TaskGroup $taskGroup)
+    {
+        $taskGroup = TaskGroup::withArchived()->findOrFail($taskGroup->id);
+
+        $this->authorize('forceDelete', [$taskGroup, $project]);
+
+        $taskGroup->load('tasks');
+
+        if ($taskGroup->tasks->isNotEmpty()) {
+            foreach ($taskGroup->tasks as $task) {
+                $task->inventoryAllocations()->delete();
+                $task->attachments()->delete();
+                $task->comments()->delete();
+                $task->labels()->detach();
+                $task->forceDelete();
+            }
+        }
+
+        $taskGroup->forceDelete();
+
+        return redirect()->back()->success('Tasks group deleted', 'The tasks group and all its tasks were successfully deleted.');
     }
 }

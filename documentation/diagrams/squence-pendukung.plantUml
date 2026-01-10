@@ -1,0 +1,55 @@
+@startuml
+!theme plain
+
+actor "Administrator" as Admin
+
+boundary "Antarmuka Inventori" as InventoryUI
+control "Kontrol Inventori" as InventoryControl
+control "Service Inventori" as InventoryService
+control "Service Sinkronisasi" as SyncService
+entity "Entitas Inventori" as InventoryEntity
+database "Basis Data Inventori" as InventoryDB
+participant "Sistem Otomatisasi Eksternal" as ExternalAutomation
+
+Admin -[#blue]> InventoryUI: 1. Login ke Sistem
+
+InventoryUI -[#green]> InventoryControl: 2. Meminta Tampilan Data Inventori
+InventoryControl -[#purple]> InventoryService: 3. Memuat Data Inventori
+InventoryService -[#purple]> InventoryEntity: 4. Mengambil Data dari Entitas
+InventoryEntity -[#purple]> InventoryDB: 5. Mengambil Data Inventori dari DB
+InventoryDB -[#purple]-> InventoryEntity: 6. Mengembalikan Data Inventori
+InventoryEntity -[#purple]-> InventoryService: 7. Mengirim Data Inventori
+InventoryService -[#green]-> InventoryControl: 8. Mengirim Data Inventori
+InventoryControl -[#green]-> InventoryUI: 9. Menampilkan Data Inventori
+InventoryUI -[#green]-> Admin: 10. Menampilkan Data Inventori
+
+Admin -[#orange]> InventoryUI: 11. Kelola Data Inventori (Tambah/Edit/Hapus)
+InventoryUI -[#red]> InventoryControl: 12. Mengirim Perubahan Data Inventori
+
+InventoryControl -[#brown]> InventoryService: 13. Memproses Perubahan Data Inventori
+InventoryService -[#brown]> InventoryEntity: 14. Memperbarui Entitas Inventori
+InventoryEntity -[#brown]> InventoryDB: 15. Simpan Perubahan Data ke DB
+InventoryDB -[#brown]-> InventoryEntity: 16. Konfirmasi Penyimpanan
+InventoryEntity -[#brown]-> InventoryService: 17. Mengirim Konfirmasi Sukses
+InventoryService -[#brown]-> InventoryControl: 18. Mengirim Konfirmasi Sukses
+
+InventoryControl -[#darkgreen]> InventoryUI: 19. Mengirim Status Operasi (Berhasil)
+InventoryUI -[#darkgreen]-> Admin: 20. Menampilkan Status Operasi
+
+InventoryControl -[#blue]> SyncService: 21. Meminta Jalankan Sinkronisasi Otomatis
+
+SyncService -[#purple]> InventoryEntity: 22. Mengambil Data Inventori untuk Sinkronisasi
+InventoryEntity -[#purple]> InventoryDB: 23. Mengambil Data Inventori Terbaru
+InventoryDB -[#purple]-> InventoryEntity: 24. Mengembalikan Data Inventori
+InventoryEntity -[#purple]-> SyncService: 25. Mengirim Data untuk Sinkronisasi
+
+SyncService -[#orange]> ExternalAutomation: 26. Mengirim Data & Perintah Sinkronisasi
+ExternalAutomation -[#orange]-> SyncService: 27. Konfirmasi Sinkronisasi & Validasi Data
+
+SyncService -[#brown]> InventoryDB: 28. Update Status Sinkronisasi & Validasi di DB
+InventoryDB -[#brown]-> SyncService: 29. Konfirmasi Berhasil
+SyncService -[#darkgreen]> InventoryControl: 30. Mengirim Notifikasi Sinkronisasi Selesai
+InventoryControl -[#darkgreen]-> InventoryUI: 31. Mengirim Notifikasi Status Sinkronisasi
+InventoryUI -[#darkgreen]-> Admin: 32. Menampilkan Notifikasi Sinkronisasi Selesai
+
+@enduml

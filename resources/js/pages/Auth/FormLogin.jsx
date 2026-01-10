@@ -1,31 +1,33 @@
-import { router } from '@inertiajs/react';
 import { useForm } from 'laravel-precognition-react-inertia';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import axios from 'axios';
 
 import {
   Anchor,
   Button,
   Checkbox,
-  Divider,
   Paper,
   PasswordInput,
   Text,
   TextInput,
   Title,
   Group,
+  Alert,
 } from '@mantine/core';
 import GuestLayout from '@/layouts/GuestLayout';
 import LoginNotification from './LoginNotification';
-import GoogleIcon from '@/icons/GoogleIcon';
-import QrIcon from '@/icons/QrIcon';
 import classes from './css/Login.module.css';
+import ContactDialog from './ContactDialog';
+import { IconLock, IconMail, IconAlertTriangle } from '@tabler/icons-react';
+import { useComputedColorScheme } from '@mantine/core';
 
-// Logika password strength meter bisa tetap ada, tapi kita sembunyikan dari render
-// untuk meniru desain target.
-// ... (fungsi getStrength dan requirements)
 
 const LoginForm = ({ notify, onForgotPassword }) => {
+  const [opened, setOpened] = useState(false);
+  const resetAndClose = () => setOpened(false);
   const passwordRef = useRef(null);
+  const scheme = useComputedColorScheme('light');
+  const cardClass = `${classes.form} ${classes.blurBackground} ${scheme === 'dark' ? classes.darkCard : ''}`;
 
   const form = useForm('post', route('auth.login.attempt'), {
     email: route().params?.email || '',
@@ -33,16 +35,33 @@ const LoginForm = ({ notify, onForgotPassword }) => {
     remember: false,
   });
 
+  useEffect(() => {
+    (async () => {
+      try {
+        await axios.get(route('sanctum.csrf-cookie'));
+      } catch (err) {
+        // ignore - endpoint may not exist or not necessary
+      }
+    })();
+  }, []);
+
   useEffect(() => route().params?.email && passwordRef.current?.focus(), [route().params?.email]);
 
   const submit = e => {
     e.preventDefault();
-    form.submit({ preserveScroll: true });
+    (async () => {
+      try {
+        await axios.get(route('sanctum.csrf-cookie'));
+      } catch (err) {
+        // Not fatal — we'll still attempt to submit; logging for diagnostics
+      }
+      form.submit({ preserveScroll: true });
+    })();
   };
 
   return (
     <Paper
-      className={`${classes.form} ${classes.blurBackground}`}
+      className={cardClass}
       radius='md'
       p='lg'
       withBorder
@@ -51,7 +70,7 @@ const LoginForm = ({ notify, onForgotPassword }) => {
         order={2}
         className={classes.title}
       >
-        CV Ajat Konstruksi Majalengka
+        Log in to Your ConstPM Account
       </Title>
       <Text
         c='dimmed'
@@ -59,20 +78,38 @@ const LoginForm = ({ notify, onForgotPassword }) => {
         ta='center'
         mt={5}
       >
-        Login to your ConstPM account
+        Access your projects and tasks securely.
       </Text>
 
       <LoginNotification notify={notify} />
 
+      {form.errors.email && (
+        <Alert
+          radius='md'
+          title='Login failed'
+          icon={<IconAlertTriangle size={18} />}
+          color='red'
+          mb='md'
+        >
+          {form.errors.email}
+        </Alert>
+      )}
+
       <form onSubmit={submit}>
         <TextInput
           label='Email'
-          placeholder='your@example.com'
+          placeholder='Your Email'
           required
+          leftSection={
+            <IconMail
+              size={18}
+              stroke={1.5}
+            />
+          }
           value={form.data.email}
           onChange={e => form.setData('email', e.target.value)}
           onBlur={() => form.validate('email')}
-          error={form.errors.email}
+          error={false}
           size='md'
           radius='md'
         />
@@ -80,6 +117,12 @@ const LoginForm = ({ notify, onForgotPassword }) => {
           ref={passwordRef}
           label='Password'
           placeholder='Your password'
+          leftSection={
+            <IconLock
+              size={18}
+              stroke={1.5}
+            />
+          }
           required
           mt='md'
           size='md'
@@ -112,11 +155,12 @@ const LoginForm = ({ notify, onForgotPassword }) => {
           size='md'
           radius='md'
           disabled={form.processing}
+          loading={form.processing}
         >
           Login
         </Button>
-
-        <Divider
+        {/* FEATURE UPCOMING}
+        {/* <Divider
           className={classes.divider}
           label='Or continue with'
           labelPosition='center'
@@ -147,24 +191,30 @@ const LoginForm = ({ notify, onForgotPassword }) => {
           >
             Scan QR
           </Button>
-        </Group>
-
-        <Text
-          c='dimmed'
-          size='sm'
-          ta='center'
-          mt='md'
-        >
-          Don`t have an account?{' '}
-          <Anchor
-            size='sm'
-            component='a'
-            onClick={() => router.get(route('coming.soon'))}
-          >
-            Sign up / Upcoming Feature
-          </Anchor>
-        </Text>
+        </Group> */}
       </form>
+
+      <Text
+        c='dimmed'
+        size='sm'
+        ta='center'
+        mt='md'
+      >
+        Don`t have an account?{' '}
+        <Anchor
+          component='button'
+          size='sm'
+          onClick={() => setOpened(true)}
+          style={{ cursor: 'pointer' }}
+        >
+          Contact us
+        </Anchor>
+      </Text>
+      <ContactDialog
+        opened={opened}
+        resetAndClose={resetAndClose}
+        initialEmail={form.data.email}
+      />
     </Paper>
   );
 };
