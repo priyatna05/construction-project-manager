@@ -280,7 +280,16 @@ export default function WorkReports({
           {Array.isArray(r.material_details) && r.material_details.length > 0 ? (
             r.material_details
               .slice(0, 1)
-              .map(m => `${m.name} (${m.used_quantity})`)
+              .map(m => {
+                const inputUnit = m.unit || m.base_unit || '';
+                const baseUnit = m.base_unit || m.unit || '';
+                const usedBase = m.used_quantity_base ?? m.used_quantity;
+                const showBase =
+                  inputUnit && baseUnit && inputUnit.toLowerCase() !== baseUnit.toLowerCase();
+                return `${m.name} (${m.used_quantity} ${inputUnit}${
+                  showBase ? ` (${usedBase} ${baseUnit})` : ''
+                })`;
+              })
               .join(', ') + (r.material_details.length > 1 ? ', ...' : '')
           ) : (
             <span style={{ color: 'red' }}>Empty record</span>

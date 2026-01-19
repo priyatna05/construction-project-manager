@@ -94,7 +94,7 @@ export default function PhotoUploadModal({
           fw={600}
           ml={6}
         >
-          {saved ? 'Saved ✓' : isEditMode ? 'Edit Work Photos' : 'View Work Photos'}
+          {saved ? 'Saved ✓' : isEditMode ? 'Upload Work Photos' : 'View Work Photos'}
         </Text>
         <Text
           fz='sm'

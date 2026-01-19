@@ -8,7 +8,6 @@ import {
   UnstyledButton,
   Group,
   Box,
-  Center,
   ActionIcon,
   rem,
   Tooltip,
@@ -50,17 +49,68 @@ export default function MaterialsUsed({
   const [isManualInput, setIsManualInput] = useState(false);
   const [autoCalculateRemaining, setAutoCalculateRemaining] = useState(false);
   const modalZIndex = 2300;
+  const unitOptions = useMemo(
+    () => [
+      { value: 'Piece', label: 'Piece' },
+      { value: 'Batang', label: 'Batang' },
+      { value: 'Kilogram', label: 'Kilogram' },
+      { value: 'Gram', label: 'Gram' },
+      { value: 'Ton', label: 'Ton' },
+      { value: 'Liter', label: 'Liter' },
+      { value: 'Milliliter', label: 'Milliliter' },
+      { value: 'Meter', label: 'Meter' },
+      { value: 'Centimeter', label: 'Centimeter' },
+      { value: 'Millimeter', label: 'Millimeter' },
+      { value: 'Square Meter', label: 'Square Meter' },
+      { value: 'Cubic Meter', label: 'Cubic Meter' },
+      { value: 'Bag', label: 'Bag' },
+      { value: 'Drum', label: 'Drum' },
+      { value: 'Roll', label: 'Roll' },
+      { value: 'Sheet', label: 'Sheet' },
+      { value: 'Unit', label: 'Unit' },
+      { value: 'Set', label: 'Set' },
+      { value: 'Lot', label: 'Lot' },
+    ],
+    []
+  );
+  const normalizeUnitText = value =>
+    (value ?? '')
+      .toString()
+      .trim()
+      .toLowerCase()
+      .replace(/[_\s]+/g, ' ');
+  const unitsMatch = (left, right) => normalizeUnitText(left) === normalizeUnitText(right);
+  const resolveUnitValue = value => {
+    const normalized = normalizeUnitText(value);
+    return unitOptions.find(option => normalizeUnitText(option.value) === normalized)?.value || value || '';
+  };
+  const baseUnit = newMaterial.base_unit || '';
+  const inputUnit = newMaterial.unit || '';
+  const needsConversion = inputUnit && baseUnit && !unitsMatch(inputUnit, baseUnit);
+  const conversionFactor = needsConversion ? Number(newMaterial.conversion_factor) || 0 : 1;
+  const usedQuantityBase =
+    conversionFactor > 0 ? (Number(newMaterial.used_quantity) || 0) / conversionFactor : 0;
+  const unitOptionsWithBase = useMemo(() => {
+    if (!baseUnit) return unitOptions;
+    const exists = unitOptions.some(option => unitsMatch(option.value, baseUnit));
+    return exists ? unitOptions : [{ value: baseUnit, label: baseUnit }, ...unitOptions];
+  }, [baseUnit, unitOptions]);
 
   useEffect(() => {
     setOpened(isOpen);
   }, [isOpen]);
 
   const isFormFilled = useMemo(() => {
-    return (
-      (isManualInput ? newMaterial.name?.trim() !== '' : newMaterial.material_id) &&
-      newMaterial.used_quantity > 0 &&
-      newMaterial.source?.trim() !== ''
-    );
+    const hasName = newMaterial.name?.trim() !== '';
+    const hasMaterial = Boolean(newMaterial.material_id);
+    const hasQuantity = Number(newMaterial.used_quantity) > 0;
+    const hasSource = newMaterial.source?.trim() !== '';
+    const hasUnit = newMaterial.unit?.toString().trim() !== '';
+    const hasBaseUnit = isManualInput ? true : newMaterial.base_unit?.toString().trim() !== '';
+    const requiresFactor = !isManualInput && hasUnit && hasBaseUnit && !unitsMatch(newMaterial.unit, newMaterial.base_unit);
+    const hasFactor = !requiresFactor || Number(newMaterial.conversion_factor) > 0;
+
+    return (isManualInput ? hasName : hasMaterial) && hasQuantity && hasSource && hasUnit && hasBaseUnit && hasFactor;
   }, [newMaterial, isManualInput]);
 
   // Calculate remaining quantity automatically for planned materials
@@ -71,10 +121,10 @@ export default function MaterialsUsed({
     // console.log('Selected material:', selected);
     // console.log('Planned quantity:', selected.planned_quantity);
     // console.log('Used quantity:', newMaterial.used_quantity);
-    const remaining = (selected.planned_quantity || 0) - (newMaterial.used_quantity || 0);
+    const remaining = (selected.planned_quantity || 0) - usedQuantityBase;
     // console.log('Calculated remaining:', remaining);
     return remaining;
-  }, [newMaterial.material_id, newMaterial.used_quantity, plannedMaterials, isManualInput]);
+  }, [newMaterial.material_id, usedQuantityBase, plannedMaterials, isManualInput]);
 
   // Get the actual remaining value (auto-calculated or manual)
   const actualRemaining = autoCalculateRemaining
@@ -85,13 +135,95 @@ export default function MaterialsUsed({
     : editingIndex !== null
       ? 'Update Material'
       : 'Add Material';
+  const materialLabel = (
+    <Group
+      justify='space-between'
+      align='center'
+      wrap='nowrap'
+    >
+
+      <Switch
+        checked={isManualInput}
+        onChange={event => {
+          const isChecked = event.currentTarget.checked;
+          setIsManualInput(isChecked);
+          setAutoCalculateRemaining(false);
+          if (isChecked) {
+            setNewMaterial(prev => ({
+              ...prev,
+              material_id: null,
+              source: 'purchase local',
+              base_unit: prev.unit || '',
+              conversion_factor: 1,
+              manual_remaining: true,
+            }));
+          } else {
+            setNewMaterial(prev => ({
+              ...prev,
+              name: '',
+              unit: '',
+              base_unit: '',
+              unit_cost: 0,
+              source: 'gudang',
+              conversion_factor: 1,
+              used_quantity_base: 0,
+              manual_remaining: false,
+            }));
+          }
+        }}
+        onClick={e => e.stopPropagation()}
+        size='xs'
+        aria-label={isManualInput ? 'Disable manual input' : 'Enable manual input'}
+      />
+       <Tooltip
+        label={
+          isManualInput
+            ? 'Disable Manual input (purchase localy)'
+            : 'Enable Manual input (purchase localy)'
+        }
+        withArrow
+        zIndex={3200}
+        position='top'
+      >
+        <Text
+          size='14px'
+          fw={500}
+        >
+          Material
+          <Text
+            span
+            c='red'
+          >
+            {' '}
+            *
+          </Text>
+        </Text>
+      </Tooltip>
+    </Group>
+  );
 
   const handleSave = () => {
     if (isEditMode && onUpdate) {
       onUpdate(materialsUsedList);
     } else {
       // For planned materials with auto-calculate, ensure remaining_quantity is set to calculated value
-      const materialToSave = { ...newMaterial };
+      const inputUnitValue = inputUnit;
+      const baseUnitValue = baseUnit || inputUnitValue;
+      const hasConversion = inputUnitValue && baseUnitValue && !unitsMatch(inputUnitValue, baseUnitValue);
+      const saveConversionFactor = hasConversion ? Number(newMaterial.conversion_factor) || 0 : 1;
+      const usedQuantityBaseValue =
+        saveConversionFactor > 0
+          ? (Number(newMaterial.used_quantity) || 0) / saveConversionFactor
+          : 0;
+      const manualRemaining = isManualInput ? true : autoCalculateRemaining;
+      const materialToSave = {
+        ...newMaterial,
+        unit: inputUnitValue,
+        base_unit: baseUnitValue,
+        conversion_factor: saveConversionFactor,
+        used_quantity_base: usedQuantityBaseValue,
+        manual_remaining: manualRemaining,
+      };
       if (!isManualInput && !autoCalculateRemaining) {
         materialToSave.remaining_quantity = calculatedRemaining;
         // console.log('Saving with auto-calculated remaining:', calculatedRemaining);
@@ -109,9 +241,13 @@ export default function MaterialsUsed({
       setNewMaterial({
         material_id: null,
         used_quantity: 0,
+        used_quantity_base: 0,
         remaining_quantity: 0,
         source: 'gudang',
         unit: '',
+        base_unit: '',
+        conversion_factor: 1,
+        manual_remaining: false,
         name: '',
         unit_cost: 0,
       });
@@ -167,8 +303,15 @@ export default function MaterialsUsed({
                     key={index}
                     size='sm'
                   >
-                    • {item.name} ( Used Qty: {item.used_quantity} {item.unit} ( {item.unit_cost} )
-                    / Total cost: {item.unit_cost * item.used_quantity} / Source: {item.source})
+                    {item.name} ( Used Qty: {item.used_quantity} {item.unit || item.base_unit || ''}
+                    {item.base_unit &&
+                      item.unit &&
+                      !unitsMatch(item.unit, item.base_unit) &&
+                      ` (${item.used_quantity_base ?? item.used_quantity} ${item.base_unit})`}{' '}
+                    ( {item.unit_cost} ) / Total cost:{' '}
+                    {(Number(item.unit_cost) || 0) *
+                      (Number(item.used_quantity_base ?? item.used_quantity) || 0)}{' '}
+                    / Source: {item.source})
                   </Text>
                 ))
               ) : (
@@ -343,7 +486,11 @@ export default function MaterialsUsed({
                       fontWeight: isEditMode && editingIndex === idx ? 'bold' : 'normal',
                     }}
                   >
-                    {mat.used_quantity} {mat.unit}
+                    {mat.used_quantity} {mat.unit || mat.base_unit || ''}
+                    {mat.base_unit &&
+                      mat.unit &&
+                      !unitsMatch(mat.unit, mat.base_unit) &&
+                      ` (${mat.used_quantity_base ?? mat.used_quantity} ${mat.base_unit})`}
                   </Table.Td>
                   {canViewCosts && (
                     <Table.Td
@@ -366,9 +513,11 @@ export default function MaterialsUsed({
                         fontWeight: isEditMode && editingIndex === idx ? 'bold' : 'normal',
                       }}
                     >
-                      {mat.unit_cost != null && mat.used_quantity != null
+                      {mat.unit_cost != null &&
+                      (mat.used_quantity_base ?? mat.used_quantity) != null
                         ? money(
-                            (Number(mat.unit_cost) || 0) * (Number(mat.used_quantity) || 0),
+                            (Number(mat.unit_cost) || 0) *
+                              (Number(mat.used_quantity_base ?? mat.used_quantity) || 0),
                             'IDR',
                             {
                               round: true,
@@ -388,7 +537,7 @@ export default function MaterialsUsed({
                     {(mat.remaining_quantity ?? mat.remaining_quantity === 0)
                       ? mat.remaining_quantity
                       : '-'}{' '}
-                    {mat.unit}
+                    {mat.base_unit || mat.unit}
                   </Table.Td>
                   <Table.Td
                     style={{
@@ -420,18 +569,28 @@ export default function MaterialsUsed({
                             variant='subtle'
                             onClick={() => {
                               setEditingIndex(idx);
+                              const resolvedUnit = resolveUnitValue(mat.unit || '');
+                              const resolvedBaseUnit = resolveUnitValue(
+                                mat.base_unit || mat.unit || ''
+                              );
                               setNewMaterial({
                                 material_id: mat.material_id?.toString() || null,
                                 used_quantity: mat.used_quantity,
+                                used_quantity_base: mat.used_quantity_base ?? mat.used_quantity,
                                 remaining_quantity: mat.remaining_quantity,
                                 source: mat.source,
-                                unit: mat.unit,
+                                unit: resolvedUnit,
+                                base_unit: resolvedBaseUnit,
+                                conversion_factor:
+                                  Number(mat.conversion_factor) ||
+                                  (unitsMatch(resolvedUnit, resolvedBaseUnit) ? 1 : 0),
+                                manual_remaining: Boolean(mat.manual_remaining),
                                 name: mat.name,
                                 unit_cost: mat.unit_cost || 0,
                               });
                               const isManual = !mat.material_id && mat.name?.trim() !== '';
                               setIsManualInput(isManual);
-                              setAutoCalculateRemaining(false); // default to auto-calc for planned materials
+                              setAutoCalculateRemaining(Boolean(mat.manual_remaining));
                               if (isManual) {
                                 setNewMaterial(prev => ({ ...prev, source: 'purchase local' }));
                               } else {
@@ -498,7 +657,6 @@ export default function MaterialsUsed({
           </Group>
         )}
         {isEditMode && (
-          <Center>
             <Box
               mt='sm'
               mb='lg'
@@ -506,69 +664,15 @@ export default function MaterialsUsed({
               {/* === FORM INPUT === */}
               <hr style={{ borderTop: '1px solid #eee', margin: '6px 0' }} />
 
-              <Group
-                align='center'
-                mt='xl'
-              >
-                <Switch
-                  checked={isManualInput}
-                  onChange={event => {
-                    setIsManualInput(event.currentTarget.checked);
-                    setAutoCalculateRemaining(!event.currentTarget.checked); // auto-calc when manual input is off
-                    if (event.currentTarget.checked) {
-                      setNewMaterial(prev => ({
-                        ...prev,
-                        material_id: null,
-                        source: 'purchase local',
-                      }));
-                    } else {
-                      setNewMaterial(prev => ({
-                        ...prev,
-                        name: '',
-                        unit: '',
-                        unit_cost: 0,
-                        source: 'gudang',
-                      }));
-                    }
-                  }}
-                  size='xs'
-                  label={
-                    <Tooltip
-                      label={
-                        isManualInput
-                          ? 'Disable Manual input (purchase localy)'
-                          : 'Enable Manual input (purchase localy)'
-                      }
-                      withArrow
-                      zIndex={3200}
-                      position='top'
-                    >
-                      <Text
-                        size='14px'
-                        fw={500}
-                      >
-                        Material
-                        <Text
-                          span
-                          c='red'
-                        >
-                          {' '}
-                          *
-                        </Text>
-                      </Text>
-                    </Tooltip>
-                  }
-                />
-              </Group>
-
               {isManualInput ? (
                 <>
                   <Group
                     grow
                     align='flex-end'
+                    mt='xl'
                   >
                     <TextInput
-                      label=''
+                      label={materialLabel}
                       placeholder='Enter material name'
                       value={newMaterial.name || ''}
                       onChange={e =>
@@ -580,21 +684,17 @@ export default function MaterialsUsed({
                       required
                       label='Unit'
                       placeholder='Select unit'
-                      data={[
-                        { value: 'piece', label: 'Piece' },
-                        { value: 'kg', label: 'Kilogram' },
-                        { value: 'liter', label: 'Liter' },
-                        { value: 'meter', label: 'Meter' },
-                        { value: 'm2', label: 'Square Meter' },
-                        { value: 'm3', label: 'Cubic Meter' },
-                        { value: 'ton', label: 'Ton' },
-                        { value: 'bag', label: 'Bag' },
-                        { value: 'drum', label: 'Drum' },
-                        { value: 'roll', label: 'Roll' },
-                        { value: 'sheet', label: 'Sheet' },
-                      ]}
+                      comboboxProps={{ withinPortal: true, zIndex: modalZIndex + 200 }}
+                      data={unitOptions}
                       value={newMaterial.unit || ''}
-                      onChange={val => setNewMaterial(prev => ({ ...prev, unit: val }))}
+                      onChange={val =>
+                        setNewMaterial(prev => ({
+                          ...prev,
+                          unit: resolveUnitValue(val),
+                          base_unit: resolveUnitValue(val),
+                          conversion_factor: 1,
+                        }))
+                      }
                       searchable
                     />
                   </Group>
@@ -619,7 +719,8 @@ export default function MaterialsUsed({
                 />
               ) : (
                 <Select
-                  mt='sm'
+                  mt='xl'
+                  label={materialLabel}
                   placeholder='Select material on planned task'
                   data={plannedMaterials
                     .filter(
@@ -639,11 +740,19 @@ export default function MaterialsUsed({
                   value={newMaterial.material_id?.toString() || null}
                   onChange={val => {
                     const selected = plannedMaterials.find(m => m.id.toString() === val);
+                    const baseUnitLabel = resolveUnitValue(
+                      selected?.unit?.name || selected?.unit || ''
+                    );
+                    setAutoCalculateRemaining(false);
                     setNewMaterial(prev => ({
                       ...prev,
                       material_id: val,
                       name: selected?.name || '',
-                      unit: selected?.unit?.name || selected?.unit || '',
+                      unit: baseUnitLabel,
+                      base_unit: baseUnitLabel,
+                      conversion_factor: 1,
+                      manual_remaining: false,
+                      used_quantity_base: 0,
                       unit_cost: selected?.unit_cost || 0,
                     }));
                   }}
@@ -653,6 +762,46 @@ export default function MaterialsUsed({
                 />
               )}
 
+              {!isManualInput && newMaterial.material_id && (
+                <Group
+                  mt='sm'
+                  grow
+                  align='flex-end'
+                >
+                  <Select
+                    label='Input Unit'
+                    placeholder='Select input unit'
+                    comboboxProps={{ withinPortal: true, zIndex: modalZIndex + 200 }}
+                    data={unitOptionsWithBase}
+                    value={newMaterial.unit || ''}
+                    onChange={val =>
+                      setNewMaterial(prev => ({
+                        ...prev,
+                        unit: resolveUnitValue(val),
+                        conversion_factor: 1,
+                      }))
+                    }
+                    searchable
+                  />
+                  {needsConversion && (
+                    <NumberInput
+                      label={`1 ${baseUnit || 'base'} = ? ${inputUnit || 'unit'}`}
+                      placeholder='Conversion factor'
+                      min={0}
+                      value={newMaterial.conversion_factor || 0}
+                      onChange={val =>
+                        setNewMaterial(prev => ({
+                          ...prev,
+                          conversion_factor: val || 0,
+                        }))
+                      }
+                      decimalSeparator=','
+                      thousandSeparator='.'
+                    />
+                  )}
+                </Group>
+              )}
+
               <Group
                 mt='sm'
                 grow
@@ -660,7 +809,7 @@ export default function MaterialsUsed({
                 <NumberInput
                   required
                   label='Used Quantity'
-                  placeholder='Jumlah digunakan'
+                  placeholder='Used quantity of material'
                   min={0}
                   value={newMaterial.used_quantity}
                   onChange={val => setNewMaterial(prev => ({ ...prev, used_quantity: val || 0 }))}
@@ -679,12 +828,13 @@ export default function MaterialsUsed({
                           onChange={e => {
                             const enabled = e.currentTarget.checked;
                             setAutoCalculateRemaining(enabled);
-                            if (!enabled && !isManualInput) {
-                              setNewMaterial(prev => ({
-                                ...prev,
-                                remaining_quantity: calculatedRemaining,
-                              }));
-                            }
+                            setNewMaterial(prev => ({
+                              ...prev,
+                              manual_remaining: enabled,
+                              remaining_quantity: enabled
+                                ? prev.remaining_quantity
+                                : calculatedRemaining,
+                            }));
                           }}
                           onClick={e => e.stopPropagation()}
                         />
@@ -727,13 +877,12 @@ export default function MaterialsUsed({
               <TextInput
                 required
                 mt='sm'
-                label='Sumber Material'
-                placeholder='Gudang / Pembelian lokal'
+                label='Source'
+                placeholder='Source of material'
                 value={newMaterial.source}
                 onChange={e => setNewMaterial(prev => ({ ...prev, source: e.currentTarget.value }))}
               />
             </Box>
-          </Center>
         )}
       </Modal>
     </>

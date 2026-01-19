@@ -66,7 +66,7 @@ class InventoryController extends Controller
         $inventory->loadMissing([
             'labels',
             'createdByUser',
-            'allocations'
+            'allocations',
         ]);
 
         return Inertia::render('Inventories/Show', [

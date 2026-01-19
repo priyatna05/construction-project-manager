@@ -607,6 +607,7 @@ export default function EquipmentUsed({
                       label='Fuel Unit'
                       placeholder='e.g., Liter'
                       required
+                      comboboxProps={{ withinPortal: true, zIndex: modalZIndex + 200 }}
                       data={[
                         { value: 'liter', label: 'Liter' },
                         { value: 'gallon', label: 'Gallon' },

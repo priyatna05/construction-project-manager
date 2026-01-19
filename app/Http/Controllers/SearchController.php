@@ -37,9 +37,12 @@ class SearchController extends Controller
         // ==========================
         // 3. Projects
         // ==========================
-        $projects = Project::where('name', 'like', "%{$query}%")
+        $projects = Project::where(function ($q) use ($query) {
+            $q->where('name', 'like', "%{$query}%")
+                ->orWhere('code', 'like', "%{$query}%");
+        })
             ->limit(5)
-            ->get(['id', 'name']);
+            ->get(['id', 'name', 'code']);
 
         foreach ($projects as $project) {
             $url = $this->safeRoute('projects.index', [
@@ -52,7 +55,7 @@ class SearchController extends Controller
                 $results[] = [
                     'type'  => 'Project',
                     'id'    => $project->id,
-                    'title' => $project->name,
+                    'title' => $project->name . ($project->code ? " ({$project->code})" : ''),
                     'url'   => $url,
                 ];
             }

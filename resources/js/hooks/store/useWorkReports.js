@@ -261,7 +261,7 @@ export function useWorkReports(
     // console.log('Materials used list:', materialLogic.materialsUsedList);
     const materialCost = materialLogic.materialsUsedList.reduce((acc, m) => {
       const unitCost = Number(m.unit_cost) || 0;
-      const usedQuantity = Number(m.used_quantity) || 0;
+      const usedQuantity = Number(m.used_quantity_base ?? m.used_quantity) || 0;
       const total = unitCost * usedQuantity;
       // console.log(`Material: ${m.name} - unit_cost: ${unitCost}, used_quantity: ${usedQuantity}, total: ${total}`);
       return acc + total;

@@ -210,22 +210,22 @@ const ProjectsIndex = () => {
                   <IconList size={14} />
                 </ActionIcon>
                   </Tooltip>
+                {isAdmin() && (
                   <Tooltip
                     label='Archive'
                     position='top'
                     withArrow
                   >
-                {isAdmin() && (
-                  <ActionIcon
-                    size='lg'
-                    onClick={toggle}
-                    variant={selected ? 'filled' : 'default'}
-                    color={selected ? 'red' : ''}
+                    <ActionIcon
+                      size='lg'
+                      onClick={toggle}
+                      variant={selected ? 'filled' : 'default'}
+                      color={selected ? 'red' : ''}
                     >
-                    <IconArchive size={14} />
-                  </ActionIcon>
+                      <IconArchive size={14} />
+                    </ActionIcon>
+                  </Tooltip>
                 )}
-                </Tooltip>
                 <Menu
                   shadow='md'
                   width={200}

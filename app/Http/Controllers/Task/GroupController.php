@@ -17,11 +17,6 @@ use Illuminate\Http\Request;
 
 class GroupController extends Controller
 {
-    public function __construct()
-    {
-        $this->authorizeResource(TaskGroup::class, 'taskGroup');
-    }
-
     public function index(Request $request)
     {
         $taskGroup = TaskGroup::Query()

@@ -21,7 +21,7 @@ function ModalForm() {
 
   const submitModal = event => {
     event.preventDefault();
-    submit(event, {
+    submit({
       onSuccess: () => modals.closeAll(),
       onError: errors => {
         console.error('Validation errors:', errors);

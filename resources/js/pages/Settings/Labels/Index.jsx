@@ -36,7 +36,6 @@ import ArchivedFilterButton from '@/components/ArchivedFilterButton';
 
 import { reloadWithQuery } from '@/utils/route';
 import { prepareColumns, actionColumnVisibility } from '@/utils/table';
-import IconSelectOption from '@/components/IconSelectOption';
 
 const toKebabCase = str =>
   (str &&
@@ -112,7 +111,7 @@ const LabelsIndex = () => {
   }, [editingLabel]);
 
   const handleCreate = () => {
-    setEditingLabel(null);
+    setEditingLabel();
     open();
   };
 
@@ -293,7 +292,6 @@ const LabelsIndex = () => {
       </Card>
 
       <Modal
-        key={editingLabel?.id || 'new'}
         opened={opened}
         onClose={handleClose}
         centered
@@ -384,7 +382,6 @@ const LabelsIndex = () => {
                       value={form.data.icon}
                       onChange={icon => form.setData('icon', icon || '')}
                       data={tablerIconOptions}
-                      renderOption={IconSelectOption}
                       comboboxProps={comboboxProps}
                       leftSection={
                         form.data.icon

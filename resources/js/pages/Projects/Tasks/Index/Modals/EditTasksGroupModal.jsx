@@ -17,7 +17,8 @@ function ModalForm({ item }) {
   );
 
   const submitModal = event => {
-    submit(event, {
+    event.preventDefault();
+    submit({
       onSuccess: () => modals.closeAll(),
       preserveScroll: true,
     });
@@ -46,32 +47,6 @@ function ModalForm({ item }) {
         onChange={e => updateValue('description', e.target.value)}
         error={form.errors.description}
       />
-
-      {/*<DateInput
-        label="Start date"
-        placeholder="Select start date"
-        value={form.data.start_date}
-        onChange={(date) => updateValue("start_date", date)}
-        error={form.errors.start_date}
-      />
-
-      <DateInput
-        label="End date"
-        placeholder="Select end date"
-        value={form.data.end_date}
-        onChange={(date) => updateValue("end_date", date)}
-        error={form.errors.end_date}
-      />
-
-      <NumberInput
-        label="Budget"
-        placeholder="Enter budget"
-        mt="md"
-        value={form.data.budget_group}
-        onChange={(value) => updateValue("budget_group", value)}
-        error={form.errors.budget_group}
-      /> */}
-
       <Flex
         justify='flex-end'
         mt='xl'

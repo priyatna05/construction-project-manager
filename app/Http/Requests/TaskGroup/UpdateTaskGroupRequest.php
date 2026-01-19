@@ -31,9 +31,6 @@ class UpdateTaskGroupRequest extends FormRequest
                     ->ignore($this->route('taskGroup')->id),
             ],
             'description' => 'string|nullable',
-            'start_date' => 'date',
-            'end_date' => 'date',
-            'budget_group' => 'numeric|min:0',
         ];
     }
 }

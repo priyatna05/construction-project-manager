@@ -304,7 +304,6 @@ export default function ProjectHeaderBudget({ project, item = null, onEdit, disa
                       order={1}
                       style={{
                         color: 'white',
-                        cursor: 'pointer',
                         transition: 'color 0.2s',
                         whiteSpace: 'normal',
                         wordBreak: 'break-word',

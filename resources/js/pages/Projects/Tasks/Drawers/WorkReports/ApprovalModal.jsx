@@ -675,7 +675,11 @@ export default function ApprovalModal({ onClose, workReport, onApprove, onReject
                                     variant='light'
                                     size='sm'
                                   >
-                                    {mat.used_quantity}
+                                    {mat.used_quantity} {mat.unit || mat.base_unit || ''}
+                                    {mat.base_unit &&
+                                      mat.unit &&
+                                      mat.unit.toLowerCase() !== mat.base_unit.toLowerCase() &&
+                                      ` (${mat.used_quantity_base ?? mat.used_quantity} ${mat.base_unit})`}
                                   </Badge>
                                 </Group>
                               </Paper>

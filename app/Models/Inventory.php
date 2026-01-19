@@ -141,6 +141,7 @@ class Inventory extends Model
         return $this->hasMany(InventoryTaskAllocation::class);
     }
 
+
     // === Scopes ===
 
     public function scopeActive(Builder $query): Builder

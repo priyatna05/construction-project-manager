@@ -28,13 +28,11 @@ import classes from './css/TaskDrawer.module.css';
 import InvAllocations from './InvAllocations/Index';
 import dayjs from '@/utils/dayjsConfig';
 
-import {
-  formatLabelsForDropdown,
-  renderSelectOptionWithIcon,
-} from '@/components/helperLabel';
+import { formatLabelsForDropdown, renderSelectOptionWithIcon } from '@/components/helperLabel';
 import StatusSelect from '@/components/StatusSelect';
 import UserMultiSelect from '@/components/UserMultiSelect';
 import UserSelect from '@/components/UserSelect';
+import { getInitials } from '@/utils/user';
 
 export function CreateTaskDrawer() {
   const {
@@ -97,15 +95,11 @@ export function CreateTaskDrawer() {
   );
 
   const updateTaskInventories = allocatedInventories => {
-    // For create task, just update the form data
     updateValue('inventories', allocatedInventories);
   };
 
-  // --- Satu useEffect untuk semua hal terkait open drawer
-  // FIX: Clear all fields setiap kali drawer dibuka untuk create new task, agar lebih clean dan menandakan sedang create new task
   useEffect(() => {
     if (create.opened) {
-      // Reset form ke initial state setiap kali drawer dibuka, bukan hanya jika belum initialized
       form.setData({ ...initial });
       setIsSubmitting(false); // Reset submitting state
       return () => clearTimeout();
@@ -180,7 +174,7 @@ export function CreateTaskDrawer() {
       const timeout = setTimeout(() => {
         setSaved(false);
         closeCreateTask();
-      }, 2000);
+      }, 3000);
       return () => clearTimeout(timeout);
     }
   }, [saved, closeCreateTask]);
@@ -704,7 +698,12 @@ export function CreateTaskDrawer() {
                     withArrow
                     zIndex={2200}
                   >
-                    <Text fw={500} size='sm'>Task Relation</Text>
+                    <Text
+                      fw={500}
+                      size='sm'
+                    >
+                      Task Relation
+                    </Text>
                   </Tooltip>
                 }
                 placeholder='Select relation'
@@ -1243,9 +1242,11 @@ export function CreateTaskDrawer() {
                   form.data.assigned_to_user_id ? form.data.assigned_to_user_id.toString() : ''
                 }
                 onChange={value => updateValue('assigned_to_user_id', value)}
-                users={usersWithAccessToProject.map(i => ({
+                data={usersWithAccessToProject.map(i => ({
                   value: i.id.toString(),
                   label: i.name,
+                  avatar: i.avatar,
+                  initial: getInitials(i.name),
                 }))}
                 error={form.errors.assigned_to_user_id}
               />
@@ -1262,6 +1263,8 @@ export function CreateTaskDrawer() {
                 users={usersWithAccessToProject.map(i => ({
                   value: i.id.toString(),
                   label: i.name,
+                  avatar: i.avatar,
+                  initial: getInitials(i.name),
                 }))}
                 error={form.errors.subscribed_users}
               />
